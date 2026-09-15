@@ -1,0 +1,7 @@
+# Freebuff çalışma alanı meta verisi
+.freebuff/
+
+# İşletim sistemi artıkları
+Thumbs.db
+Desktop.ini
+.DS_Store

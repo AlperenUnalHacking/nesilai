@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>NesilAI — Yapay Zeka Asistanı</title>
+    <meta name="description" content="NesilAI — sohbet, görsel oluşturma, sesle yazma, sesli okuma ve görsel okuma özellikli yapay zeka asistanı.">
+    <meta name="color-scheme" content="dark light">
+    <link rel="icon" type="image/png" href="assets/logo.png">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="css/style.css?v=pool">
+</head>
+<body>
+
+<!-- ========================================================== -->
+<!-- İkon Seti (stroke tabanlı, tek renk)                       -->
+<!-- ========================================================== -->
+<svg class="icon-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 12a1 1 0 001 1h8a1 1 0 001-1l1-12"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h13M12 6l6 6-6 6"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 15a3.5 3.5 0 003.5-3.5v-5a3.5 3.5 0 10-7 0v5A3.5 3.5 0 0012 15z"/><path d="M5.5 11.5a6.5 6.5 0 0013 0M12 18.5V21"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="M20 11l-7.6 7.6a4.6 4.6 0 01-6.5-6.5l7.3-7.3a3.1 3.1 0 014.4 4.4l-7.2 7.2a1.6 1.6 0 01-2.2-2.2l6.6-6.6"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-2.9 1.2 2 2 0 11-4 0 1.7 1.7 0 00-2.9-1.2l-.1.1a2 2 0 11-2.8-2.8l.1-.1A1.7 1.7 0 003 15a2 2 0 110-4 1.7 1.7 0 001.2-2.9l-.1-.1a2 2 0 112.8-2.8l.1.1A1.7 1.7 0 0010 4.1a2 2 0 114 0A1.7 1.7 0 0016.9 5.3l.1-.1a2 2 0 112.8 2.8l-.1.1A1.7 1.7 0 0021 11a2 2 0 110 4z"/></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></symbol>
+    <symbol id="i-crown" viewBox="0 0 24 24"><path d="M3 8l4 3 5-6 5 6 4-3-2 11H5z"/></symbol>
+    <symbol id="i-voice" viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 13.2A9 9 0 1110.8 3a7 7 0 1010.2 10.2z"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5.5A2.5 2.5 0 0012.5 3H6a2 2 0 00-2 2v7a2.5 2.5 0 002.5 2.5"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 9.5a3.5 3.5 0 010 5"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3v2M14 3v2M10 19v2M14 19v2M3 10h2M3 14h2M19 10h2M19 14h2"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="3.5"/><path d="M10.5 12.5L19 4M16 4h3.5V7.5"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l4.5-4.5L13 17l3-2.5 4 3.5"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M5 19l1-4L16.5 4.5a2.1 2.1 0 013 3L9 18z"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 12a7.5 7.5 0 01-11 6.7L5 20l1.3-4A7.5 7.5 0 1120 12z"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.2v.1"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 13l4.5 4.5L19 7"/></symbol>
+    <symbol id="i-caret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+</svg>
+
+<div class="app">
+
+    <!-- ========================================================== -->
+    <!-- Kenar Çubuğu                                               -->
+    <!-- ========================================================== -->
+    <aside id="sidebar" class="sidebar" aria-label="Kenar çubuğu">
+        <div class="sidebar-head">
+            <div class="brand">
+                <img class="brand-mark" src="assets/logo.png" alt="NesilAI logosu" width="32" height="31">
+                <div class="brand-text">
+                    <span class="brand-name">NesilAI</span>
+                    <span class="badge" id="sidebar-plan-badge">Free Plan</span>
+                </div>
+            </div>
+            <button id="new-chat-btn" class="btn btn-primary btn-block">
+                <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>
+                <span>Yeni sohbet</span>
+            </button>
+        </div>
+
+        <div class="sidebar-scroll">
+            <p class="section-label">Sohbetler</p>
+            <div id="chat-history-list" class="history-list"><!-- JS --></div>
+        </div>
+
+        <div class="sidebar-foot">
+            <div class="usage-widget" id="sidebar-usage-widget">
+                <div class="usage-widget-head">
+                    <span class="usage-widget-plan" id="widget-plan-name">Ücretsiz Plan</span>
+                    <button id="sidebar-upgrade-btn" class="btn btn-mini">Yükselt</button>
+                </div>
+                <div class="meter">
+                    <div class="meter-row">
+                        <span class="meter-label">Görsel</span>
+                        <span class="meter-track"><span class="meter-fill" id="mini-bar-images"></span></span>
+                        <span class="meter-value" id="mini-txt-images">0/5</span>
+                    </div>
+                    <div class="meter-row">
+                        <span class="meter-label">Sohbet</span>
+                        <span class="meter-track"><span class="meter-fill" id="mini-bar-chats"></span></span>
+                        <span class="meter-value" id="mini-txt-chats">0/50</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button id="open-pool-btn" class="nav-item">
+                    <svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg>
+                    <span>Üretim havuzu</span>
+                </button>
+                <button id="open-subscription-btn" class="nav-item">
+                    <svg class="icon" aria-hidden="true"><use href="#i-crown"/></svg>
+                    <span>Planlar ve kullanım</span>
+                </button>
+                <button id="open-voice-mode-btn" class="nav-item">
+                    <svg class="icon" aria-hidden="true"><use href="#i-voice"/></svg>
+                    <span>Sesli sohbet</span>
+                </button>
+                <button id="open-settings-btn" class="nav-item">
+                    <svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>
+                    <span>Ayarlar</span>
+                </button>
+            </nav>
+
+            <p class="sidebar-note">© 2026 NesilAI</p>
+        </div>
+    </aside>
+
+    <div id="sidebar-backdrop" class="backdrop"></div>
+
+    <!-- ========================================================== -->
+    <!-- Ana Alan                                                   -->
+    <!-- ========================================================== -->
+    <main class="main">
+
+        <header class="topbar">
+            <button id="toggle-sidebar-btn" class="icon-btn" aria-label="Menüyü aç/kapat">
+                <svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg>
+            </button>
+
+            <div class="topbar-title">
+                <h1 id="current-chat-title">Yeni sohbet</h1>
+                <button id="ai-status-chip" class="status-chip" type="button">
+                    <svg class="icon" aria-hidden="true"><use href="#i-cpu"/></svg>
+                    <span id="ai-status-text">Sağlayıcı ayarla</span>
+                </button>
+            </div>
+
+            <div class="topbar-actions">
+                <button id="theme-toggle" class="icon-btn" aria-label="Tema değiştir" title="Açık/koyu tema">
+                    <svg class="icon theme-icon-dark" aria-hidden="true"><use href="#i-sun"/></svg>
+                    <svg class="icon theme-icon-light" aria-hidden="true"><use href="#i-moon"/></svg>
+                </button>
+                <button id="header-sub-btn" class="btn btn-ghost hide-sm">
+                    <svg class="icon" aria-hidden="true"><use href="#i-crown"/></svg>
+                    <span id="header-plan-name">Free Plan</span>
+                </button>
+                <button id="header-voice-btn" class="btn btn-ghost hide-sm">
+                    <svg class="icon" aria-hidden="true"><use href="#i-voice"/></svg>
+                    <span>Sesli</span>
+                </button>
+                <button id="header-settings-btn" class="icon-btn" aria-label="Ayarlar">
+                    <svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <div id="chat-messages" class="messages">
+
+            <section id="welcome-hero" class="welcome-hero">
+                <img class="welcome-mark" src="assets/logo.png" alt="" width="72" height="70">
+                <h2 class="welcome-title">NesilAI ile çalışmaya başla</h2>
+                <p class="welcome-subtitle">
+                    Gerçek bir yapay zeka modeliyle sohbet et, görsel oluştur, sesini yazıya çevir
+                    ve yüklediğin görselleri okut.
+                </p>
+
+                <p class="welcome-source">
+                    <span>Aktif kaynak: <strong id="welcome-provider">—</strong></span>
+                    <button id="welcome-setup-btn" class="link-btn" type="button">Kaynağı değiştir</button>
+                </p>
+
+                <div class="suggestions">
+                    <button class="suggestion-card" data-prompt="Neon ışıklı bir siberpunk şehir görseli oluştur">
+                        <svg class="icon" aria-hidden="true"><use href="#i-image"/></svg>
+                        <span class="suggestion-body">
+                            <strong>Görsel oluştur</strong>
+                            <span>Neon ışıklı siberpunk bir şehir</span>
+                        </span>
+                    </button>
+                    <button class="suggestion-card" data-prompt="Kendini kısaca tanıt: hangi konularda yardımcı olabilirsin?">
+                        <svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>
+                        <span class="suggestion-body">
+                            <strong>Asistanı tanı</strong>
+                            <span>Neler yapabildiğini anlat</span>
+                        </span>
+                    </button>
+                    <button class="suggestion-card" data-prompt="JavaScript ile modern ve erişilebilir bir yapılacaklar listesi uygulaması yaz">
+                        <svg class="icon" aria-hidden="true"><use href="#i-code"/></svg>
+                        <span class="suggestion-body">
+                            <strong>Kod yaz</strong>
+                            <span>JavaScript todo uygulaması</span>
+                        </span>
+                    </button>
+                    <button class="suggestion-card" data-prompt="Yapay zekanın gelecekteki etkileri üzerine kısa ve özgün bir yazı yaz">
+                        <svg class="icon" aria-hidden="true"><use href="#i-pen"/></svg>
+                        <span class="suggestion-body">
+                            <strong>Yazı üret</strong>
+                            <span>Yapay zekanın geleceği</span>
+                        </span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Mesajlar buraya eklenir -->
+        </div>
+
+        <footer class="composer-area">
+            <div id="attachment-preview-bar" class="attachment-bar hidden">
+                <img id="attachment-thumbnail" class="attachment-thumb" src="" alt="">
+                <div class="attachment-meta">
+                    <span id="attachment-filename" class="attachment-name">gorsel.png</span>
+                    <span id="attachment-status" class="attachment-status">Metin taranıyor…</span>
+                </div>
+                <button id="remove-attachment-btn" class="icon-btn icon-btn-sm" aria-label="Eki kaldır">
+                    <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+                </button>
+            </div>
+
+            <div class="composer">
+                <button id="attach-btn" class="composer-btn" aria-label="Görsel yükle" title="Görsel yükle ve metnini okut">
+                    <svg class="icon" aria-hidden="true"><use href="#i-paperclip"/></svg>
+                </button>
+                <input type="file" id="file-input" accept="image/*" class="hidden">
+
+                <div id="model-picker-wrap" class="model-picker-wrap">
+                    <button id="model-picker-btn" class="model-picker-btn" type="button" aria-haspopup="listbox" title="Yapay zeka modelini değiştir">
+                        <svg class="icon" aria-hidden="true"><use href="#i-cpu"/></svg>
+                        <span id="model-picker-label">Model</span>
+                        <svg class="icon model-caret" aria-hidden="true"><use href="#i-caret"/></svg>
+                    </button>
+                    <div id="model-picker-menu" class="model-menu hidden" role="listbox" aria-label="Model seç">
+                        <div class="model-menu-search">
+                            <input id="model-picker-search" type="text" placeholder="Model ara…" autocomplete="off" spellcheck="false">
+                        </div>
+                        <div class="model-menu-list" id="model-menu-list"><!-- JS doldurur --></div>
+                        <p class="model-menu-foot">Kendi API anahtarını eklemek için Ayarlar → Yapay Zeka.</p>
+                    </div>
+                </div>
+
+                <textarea
+                    id="user-input"
+                    class="composer-input"
+                    rows="1"
+                    placeholder="Bir mesaj yaz…"
+                    autocomplete="off"
+                    aria-label="Mesaj"></textarea>
+
+                <button id="mic-btn" class="composer-btn" aria-label="Sesle yaz" title="Sesle yaz">
+                    <svg class="icon" aria-hidden="true"><use href="#i-mic"/></svg>
+                </button>
+                <button id="send-btn" class="composer-btn composer-btn-send" aria-label="Gönder" title="Gönder" disabled>
+                    <svg class="icon" aria-hidden="true"><use href="#i-send"/></svg>
+                </button>
+            </div>
+
+            <p class="composer-hint">
+                Enter ile gönder · Shift+Enter ile satır atla · Yanıtlar hatalı olabilir, önemli bilgileri doğrula
+            </p>
+        </footer>
+
+    </main>
+</div>
+
+<!-- ============================================================== -->
+<!-- Abonelik / Kullanım Modalı                                      -->
+<!-- ============================================================== -->
+<div id="subscription-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="sub-modal-title">
+    <div class="modal-backdrop" id="subscription-backdrop"></div>
+    <div class="modal-card modal-wide">
+        <header class="modal-head">
+            <div>
+                <h2 id="sub-modal-title">Planlar ve kullanım</h2>
+                <p class="modal-sub">Kotaların cihazında tutulur; paketler arasında istediğin an geçiş yapabilirsin.</p>
+            </div>
+            <button id="close-sub-modal-btn" class="icon-btn" aria-label="Kapat">
+                <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+            </button>
+        </header>
+
+        <div class="modal-body">
+            <section class="panel">
+                <div class="panel-head">
+                    <h3>Bu ayki kullanım</h3>
+                    <span class="badge badge-accent" id="dash-active-plan">Free Plan</span>
+                </div>
+                <div class="usage-grid">
+                    <div class="usage-card">
+                        <div class="usage-card-head"><span>Görsel oluşturma</span><strong id="stat-val-images">0 / 5</strong></div>
+                        <div class="track"><div class="track-fill" id="stat-bar-images"></div></div>
+                    </div>
+                    <div class="usage-card">
+                        <div class="usage-card-head"><span>Sohbet mesajı</span><strong id="stat-val-chats">0 / 50</strong></div>
+                        <div class="track"><div class="track-fill" id="stat-bar-chats"></div></div>
+                    </div>
+                    <div class="usage-card">
+                        <div class="usage-card-head"><span>Sesten yazıya</span><strong id="stat-val-stt">0 / 50</strong></div>
+                        <div class="track"><div class="track-fill" id="stat-bar-stt"></div></div>
+                    </div>
+                    <div class="usage-card">
+                        <div class="usage-card-head"><span>Yazıdan sese</span><strong id="stat-val-tts">0 / 25</strong></div>
+                        <div class="track"><div class="track-fill" id="stat-bar-tts"></div></div>
+                    </div>
+                </div>
+                <p id="sub-coupon-status" class="coupon-status hidden"></p>
+            </section>
+
+            <div class="plans">
+                <article class="plan-card" data-plan="free" id="card-plan-free">
+                    <header class="plan-head">
+                        <h3>Free</h3>
+                        <p class="plan-price">0₺ <span>başlangıç</span></p>
+                    </header>
+                    <ul class="plan-list">
+                        <li>5 görsel oluşturma</li>
+                        <li>50 sohbet mesajı</li>
+                        <li>50 sesle yazma</li>
+                        <li>25 sesli okuma</li>
+                    </ul>
+                    <button class="btn btn-outline btn-block btn-select-plan" data-tier="free">Mevcut plan</button>
+                </article>
+
+                <article class="plan-card" data-plan="premium" id="card-plan-premium">
+                    <header class="plan-head">
+                        <h3>Premium</h3>
+                        <p class="plan-price">49₺ <span>/ ay</span></p>
+                    </header>
+                    <ul class="plan-list">
+                        <li>10 görsel oluşturma</li>
+                        <li>100 sohbet mesajı</li>
+                        <li>100 sesle yazma</li>
+                        <li>50 sesli okuma</li>
+                    </ul>
+                    <button class="btn btn-outline btn-block btn-select-plan" data-tier="premium">Premium'a geç</button>
+                </article>
+
+                <article class="plan-card" data-plan="premium_go" id="card-plan-premium_go">
+                    <header class="plan-head">
+                        <h3>Premium Go</h3>
+                        <p class="plan-price">89₺ <span>/ ay</span></p>
+                    </header>
+                    <ul class="plan-list">
+                        <li>20 görsel oluşturma</li>
+                        <li>200 sohbet mesajı</li>
+                        <li>200 sesle yazma</li>
+                        <li>100 sesli okuma</li>
+                    </ul>
+                    <button class="btn btn-outline btn-block btn-select-plan" data-tier="premium_go">Premium Go'ya geç</button>
+                </article>
+
+                <article class="plan-card plan-card-featured" data-plan="premium_plus" id="card-plan-premium_plus">
+                    <header class="plan-head">
+                        <h3>Premium Plus</h3>
+                        <p class="plan-price">149₺ <span>/ ay</span></p>
+                    </header>
+                    <ul class="plan-list">
+                        <li>40 görsel oluşturma</li>
+                        <li>400 sohbet mesajı</li>
+                        <li>400 sesle yazma</li>
+                        <li>200 sesli okuma</li>
+                    </ul>
+                    <button class="btn btn-primary btn-block btn-select-plan" data-tier="premium_plus">Premium Plus'a geç</button>
+                </article>
+
+                <article class="plan-card plan-card-unlimited" data-plan="unlimited" id="card-plan-unlimited">
+                    <header class="plan-head">
+                        <h3>♾️ Sınırsız</h3>
+                        <p class="plan-price">Her şey sınırsız</p>
+                    </header>
+                    <ul class="plan-list">
+                        <li>Sınırsız görsel oluşturma</li>
+                        <li>Sınırsız sohbet mesajı</li>
+                        <li>Sınırsız sesle yazma</li>
+                        <li>Sınırsız sesli okuma</li>
+                        <li>Tüm sağlayıcı ve modeller</li>
+                    </ul>
+                    <button class="btn btn-primary btn-glow btn-block btn-select-plan" data-tier="unlimited">♾️ Sınırsız'a geç</button>
+                </article>
+            </div>
+
+            <p class="notice">
+                <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+                <span>Bu ekran şu an bir <strong>demo</strong>: ödeme altyapısı bağlı değildir, plan geçişleri yalnızca
+                cihazındaki kullanım limitlerini değiştirir. Gerçek ödeme entegrasyonu eklenene kadar ücret tahsil edilmez.</span>
+            </p>
+        </div>
+
+        <footer class="modal-foot">
+            <button id="reset-usage-btn" class="btn btn-ghost">Kullanımı sıfırla</button>
+            <button id="open-coupon-modal-btn" class="btn btn-outline">🎟️ Abonelik aktifleştir</button>
+        </footer>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- Kupon ile Abonelik Aktifleştirme Modalı                         -->
+<!-- ============================================================== -->
+<div id="coupon-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="coupon-title">
+    <div class="modal-backdrop" id="coupon-backdrop"></div>
+    <div class="modal-card modal-narrow">
+        <header class="modal-head">
+            <div>
+                <h2 id="coupon-title">Abonelik aktifleştir</h2>
+                <p class="modal-sub">Kupon kodunu gir, seçtiğin plan 18 ay boyunca ücretsiz olsun.</p>
+            </div>
+            <button id="close-coupon-modal-btn" class="icon-btn" aria-label="Kapat">
+                <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+            </button>
+        </header>
+        <div class="modal-body">
+            <div id="coupon-form-view">
+                <div class="field">
+                    <label for="coupon-plan-select">Plan seç</label>
+                    <select id="coupon-plan-select" class="input">
+                        <option value="premium">Premium</option>
+                        <option value="premium_go">Premium Go</option>
+                        <option value="premium_plus">Premium Plus</option>
+                        <option value="unlimited">♾️ Sınırsız</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="coupon-code-input">Kupon kodu</label>
+                    <input id="coupon-code-input" class="input" type="text" inputmode="numeric" maxlength="8" placeholder="Kupon kodunu yaz" autocomplete="off" spellcheck="false">
+                </div>
+                <p id="coupon-error" class="coupon-error hidden" role="alert"></p>
+                <button id="coupon-activate-btn" class="btn btn-primary btn-block">Aktifleştir</button>
+            </div>
+            <div id="coupon-success-view" class="coupon-success hidden">
+                <div class="coupon-success-icon" aria-hidden="true">🎟️</div>
+                <h3>Aboneliğin aktif!</h3>
+                <p id="coupon-success-text"></p>
+                <button id="coupon-done-btn" class="btn btn-primary btn-block">Harika, kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- Üretim Havuzu — sohbetten bağımsız üretim atölyesi              -->
+<!-- ============================================================== -->
+<div id="pool-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pool-title">
+    <div class="modal-backdrop" id="pool-backdrop"></div>
+    <div class="modal-card modal-wide pool-card">
+        <header class="modal-head">
+            <div>
+                <h2 id="pool-title">Üretim havuzu</h2>
+                <p class="modal-sub">Yapay zeka sohbetinden bağımsız üretim atölyesi — üret, dinle, indir.</p>
+            </div>
+            <button id="close-pool-modal-btn" class="icon-btn" aria-label="Kapat">
+                <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+            </button>
+        </header>
+        <div class="modal-body pool-body">
+            <div class="pool-tabs" role="tablist">
+                <button class="pool-tab active" data-pool-tab="image" role="tab"><svg class="icon" aria-hidden="true"><use href="#i-image"/></svg><span>Görsel üret</span></button>
+                <button class="pool-tab" data-pool-tab="tts" role="tab"><svg class="icon" aria-hidden="true"><use href="#i-volume"/></svg><span>Yazıdan sese</span></button>
+                <button class="pool-tab" data-pool-tab="stt" role="tab"><svg class="icon" aria-hidden="true"><use href="#i-mic"/></svg><span>Sesten yazıya</span></button>
+                <button class="pool-tab" data-pool-tab="ocr" role="tab"><svg class="icon" aria-hidden="true"><use href="#i-pen"/></svg><span>Görselden metin</span></button>
+            </div>
+
+            <section class="pool-pane active" data-pool-pane="image">
+                <div class="field">
+                    <label for="pool-image-prompt">Ne çizilsin?</label>
+                    <textarea id="pool-image-prompt" class="input pool-textarea" rows="3" placeholder="Örn: bozuk araba fotoğrafı, neon ışıklı siberpunk şehir…"></textarea>
+                </div>
+                <div class="pool-row">
+                    <div class="field">
+                        <label for="pool-image-size">Boyut</label>
+                        <select id="pool-image-size" class="input">
+                            <option value="1024x768">Yatay (1024×768)</option>
+                            <option value="768x1024">Dikey (768×1024)</option>
+                            <option value="1024x1024">Kare (1024×1024)</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="pool-image-count">Adet</label>
+                        <select id="pool-image-count" class="input">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                        </select>
+                    </div>
+                    <button id="pool-image-btn" class="btn btn-primary pool-go">Üret</button>
+                </div>
+                <p id="pool-image-status" class="pool-status" role="status"></p>
+                <div id="pool-image-results" class="pool-gallery"></div>
+            </section>
+
+            <section class="pool-pane" data-pool-pane="tts" hidden>
+                <div class="field">
+                    <label for="pool-tts-text">Seslendirilecek metin</label>
+                    <textarea id="pool-tts-text" class="input pool-textarea" rows="5" placeholder="Buraya metni yaz, sese çevirelim…"></textarea>
+                </div>
+                <div class="pool-row">
+                    <div class="field">
+                        <label for="pool-tts-voice">Ses</label>
+                        <select id="pool-tts-voice" class="input"><option>Sistem sesleri yükleniyor…</option></select>
+                    </div>
+                    <div class="field">
+                        <label for="pool-tts-speed">Hız — <span id="pool-tts-speed-val">1.0</span>x</label>
+                        <input id="pool-tts-speed" class="range" type="range" min="0.6" max="1.6" step="0.1" value="1.0">
+                    </div>
+                    <button id="pool-tts-btn" class="btn btn-primary pool-go">Seslendir</button>
+                </div>
+                <p id="pool-tts-status" class="pool-status" role="status"></p>
+                <div id="pool-tts-history" class="pool-tts-history"></div>
+            </section>
+
+            <section class="pool-pane" data-pool-pane="stt" hidden>
+                <div class="pool-stt-stage">
+                    <button id="pool-stt-btn" class="pool-stt-btn" aria-label="Kaydı başlat/durdur">
+                        <svg class="icon" aria-hidden="true"><use href="#i-mic"/></svg>
+                    </button>
+                    <p id="pool-stt-status" class="pool-status">Kayda başlamak için mikrofona bas.</p>
+                </div>
+                <div class="field">
+                    <label for="pool-stt-text">Çıkan metin (düzenleyebilirsin)</label>
+                    <textarea id="pool-stt-text" class="input pool-textarea" rows="6" placeholder="Konuşman buraya yazılacak…"></textarea>
+                </div>
+                <div class="pool-row">
+                    <button id="pool-stt-copy" class="btn btn-outline">Kopyala</button>
+                    <button id="pool-stt-download" class="btn btn-outline">.txt indir</button>
+                    <button id="pool-stt-clear" class="btn btn-ghost">Temizle</button>
+                </div>
+            </section>
+
+            <section class="pool-pane" data-pool-pane="ocr" hidden>
+                <div class="pool-ocr-drop" id="pool-ocr-drop">
+                    <input type="file" id="pool-ocr-file" accept="image/*" class="hidden">
+                    <p>Görseli buraya sürükle ya da <button id="pool-ocr-pick" class="link-btn" type="button">dosya seç</button>.</p>
+                    <p class="pool-status" id="pool-ocr-status"></p>
+                </div>
+                <div class="field">
+                    <label for="pool-ocr-text">Okunan metin</label>
+                    <textarea id="pool-ocr-text" class="input pool-textarea" rows="6" placeholder="Görseldeki metin buraya çıkar…"></textarea>
+                </div>
+                <div class="pool-row">
+                    <button id="pool-ocr-copy" class="btn btn-outline">Kopyala</button>
+                    <button id="pool-ocr-download" class="btn btn-outline">.txt indir</button>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- Sesli Sohbet Modalı                                             -->
+<!-- ============================================================== -->
+<div id="voice-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="voice-modal-title">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card modal-narrow voice-card">
+        <header class="modal-head">
+            <div class="voice-live">
+                <span class="live-dot"></span>
+                <h2 id="voice-modal-title">Sesli sohbet</h2>
+            </div>
+            <button id="close-voice-modal-btn" class="icon-btn" aria-label="Kapat">
+                <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+            </button>
+        </header>
+
+        <div class="modal-body voice-body">
+            <div id="voice-orb" class="orb idle">
+                <span class="orb-core"></span>
+                <span class="orb-ring orb-ring-1"></span>
+                <span class="orb-ring orb-ring-2"></span>
+            </div>
+            <p id="voice-status-text" class="voice-status">Bağlanıyor…</p>
+            <p id="voice-live-transcript" class="voice-transcript">Konuşmaya başlayabilirsin.</p>
+        </div>
+
+        <footer class="modal-foot modal-foot-center">
+            <button id="voice-mute-btn" class="orb-btn" aria-label="Mikrofonu aç/kapat">
+                <svg class="icon" aria-hidden="true"><use href="#i-mic"/></svg>
+            </button>
+            <button id="voice-end-btn" class="orb-btn orb-btn-end" aria-label="Sohbeti bitir">
+                <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+            </button>
+        </footer>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- Ayarlar Modalı                                                  -->
+<!-- ============================================================== -->
+<div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+        <header class="modal-head">
+            <div>
+                <h2 id="settings-title">Ayarlar</h2>
+                <p class="modal-sub">Yapay zeka sağlayıcısı, ses ve veri seçenekleri.</p>
+            </div>
+            <button id="close-settings-btn" class="icon-btn" aria-label="Kapat">
+                <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+            </button>
+        </header>
+
+        <div class="modal-body settings-body">
+
+            <section class="settings-section">
+                <h3 class="settings-title">
+                    <svg class="icon" aria-hidden="true"><use href="#i-cpu"/></svg>
+                    Yapay zeka
+                </h3>
+
+                <div class="field">
+                    <label for="ai-provider-select">Sağlayıcı</label>
+                    <select id="ai-provider-select" class="input"></select>
+                    <p class="field-note" id="ai-provider-note"></p>
+                </div>
+
+                <div class="field">
+                    <label for="ai-model-input">Model</label>
+                    <input id="ai-model-input" class="input" type="text" list="ai-model-list" spellcheck="false" placeholder="model-adı">
+                    <datalist id="ai-model-list"></datalist>
+                    <p class="field-note">Listeden seçebilir ya da model adını elle yazabilirsin.</p>
+                </div>
+
+                <div class="field" id="ai-key-field">
+                    <label for="ai-key-input">API anahtarı</label>
+                    <div class="input-group">
+                        <input id="ai-key-input" class="input" type="password" autocomplete="off" spellcheck="false" placeholder="Anahtarını buraya yapıştır">
+                        <button id="ai-key-toggle" class="btn btn-outline" type="button">Göster</button>
+                    </div>
+                    <p class="field-note">
+                        <a id="ai-key-link" class="link" href="#" target="_blank" rel="noopener noreferrer">API anahtarı al ↗</a>
+                        <span> · Anahtar yalnızca bu tarayıcının localStorage alanında tutulur, hiçbir sunucuya gönderilmez.</span>
+                    </p>
+                </div>
+
+                <div class="field hidden" id="ai-baseurl-field">
+                    <label for="ai-baseurl-input">Sunucu adresi (OpenAI uyumlu)</label>
+                    <input id="ai-baseurl-input" class="input" type="url" spellcheck="false" placeholder="http://localhost:11434/v1">
+                    <p class="field-note">Örnek: Ollama <code class="inline-code">http://localhost:11434/v1</code>, LM Studio <code class="inline-code">http://localhost:1234/v1</code></p>
+                </div>
+
+                <div class="field">
+                    <label for="ai-temperature">Yaratıcılık (temperature) — <span id="ai-temp-val">0.7</span></label>
+                    <input id="ai-temperature" class="range" type="range" min="0" max="1.5" step="0.1" value="0.7">
+                    <p class="field-note">Düşük değer daha kesin, yüksek değer daha yaratıcı yanıt üretir.</p>
+                </div>
+
+                <div class="field">
+                    <button id="ai-test-btn" class="btn btn-outline" type="button">
+                        <svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                        Bağlantıyı test et
+                    </button>
+                    <p class="ai-test-result" id="ai-test-result" role="status"></p>
+                </div>
+
+                <p class="notice">
+                    <svg class="icon" aria-hidden="true"><use href="#i-key"/></svg>
+                    <span>Kendi anahtarını kullanmak, hesapların ve kotaların sana ait olmasını sağlar. Başkasının
+                    yayınladığı anahtarlar güvenlik ihlali olur ve çalışmaz — denemek için ücretsiz katman sunan
+                    sağlayıcıları (Gemini, Groq, OpenRouter) kullan.</span>
+                </p>
+            </section>
+
+            <section class="settings-section">
+                <h3 class="settings-title">
+                    <svg class="icon" aria-hidden="true"><use href="#i-volume"/></svg>
+                    Ses
+                </h3>
+
+                <div class="field">
+                    <label for="setting-voice-select">Seslendirici</label>
+                    <select id="setting-voice-select" class="input">
+                        <option>Sistem sesleri yükleniyor…</option>
+                    </select>
+                    <p class="field-note" id="voice-count-note"></p>
+                </div>
+
+                <div class="field-row">
+                    <div class="field">
+                        <label for="setting-voice-speed">Konuşma hızı — <span id="voice-speed-val">1.0</span>x</label>
+                        <input id="setting-voice-speed" class="range" type="range" min="0.6" max="1.6" step="0.1" value="1.0">
+                    </div>
+                    <div class="field">
+                        <label for="setting-voice-pitch">Ses tonu — <span id="voice-pitch-val">1.0</span></label>
+                        <input id="setting-voice-pitch" class="range" type="range" min="0.5" max="1.5" step="0.1" value="1.0">
+                    </div>
+                </div>
+
+                <label class="switch">
+                    <input type="checkbox" id="setting-auto-speak">
+                    <span class="switch-track" aria-hidden="true"></span>
+                    <span class="switch-label">Yanıtları otomatik olarak seslendir</span>
+                </label>
+            </section>
+
+            <section class="settings-section">
+                <h3 class="settings-title">
+                    <svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>
+                    Veri
+                </h3>
+                <button id="clear-all-chats-btn" class="btn btn-danger-outline">Tüm sohbet geçmişini sil</button>
+            </section>
+
+        </div>
+
+        <footer class="modal-foot">
+            <button id="save-settings-btn" class="btn btn-primary">Kaydet ve kapat</button>
+        </footer>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="js/ai.js?v=pool"></script>
+<script src="js/tts.js?v=pool"></script>
+<script src="js/stt.js?v=pool"></script>
+<script src="js/textToPhoto.js?v=pool"></script>
+<script src="js/photoToText.js?v=pool"></script>
+<script src="js/app.js?v=pool"></script>
+</body>
+</html>
