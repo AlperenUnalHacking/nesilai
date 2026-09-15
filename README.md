@@ -72,6 +72,47 @@ python -m http.server 8123 --directory .
 Ardından `http://localhost:8123` adresini aç. Depoyu kopyaladıktan sonra doğrudan
 `index.html` dosyasına çift tıklamak da çalışır (modüller `file://` üzerinden de yüklenir).
 
+### 🚀 Yayına alma (dağıtım)
+
+NesilAI tamamen statik bir sitedir — derleme adımı, sunucu veya veritabanı gerekmez. API
+anahtarları tarayıcıda kalır, sağlayıcı istekleri doğrudan tarayıcıdan gider.
+
+#### Netlify (önerilen — en kolay)
+
+**Yöntem 1 — Sürükle-bırak (30 saniye):**
+1. [app.netlify.com/drop](https://app.netlify.com/drop) adresini aç (ücretsiz hesap yeterli).
+2. Proje klasörünü (`index.html`-in içinde olduğu dizini) sayfaya sürükle.
+3. Bitti — site `rastgele-ad.netlify.app` adresinde canlı. `netlify.toml` önbellek ve
+   güvenlik başlıklarını otomatik uygular.
+
+**Yöntem 2 — Git ile kalıcı dağıtım:**
+1. Depoyu GitHub'a gönder (aşağıya bak), Netlify'da **Add new site → Import an existing project**.
+2. Depoyu seç; ayarlar `netlify.toml`dan otomatik okunur (publish dizini: `.`).
+3. **Deploy** — her `git push` sonrası site otomatik güncellenir.
+
+#### GitHub Pages
+
+1. Projeyi GitHub'a yükle:
+   ```bash
+   git remote add origin https://github.com/KULLANICI_ADIN/nesilai.git
+   git push -u origin main
+   ```
+2. GitHub'da depo → **Settings → Pages → Build and deployment**.
+3. **Source:** `Deploy from a branch` → **Branch:** `main` / `/ (root)` → **Save**.
+4. 1-2 dakika içinde `https://KULLANICI_ADIN.github.io/nesilai/` yayında olur.
+   (Depodaki `.nojekyll` dosyası Jekyll derlemesini atlar; dosyalar olduğu gibi servis edilir.)
+
+> **Not:** GitHub Pages alt dizinde barındırır (`/nesilai/`); uygulama tüm varlık yollarını
+> göreli kullandığı için ek yapılandırma gerekmez.
+
+#### Dağıtımdan sonra
+- Tarayıcı mikrofon izni istediğinde **izin ver** — HTTPS üzerinde Web Speech API çalışır.
+- LLM7 ve Pollinations anahtarsız çalışır; kullanıcılar kendi Gemini/Groq/OpenRouter
+  anahtarlarını Ayarlar'dan ekleyebilir.
+- Kupon, sohbet geçmişi ve ayarlar her ziyaretçinin kendi tarayıcısında tutulur; sunucuda
+  paylaşılmaz.
+
+
 İlk açılışta:
 1. Mesaj kutusunun yanındaki **model adına** tıkla (ör. `LLM7 · codestral-latest`) — tüm
    sağlayıcıların tüm modelleri tek menüde listelenir; arayıp seçtiğin an geçer.

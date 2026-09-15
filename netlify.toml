@@ -1,0 +1,28 @@
+# Netlify dağıtım yapılandırması — NesilAI statik sitedir, derleme adımı yoktur.
+[build]
+  publish = "."
+
+# Uzun önbellek: sürümlü statik varlıklar (js/css ?v= sorgu parametresiyle kırılır)
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# Temel güvenlik başlıkları
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "microphone=(self)"
