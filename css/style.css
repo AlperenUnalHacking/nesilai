@@ -492,10 +492,11 @@ select.input { cursor: pointer; appearance: none; padding-right: var(--s-8); bac
 .brand { display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-1); }
 .brand-mark {
     width: 32px;
-    height: 31px;
+    height: 32px;
     flex: none;
     object-fit: contain;
-    filter: drop-shadow(0 0 10px rgba(124, 156, 255, 0.35));
+    border-radius: var(--r-md);
+    filter: drop-shadow(0 0 10px rgba(255, 82, 82, 0.45));
 }
 .brand-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .brand-name { font-size: 14.5px; font-weight: 650; letter-spacing: -0.01em; }
@@ -745,6 +746,15 @@ select.input { cursor: pointer; appearance: none; padding-right: var(--s-8); bac
     font-size: 10.5px;
     font-weight: 700;
     letter-spacing: 0.03em;
+    overflow: hidden;
+}
+
+.assistant-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: drop-shadow(0 0 6px rgba(255, 82, 82, 0.4));
 }
 
 .message-content-wrapper { flex: 1; min-width: 0; }
@@ -998,10 +1008,11 @@ select.input { cursor: pointer; appearance: none; padding-right: var(--s-8); bac
 
 .welcome-mark {
     width: 72px;
-    height: 70px;
+    height: 72px;
     object-fit: contain;
     margin-bottom: var(--s-5);
-    filter: drop-shadow(0 0 18px rgba(124, 156, 255, 0.45));
+    border-radius: 16px;
+    filter: drop-shadow(0 0 20px rgba(255, 82, 82, 0.5));
 }
 
 .welcome-title {
@@ -1252,6 +1263,97 @@ select.input { cursor: pointer; appearance: none; padding-right: var(--s-8); bac
     border-top: 1px solid var(--border);
     color: var(--text-3);
     font-size: 11px;
+}
+
+/* Üretim modu seçici — model seçicinin solunda */
+.mode-picker-btn {
+    max-width: 150px;
+    border-color: var(--accent-border);
+}
+.mode-picker-btn .icon { width: 14px; height: 14px; }
+#mode-picker-label {
+    max-width: 84px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mode-picker-btn.mode-active {
+    background: var(--accent-soft);
+    color: var(--text-1);
+}
+.mode-option-name { font-weight: 600; }
+.mode-option-desc {
+    display: block;
+    font-size: 10.5px;
+    color: var(--text-3);
+    margin-top: 1px;
+}
+.mode-option-texts { display: flex; flex-direction: column; min-width: 0; }
+
+/* Sohbet içinde üretilen medya */
+.media-player {
+    width: 100%;
+    max-width: 460px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    display: block;
+}
+.media-error-note {
+    padding: var(--s-3);
+    border: 1px solid var(--warning);
+    border-radius: var(--r-md);
+    color: var(--text-2);
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: rgba(255, 152, 0, 0.06);
+}
+
+/* Kalıcı galeri (üretim havuzu) */
+.pool-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--s-3);
+    margin-top: var(--s-3);
+}
+.pool-gallery-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    padding: var(--s-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    min-width: 0;
+}
+.pool-gallery-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--s-2);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-2);
+}
+.pool-gallery-date { color: var(--text-3); font-weight: 400; }
+.pool-gallery-card img,
+.pool-gallery-card video {
+    width: 100%;
+    border-radius: var(--r-sm);
+    display: block;
+}
+.pool-gallery-card audio { width: 100%; }
+.pool-gallery-text {
+    margin: 0;
+    font-size: 11.5px;
+    color: var(--text-2);
+    line-height: 1.5;
+    word-break: break-word;
+}
+.pool-gallery-foot {
+    display: flex;
+    gap: var(--s-2);
+    margin-top: auto;
 }
 
 .composer-btn {

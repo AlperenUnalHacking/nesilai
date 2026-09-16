@@ -18,7 +18,9 @@
                 images: 5,
                 chats: 50,
                 stt: 50,
-                tts: 25
+                tts: 25,
+                music: 3,
+                video: 2
             }
         },
         premium: {
@@ -30,7 +32,9 @@
                 images: 10,  // 5 * 2
                 chats: 100,  // 50 * 2
                 stt: 100,    // 50 * 2
-                tts: 50      // 25 * 2
+                tts: 50,     // 25 * 2
+                music: 6,    // 3 * 2
+                video: 4     // 2 * 2
             }
         },
         premium_go: {
@@ -42,7 +46,9 @@
                 images: 20,  // 10 * 2
                 chats: 200,  // 100 * 2
                 stt: 200,    // 100 * 2
-                tts: 100     // 50 * 2
+                tts: 100,    // 50 * 2
+                music: 12,   // 6 * 2
+                video: 8     // 4 * 2
             }
         },
         premium_plus: {
@@ -54,7 +60,9 @@
                 images: 40,  // 20 * 2
                 chats: 400,  // 200 * 2
                 stt: 400,    // 200 * 2
-                tts: 200     // 100 * 2
+                tts: 200,    // 100 * 2
+                music: 24,   // 12 * 2
+                video: 16    // 8 * 2
             }
         },
         unlimited: {
@@ -66,7 +74,9 @@
                 images: Infinity,
                 chats: Infinity,
                 stt: Infinity,
-                tts: Infinity
+                tts: Infinity,
+                music: Infinity,
+                video: Infinity
             }
         }
     };
@@ -198,6 +208,81 @@
     const modelPickerBtn = document.getElementById('model-picker-btn');
     const modelPickerLabel = document.getElementById('model-picker-label');
     const modelMenu = document.getElementById('model-picker-menu');
+    const modeMenu = document.getElementById('mode-menu');
+    const modeMenuList = document.getElementById('mode-menu-list');
+    const modePickerBtn = document.getElementById('mode-picker-btn');
+    const modePickerLabel = document.getElementById('mode-picker-label');
+
+    // Üretim modu: 'chat' | 'image' | 'music' | 'video' — kalıcı tercih
+    let currentGenMode = (function () {
+        const saved = localStorage.getItem('nesilai_gen_mode');
+        return ['chat', 'image', 'music', 'video'].includes(saved) ? saved : 'chat';
+    })();
+
+    function setGenMode(mode) {
+        currentGenMode = mode;
+        localStorage.setItem('nesilai_gen_mode', mode);
+        updateModePickerUI();
+        hideModeMenu();
+        const names = { chat: 'Sohbet', image: 'Görsel', music: 'Müzik/Ses', video: 'Video' };
+        showToast('Mod: ' + names[mode] + ' — yazdığın her şey ' + names[mode] + ' olarak üretilcek', 'success');
+    }
+
+    function updateModePickerUI() {
+        if (!modePickerLabel) return;
+        const map = {
+            chat:  { icon: '#i-chat',  label: 'Sohbet' },
+            image: { icon: '#i-image', label: 'Görsel' },
+            music: { icon: '#i-music', label: 'Müzik/Ses' },
+            video: { icon: '#i-video', label: 'Video' }
+        };
+        const m = map[currentGenMode] || map.chat;
+        modePickerLabel.textContent = m.label;
+        const iconUse = modePickerBtn ? modePickerBtn.querySelector('use') : null;
+        if (iconUse) iconUse.setAttribute('href', m.icon);
+        if (modePickerBtn) {
+            modePickerBtn.classList.toggle('mode-active', currentGenMode !== 'chat');
+            modePickerBtn.title = 'Üretim modu: ' + m.label;
+        }
+    }
+
+    function buildModeMenu() {
+        if (!modeMenuList) return;
+        modeMenuList.innerHTML = '';
+        const modes = [
+            { id: 'chat',  icon: '#i-chat',  name: 'Sohbet',      desc: 'Normal yapay zeka sohbeti' },
+            { id: 'image', icon: '#i-image', name: 'Görsel üret', desc: 'Yazdığın tarif görsel olur' },
+            { id: 'music', icon: '#i-music', name: 'Müzik / Ses', desc: 'Şarkı, enstrümantal veya seslendirme' },
+            { id: 'video', icon: '#i-video', name: 'Video üret',  desc: 'Kısa video klip (yavaş olabilir)' }
+        ];
+        modes.forEach(m => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'model-option mode-option' + (currentGenMode === m.id ? ' selected' : '');
+            item.innerHTML =
+                '<svg class="icon" aria-hidden="true"><use href="' + m.icon + '"/></svg>' +
+                '<span class="mode-option-texts"><span class="mode-option-name">' + m.name + '</span>' +
+                '<span class="mode-option-desc">' + m.desc + '</span></span>' +
+                (currentGenMode === m.id ? '<span class="model-current-tag">aktif</span>' : '');
+            item.addEventListener('click', () => setGenMode(m.id));
+            modeMenuList.appendChild(item);
+        });
+    }
+
+    function toggleModeMenu() {
+        if (!modeMenu) return;
+        if (modelMenu && !modelMenu.classList.contains('hidden')) hideModelPicker();
+        if (modeMenu.classList.contains('hidden')) {
+            buildModeMenu();
+            modeMenu.classList.remove('hidden');
+        } else {
+            hideModeMenu();
+        }
+    }
+
+    function hideModeMenu() {
+        if (modeMenu) modeMenu.classList.add('hidden');
+    }
     const modelPickerSearch = document.getElementById('model-picker-search');
 
     // Sesli Sohbet Modalı (Voice Mode)
@@ -276,6 +361,9 @@
         // Event listener'ları bağla
         bindEvents();
 
+        // Üretim modu göstergesini geri yükle
+        updateModePickerUI();
+
         // Giriş kutusu boyutlandırma
         autoResizeTextarea();
     }
@@ -336,7 +424,9 @@
                 images: 'Görsel oluşturma',
                 chats: 'Sohbet mesajı',
                 stt: 'Sesi yazıya çevirme (Mikrofon)',
-                tts: 'Yazıyı sese çevirme (Dinleme)'
+                tts: 'Yazıyı sese çevirme (Dinleme)',
+                music: 'Müzik/ses üretimi',
+                video: 'Video üretimi'
             };
             const label = typeLabels[type] || type;
             showToast(`⚠️ ${label} limitinize ulaştınız (${current}/${limit})!`, 'warning');
@@ -568,8 +658,92 @@
         if (poolBackdrop) poolBackdrop.addEventListener('click', closePoolModal);
 
         poolTabs.forEach(tab => {
-            tab.addEventListener('click', () => activatePoolTab(tab.dataset.poolTab));
+            tab.addEventListener('click', () => {
+                activatePoolTab(tab.dataset.poolTab);
+                if (tab.dataset.poolTab === 'gallery') renderPoolGallery();
+            });
         });
+
+        // --- Kalıcı galeri ---
+        const poolGalleryGrid = document.getElementById('pool-gallery-grid');
+        const poolGalleryClear = document.getElementById('pool-gallery-clear');
+
+        function renderPoolGallery() {
+            if (!poolGalleryGrid || !window.NesilStore) return;
+            poolGalleryGrid.innerHTML = '<p class="pool-status">Galeri yükleniyor…</p>';
+            window.NesilStore.getPoolItems(null).then(items => {
+                poolGalleryGrid.innerHTML = '';
+                if (!items.length) {
+                    poolGalleryGrid.innerHTML = '<p class="pool-status">Henüz üretim yok. Görsel, ses ve metin çıktıların burada birikecek.</p>';
+                    return;
+                }
+                const kindLabels = { image: '🎨 Görsel', tts: '🔊 Sesi', stt: '🎙️ Transkript', ocr: '📖 OCR', music: '🎵 Müzik', video: '🎬 Video' };
+                items.forEach(it => {
+                    const card = document.createElement('div');
+                    card.className = 'pool-gallery-card';
+
+                    const head = document.createElement('div');
+                    head.className = 'pool-gallery-head';
+                    const when = new Date(it.createdAt);
+                    head.innerHTML = '<span>' + (kindLabels[it.kind] || it.kind) + '</span>' +
+                        '<span class="pool-gallery-date">' + when.toLocaleDateString('tr-TR') + ' ' + when.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) + '</span>';
+                    card.appendChild(head);
+
+                    if (it.kind === 'image' && it.url) {
+                        const img = document.createElement('img');
+                        img.src = it.url;
+                        img.alt = it.text || '';
+                        img.loading = 'lazy';
+                        card.appendChild(img);
+                    } else if ((it.kind === 'tts' || it.kind === 'music' || it.kind === 'video') && it.url) {
+                        const av = document.createElement(it.kind === 'video' ? 'video' : 'audio');
+                        av.controls = true;
+                        av.preload = 'metadata';
+                        av.src = it.url;
+                        card.appendChild(av);
+                    }
+
+                    if (it.text) {
+                        const txt = document.createElement('p');
+                        txt.className = 'pool-gallery-text';
+                        txt.textContent = it.text.slice(0, 140) + (it.text.length > 140 ? '…' : '');
+                        txt.title = it.text;
+                        card.appendChild(txt);
+                    }
+
+                    const foot = document.createElement('div');
+                    foot.className = 'pool-gallery-foot';
+                    if (it.url) {
+                        const dl = document.createElement('a');
+                        dl.className = 'btn btn-mini btn-outline';
+                        dl.href = it.url;
+                        dl.download = 'nesilai-' + it.kind + '-' + it.id + (it.kind === 'image' ? '.jpg' : it.kind === 'video' ? '.webm' : it.kind === 'tts' || it.kind === 'music' ? '.wav' : '.txt');
+                        dl.textContent = 'İndir';
+                        foot.appendChild(dl);
+                    }
+                    const rm = document.createElement('button');
+                    rm.className = 'btn btn-mini btn-outline';
+                    rm.textContent = 'Sil';
+                    rm.addEventListener('click', () => {
+                        window.NesilStore.deletePoolItem(it.id).then(renderPoolGallery);
+                    });
+                    foot.appendChild(rm);
+                    card.appendChild(foot);
+                    poolGalleryGrid.appendChild(card);
+                });
+            });
+        }
+
+        if (poolGalleryClear) {
+            poolGalleryClear.addEventListener('click', () => {
+                if (!window.NesilStore) return;
+                ['image', 'tts', 'stt', 'ocr', 'music', 'video'].forEach(k => {
+                    window.NesilStore.clearPoolKind(k);
+                });
+                setTimeout(renderPoolGallery, 250);
+                showToast('Galeri temizlendi');
+            });
+        }
 
         // --- Görsel üretimi ---
         if (poolImageBtn) {
@@ -624,6 +798,11 @@
                             }
                         });
                         cell.appendChild(dl);
+                        // Kalıcı galeri: havuz görseli IndexedDB'ye yaz
+                        if (window.NesilStore) {
+                            window.NesilStore.addPoolItem('image', { url: url, text: prompt, meta: w + '×' + h })
+                                .then(() => renderPoolGallery()).catch(() => {});
+                        }
                     };
                     img.onerror = () => {
                         skeleton.textContent = 'Üretilemedi, tekrar dene.';
@@ -704,6 +883,11 @@
             item.appendChild(meta);
             item.appendChild(play);
             poolTtsHistory.insertBefore(item, poolTtsHistory.firstChild);
+            // Kalıcı geçmiş (metin yeterli; cihaz sesiyle yeniden söylenir)
+            if (window.NesilStore) {
+                window.NesilStore.addPoolItem('tts', { text: text, meta: (voiceName || 'Sistem sesi') + ' · ' + rate.toFixed(1) + 'x' })
+                    .catch(() => {});
+            }
         }
 
         // --- Sesten yazıya ---
@@ -745,7 +929,13 @@
             });
         }
         if (poolSttCopy) poolSttCopy.addEventListener('click', () => {
-            if (poolSttText.value.trim()) copyTextToClipboard(poolSttText.value.trim());
+            if (poolSttText.value.trim()) {
+                copyTextToClipboard(poolSttText.value.trim());
+                // Kalıcı transkript
+                if (window.NesilStore) {
+                    window.NesilStore.addPoolItem('stt', { text: poolSttText.value.trim(), meta: 'Konuşma tanıma' }).catch(() => {});
+                }
+            }
         });
         if (poolSttDownload) poolSttDownload.addEventListener('click', () => {
             if (poolSttText.value.trim()) poolDownloadText(poolSttText.value.trim(), 'nesilai-konusma');
@@ -801,6 +991,10 @@
                             poolOcrStatus.textContent = `Taranıyor… %${p}`;
                         });
                         poolOcrText.value = text || '';
+                        // Kalıcı OCR çıktısı
+                        if (window.NesilStore && text) {
+                            window.NesilStore.addPoolItem('ocr', { text: text, meta: 'Görselden metin' }).catch(() => {});
+                        }
                         poolOcrStatus.textContent = text ? '✅ Metin çıkarıldı.' : 'ℹ️ Metin bulunamadı.';
                     } catch (err) {
                         poolOcrStatus.textContent = '⚠️ OCR başarısız oldu.';
@@ -873,6 +1067,13 @@
 
     function deleteChat(chatId, e) {
         if (e) e.stopPropagation();
+        const removed = chats.find(c => c.id === chatId);
+        // Silinen sohbetin kalıcı medyalarını da temizle
+        if (removed && window.NesilStore) {
+            removed.messages.forEach(m => {
+                if (m.isMediaGen || m.isImageGen) window.NesilStore.deleteMessageMedia(m.id);
+            });
+        }
         chats = chats.filter(c => c.id !== chatId);
         if (chats.length === 0) {
             createNewChat();
@@ -942,11 +1143,49 @@
 
         welcomeHero.style.display = 'none';
 
+        // Sayfa yenilenirken yarıda kalan üretimlere dürüst not düş
+        let interruptedFixed = false;
+        activeChat.messages.forEach(msg => {
+            if (msg.isMediaGen && !msg.mediaUrl && !msg.mediaError) {
+                msg.mediaError = 'Sayfa yenilenirken üretim yarıda kesildi. Aynı isteği yeniden gönderebilirsin.';
+                interruptedFixed = true;
+            }
+        });
+        if (interruptedFixed) saveChatsToStorage();
+
         activeChat.messages.forEach(msg => {
             appendMessageToDom(msg, false);
         });
 
         scrollToBottom();
+
+        // Kalıcı medya geri yükleme: blob: URL'ler yenilenmede ölür;
+        // IndexedDB'deki kopyalardan canlı URL'ler tekrar üretilir.
+        if (window.NesilStore) {
+            activeChat.messages.forEach(msg => {
+                const needsRestore = msg.role === 'assistant' &&
+                    ((msg.isMediaGen && msg.mediaUrl && msg.mediaUrl.startsWith('blob:')) ||
+                     (msg.isImageGen && msg.imageUrl && msg.imageUrl.startsWith('blob:')));
+                if (!needsRestore) return;
+                window.NesilStore.loadMessageMedia(msg.id).then(rec => {
+                    if (!rec) {
+                        // Blob kaydı yoksa (eski oturum) http URL'leri zaten çalışır;
+                        // blob ise dürüst not düş.
+                        if (msg.isMediaGen && msg.mediaUrl && msg.mediaUrl.startsWith('blob:')) {
+                            msg.mediaError = 'Bu üretim kalıcı depoya yazılamamıştı (eski oturum). Lütfen yeniden üret.';
+                            rerenderMediaMessage(msg);
+                        }
+                        return;
+                    }
+                    if (msg.isMediaGen) {
+                        msg.mediaUrl = rec.url;
+                    } else if (msg.isImageGen) {
+                        msg.imageUrl = rec.url;
+                    }
+                    rerenderMediaMessage(msg);
+                }).catch(() => {});
+            });
+        }
     }
 
     // ========================================================
@@ -982,16 +1221,16 @@
             // Asistan Mesajı
             const avatar = document.createElement('div');
             avatar.className = 'assistant-avatar';
-            avatar.textContent = 'AI';
+            avatar.innerHTML = '<img src="assets/logo.png?v=2" alt="" draggable="false">';
             row.appendChild(avatar);
 
             const contentWrapper = document.createElement('div');
             contentWrapper.className = 'message-content-wrapper';
 
             const bubble = document.createElement('div');
-            bubble.className = 'message-bubble';
-
-            if (msg.isImageGen && msg.imageUrl) {
+            bubble.className = 'message-bubble';                if (msg.isMediaGen) {
+                    renderMediaIntoBubble(bubble, msg);
+                } else if (msg.isImageGen && msg.imageUrl) {
                 const descP = document.createElement('p');
                 descP.textContent = msg.text || 'İşte oluşturulan görsel:';
                 bubble.appendChild(descP);
@@ -1179,12 +1418,14 @@
 
         if (!text && !attachment) return;
 
-        // Görsel oluşturma isteği mi kontrol et
-        const isImage = window.NesilT2P && window.NesilT2P.isImagePrompt(text);
+        // Üretim modu rotası: mod neyse mesaj o türe gider — kelime tetiklemesi yok
+        const isImage = currentGenMode === 'image';
 
         // KOTA KONTROLÜ
         if (isImage) {
             if (!checkQuota('images')) return;
+        } else if (currentGenMode === 'music' || currentGenMode === 'video') {
+            if (!checkQuota(currentGenMode === 'music' ? 'music' : 'video')) return;
         } else {
             if (!checkQuota('chats')) return;
         }
@@ -1219,11 +1460,11 @@
         appendMessageToDom(userMsg);
         saveChatsToStorage();
 
-        // 2. Görsel oluşturma işlemi
+        // 2. Üretim modları (sohbet hariç hepsi burada rotalanır)
         if (isImage) {
             incrementQuota('images');
-            const visualPrompt = window.NesilT2P.extractImagePrompt(text);
-            const imageUrl = window.NesilT2P.generateImageUrl(visualPrompt);
+            const visualPrompt = window.NesilT2P ? window.NesilT2P.extractImagePrompt(text) : text;
+            const imageUrl = window.NesilT2P ? window.NesilT2P.generateImageUrl(visualPrompt) : '';
 
             const aiMsg = {
                 id: 'msg_' + (Date.now() + 1),
@@ -1239,7 +1480,20 @@
             appendMessageToDom(aiMsg);
             saveChatsToStorage();
 
+            // Kalıcı depo: görseli blob olarak IndexedDB'ye yaz (URL havuzdan
+            // silinse bile sohbet yenilendikçe kart çalışır)
+            if (window.NesilStore) {
+                window.NesilStore.saveMessageMedia(aiMsg.id, 'image', imageUrl, visualPrompt)
+                    .then(ok => { aiMsg.mediaPersisted = ok; saveChatsToStorage(); })
+                    .catch(() => {});
+            }
+
             checkAutoSpeak(aiMsg.text);
+            return;
+        }
+
+        if ((currentGenMode === 'music' || currentGenMode === 'video') && window.NesilMedia) {
+            generateMediaMessage(currentGenMode, text);
             return;
         }
 
@@ -1250,7 +1504,7 @@
         const loadingRow = document.createElement('div');
         loadingRow.className = 'message-row assistant thinking';
         loadingRow.innerHTML = `
-            <div class="assistant-avatar">AI</div>
+            <div class="assistant-avatar"><img src="assets/logo.png?v=2" alt="" draggable="false"></div>
             <div class="message-content-wrapper">
                 <div class="thinking-bubble">
                     <span class="typing-dots"><i></i><i></i><i></i></span>
@@ -1881,6 +2135,110 @@
         }
     }
 
+    function generateMediaMessage(kind, prompt, model) {
+        const isMusic = kind === 'music';
+        const kindLabel = isMusic ? 'Müzik/Ses' : 'Video';
+        const models = isMusic ? window.NesilMedia.AUDIO_MODELS : window.NesilMedia.VIDEO_MODELS;
+        const chosen = models.find(m => m.id === model) || models[0];
+        const quotaKey = isMusic ? 'music' : 'video';
+
+        incrementQuota(quotaKey);
+
+        const aiMsg = {
+            id: 'msg_' + (Date.now() + 2),
+            role: 'assistant',
+            text: '"' + prompt + '" için ' + chosen.label + ' ile ' + kindLabel.toLowerCase() + ' üretiliyor…',
+            isMediaGen: true,
+            mediaKind: kind,
+            mediaModel: chosen.id,
+            mediaModelLabel: chosen.label,
+            mediaPrompt: prompt,
+            mediaUrl: null,
+            mediaError: null,
+            timestamp: Date.now()
+        };
+        getCurrentChat().messages.push(aiMsg);
+        appendMessageToDom(aiMsg);
+        saveChatsToStorage();
+        scrollToBottom();
+
+        const run = isMusic ?
+            window.NesilMedia.generateMusic(prompt, chosen.id) :
+            window.NesilMedia.generateVideo(prompt, chosen.id);
+
+        run.then(url => {
+            aiMsg.mediaUrl = url;
+            aiMsg.text = '"' + prompt + '" — ' + chosen.label + ' ile üretildi:';
+            // Kalıcı depo: blob IndexedDB'ye yazılır; sayfa yenilense bile geri yüklenir
+            if (window.NesilStore) {
+                window.NesilStore.saveMessageMedia(aiMsg.id, kind, url, prompt)
+                    .then(ok => { aiMsg.mediaPersisted = ok; saveChatsToStorage(); })
+                    .catch(() => {});
+            }
+            saveChatsToStorage();
+            rerenderMediaMessage(aiMsg);
+        }).catch(err => {
+            aiMsg.mediaError = (err && err.message) || 'Bilinmeyen hata';
+            aiMsg.text = '"' + prompt + '" üretilemedi.';
+            saveChatsToStorage();
+            rerenderMediaMessage(aiMsg);
+        });
+    }
+
+    function rerenderMediaMessage(msg) {
+        const row = document.querySelector('[data-msg-id="' + msg.id + '"]');
+        if (row) row.remove();
+        appendMessageToDom(msg);
+        scrollToBottom();
+    }
+
+    // Medya mesajının baloncuğunu çizer: üretiliyor / hata / oynatıcı
+    function renderMediaIntoBubble(bubble, msg) {
+        const descP = document.createElement('p');
+        descP.textContent = msg.text || '';
+        bubble.appendChild(descP);
+
+        if (!msg.mediaUrl && !msg.mediaError) {
+            const prog = document.createElement('div');
+            prog.className = 'thinking-bubble';
+            prog.innerHTML = '<span class="typing-dots"><i></i><i></i><i></i></span>' +
+                '<span class="thinking-label">' + (msg.mediaKind === 'video' ? 'Video üretiliyor… 1-2 dakika sürebilir' : 'Ses üretiliyor…') + '</span>';
+            bubble.appendChild(prog);
+            return;
+        }
+
+        if (msg.mediaError) {
+            const err = document.createElement('div');
+            err.className = 'media-error-note';
+            err.textContent = msg.mediaError;
+            bubble.appendChild(err);
+            return;
+        }
+
+        if (msg.mediaKind === 'video') {
+            const vid = document.createElement('video');
+            vid.className = 'media-player';
+            vid.controls = true;
+            vid.src = msg.mediaUrl;
+            vid.preload = 'metadata';
+            bubble.appendChild(vid);
+        } else {
+            const audio = document.createElement('audio');
+            audio.className = 'media-player';
+            audio.controls = true;
+            audio.src = msg.mediaUrl;
+            audio.preload = 'metadata';
+            bubble.appendChild(audio);
+        }
+
+        const dl = document.createElement('a');
+        dl.className = 'btn-action-pill';
+        dl.href = msg.mediaUrl;
+        dl.download = 'nesilai-' + msg.mediaKind + '-' + Date.now();
+        dl.innerHTML = '<span>⬇️</span> <span>İndir</span>';
+        bubble.appendChild(dl);
+    }
+
     function hideModelPicker() {
         if (modelMenu) modelMenu.classList.add('hidden');
     }
@@ -2023,9 +2381,12 @@
             modelPickerSearch.addEventListener('input', () => filterModelMenu(modelPickerSearch.value));
             modelPickerSearch.addEventListener('click', (e) => e.stopPropagation());
         }
+        if (modePickerBtn) {
+            modePickerBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleModeMenu(); });
+        }
         document.addEventListener('click', (e) => {
-            if (modelMenu && !modelMenu.classList.contains('hidden') && modelPickerWrap && !modelPickerWrap.contains(e.target)) {
-                hideModelPicker();
+            if (modeMenu && !modeMenu.classList.contains('hidden') && modePickerWrap && !modePickerWrap.contains(e.target)) {
+                hideModeMenu();
             }
         });
 
@@ -2041,7 +2402,7 @@
 
         // Test Kotası Sıfırlama Butonu
         resetUsageBtn.addEventListener('click', () => {
-            currentSubscription.usage = { images: 0, chats: 0, stt: 0, tts: 0 };
+            currentSubscription.usage = { images: 0, chats: 0, stt: 0, tts: 0, music: 0, video: 0 };
             saveSubscription();
             showToast('Kullanım kotaları sıfırlandı (Test) 🔄');
         });
