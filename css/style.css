@@ -1939,3 +1939,375 @@ select.input { cursor: pointer; appearance: none; padding-right: var(--s-8); bac
     .sidebar, .topbar-actions, .composer-area, .message-actions { display: none !important; }
     body { overflow: visible; background: #fff; color: #000; }
 }
+
+/* ==========================================================
+   12. UZAY TEKNOLOJİSİ HUD KATMANI
+   ----------------------------------------------------------
+   Tüm dekorasyon pseudo-element'lerle yapılır; HTML ve JS
+   değişmez. Ana katmanlar:
+   • Hareketli yıldız sürüklenmesi (drift) + kayan meteorlar
+   • HUD köşe çerçevesi (hedefleme ekranı estetiği)
+   • Üst çubukta HUD etiketi + tarama çizgisi süpürmesi
+   • Composer'da kuantal benzeri nabız halkası
+   • Karşılama ekranında yükselen yıldız haritası + yazı ışıması
+   • Mesajlarda warp-in girişi, kartlarda cam ışıması
+   reduced-motion: tüm dekorasyon kapanır (§erişilebilirlik).
+   ========================================================== */
+
+/* --- 12.1 Yıldız sürüklenmesi (drift) ---
+   Mevcut body::before yıldız alanı çok yavaş kayar; derin uzay
+   hissi verir ama dikkat dağıtmaz. */
+@keyframes star-drift {
+    from { background-position:
+        0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+    to   { background-position:
+        -210px 105px, -190px -95px, -230px 115px, 170px -85px,
+        -260px 130px, 200px 100px, -220px -110px, 180px 90px,
+        -240px 120px, -210px 105px; }
+}
+body::before {
+    animation: star-drift 480s linear infinite;
+}
+
+/* --- 12.2 Meteor / uydu izleri ---
+   .app::before — nadiren geçen ince ışık izleri. */
+@keyframes meteor {
+    0%   { transform: translate3d(-12vw, -8vh, 0) rotate(38deg);
+           opacity: 0; }
+    4%   { opacity: .55; }
+    14%  { transform: translate3d(112vw, 78vh, 0) rotate(38deg);
+           opacity: 0; }
+    100% { transform: translate3d(112vw, 78vh, 0) rotate(38deg);
+           opacity: 0; }
+}
+.app::before {
+    content: '';
+    position: fixed;
+    top: -10vh;
+    left: 0;
+    width: 150px;
+    height: 1.5px;
+    z-index: -1;
+    background: linear-gradient(90deg,
+        transparent, rgba(190, 205, 255, 0.85), transparent);
+    border-radius: var(--r-full);
+    pointer-events: none;
+    animation: meteor 26s linear infinite;
+}
+.app::after {
+    content: '';
+    position: fixed;
+    top: 30vh;
+    left: 0;
+    width: 110px;
+    height: 1px;
+    z-index: -1;
+    background: linear-gradient(90deg,
+        transparent, rgba(255, 255, 255, 0.6), transparent);
+    border-radius: var(--r-full);
+    pointer-events: none;
+    animation: meteor 39s linear infinite;
+    animation-delay: 13s;
+}
+
+/* --- 12.3 HUD köşe çerçevesi ---
+   Ekranın dört köşesinde ince, köşeli hedefleme çerçevesi.
+   Tek element, dört köşe: background konumlarıyla çizilir. */
+.hud-frame {
+    position: fixed;
+    inset: 10px;
+    z-index: 40;
+    pointer-events: none;
+    opacity: .85;
+}
+.hud-frame i {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border: 0 solid var(--accent-border);
+}
+.hud-frame i:nth-child(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; border-top-left-radius: 8px; }
+.hud-frame i:nth-child(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; border-top-right-radius: 8px; }
+.hud-frame i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; border-bottom-left-radius: 8px; }
+.hud-frame i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; border-bottom-right-radius: 8px; }
+.hud-frame::after {
+    /* köşelerdeki minik ışık noktaları */
+    content: '';
+    position: absolute;
+    inset: -1px;
+    background:
+        radial-gradient(2px 2px at 0 0, var(--accent) 40%, transparent 41%),
+        radial-gradient(2px 2px at 100% 0, var(--accent) 40%, transparent 41%),
+        radial-gradient(2px 2px at 0 100%, var(--accent) 40%, transparent 41%),
+        radial-gradient(2px 2px at 100% 100%, var(--accent) 40%, transparent 41%);
+    opacity: .6;
+}
+
+/* --- 12.4 Üst çubuk HUD etiketi + tarama süpürmesi --- */
+.topbar { position: relative; overflow: hidden; }
+.topbar::before {
+    content: 'NESILAI · ORBITAL COMMAND';
+    position: absolute;
+    right: var(--s-4);
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .22em;
+    color: var(--accent);
+    opacity: .5;
+    pointer-events: none;
+}
+@keyframes hud-sweep {
+    0%   { transform: translateX(-100%); opacity: 0; }
+    12%  { opacity: .5; }
+    60%  { opacity: .25; }
+    100% { transform: translateX(240%); opacity: 0; }
+}
+.topbar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 34%;
+    background: linear-gradient(100deg,
+        transparent, rgba(124, 156, 255, 0.10), transparent);
+    pointer-events: none;
+    animation: hud-sweep 9s var(--ease) infinite;
+}
+
+/* --- 12.5 Composer: kuantal nabız halkası --- */
+.composer { position: relative; }
+@keyframes ring-pulse {
+    0%   { opacity: .0; transform: scale(.985); }
+    50%  { opacity: .5; }
+    100% { opacity: 0; transform: scale(1.012); }
+}
+.composer::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: var(--r-xl);
+    border: 1px solid var(--accent-border);
+    pointer-events: none;
+    animation: ring-pulse 4.5s var(--ease) infinite;
+}
+.composer:focus-within::after { animation-play-state: paused; opacity: 0; }
+
+/* --- 12.6 Karşılama: yükselen yıldız haritası + yazı ışıması --- */
+.welcome-hero { position: relative; }
+.welcome-hero::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -8%;
+    width: min(560px, 92%);
+    height: 190px;
+    transform: translateX(-50%);
+    background:
+        radial-gradient(1.5px 1.5px at 18% 70%, rgba(124,156,255,.8) 50%, transparent 51%),
+        radial-gradient(1px 1px at 32% 40%, rgba(255,255,255,.7) 50%, transparent 51%),
+        radial-gradient(1.2px 1.2px at 47% 78%, rgba(210,220,255,.75) 50%, transparent 51%),
+        radial-gradient(1px 1px at 61% 30%, rgba(255,255,255,.6) 50%, transparent 51%),
+        radial-gradient(1.6px 1.6px at 74% 62%, rgba(124,156,255,.85) 50%, transparent 51%),
+        radial-gradient(1px 1px at 86% 44%, rgba(255,255,255,.65) 50%, transparent 51%),
+        radial-gradient(140px 60px at 50% 100%, rgba(124, 156, 255, 0.12), transparent 70%);
+    -webkit-mask-image: linear-gradient(to top, #000 30%, transparent 95%);
+    mask-image: linear-gradient(to top, #000 30%, transparent 95%);
+    pointer-events: none;
+}
+.welcome-title {
+    background: linear-gradient(180deg,
+        var(--text-1) 30%, rgba(236, 236, 242, 0.72));
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: title-shimmer 6s ease-in-out infinite;
+}
+@keyframes title-shimmer {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(124, 156, 255, 0.0)); }
+    50%      { filter: drop-shadow(0 0 14px rgba(124, 156, 255, 0.35)); }
+}
+
+/* --- 12.7 Mesaj warp-in girişi --- */
+@keyframes warp-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.985); filter: blur(3px); }
+    to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.message-row { animation: warp-in .28s var(--ease) both; }
+
+/* --- 12.8 Suggestion kartlarında HUD ışıması --- */
+.suggestion-card {
+    position: relative;
+    overflow: hidden;
+}
+.suggestion-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120px 70px at var(--mx, 50%) var(--my, 0%),
+        rgba(124, 156, 255, 0.12), transparent 70%);
+    opacity: 0;
+    transition: opacity .2s var(--ease);
+    pointer-events: none;
+}
+.suggestion-card:hover::before { opacity: 1; }
+
+/* --- 12.9 Reduced motion: dekorasyonu tamamen kapat --- */
+@media (prefers-reduced-motion: reduce) {
+    body::before { animation: none; }
+    .app::before, .app::after,
+    .topbar::after,
+    .composer::after { animation: none; opacity: 0; }
+    .welcome-title { animation: none; }
+    .message-row { animation: none; }
+}
+@media (max-width: 720px) {
+    .hud-frame { display: none; }
+    .topbar::before { display: none; }
+}
+
+/* ==========================================================
+   13. TELEFON MODU
+   ----------------------------------------------------------
+   Ayarlar → Görünüm → Cihaz modu = "Telefon" seçildiğinde
+   <html data-device="phone"> üzerinden etkinleşir. "Otomatik"
+   ise yalnızca gerçek telefonlarda (max-width: 720px) uygulanır.
+   Renkler, yazı boyutları ve dokunma hedefleri telefona göre
+   yeniden ayarlanır.
+   ========================================================== */
+
+/* --- 13.1 Ortak telefon kuralları (data-device VE dar ekran) --- */
+
+/* Composer üst çubuğu: seçiciler baloncuğun tepesinde */
+.composer-topbar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 0 var(--s-1) var(--s-2);
+}
+.composer-topbar-left { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.composer-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 200px;
+    padding: 9px 12px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-full);
+    background: var(--surface-2);
+    color: var(--text-2);
+    font-size: 12.5px;
+    font-weight: 550;
+    cursor: pointer;
+    transition: border-color 0.15s var(--ease), color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.composer-chip:hover { border-color: var(--accent-border); color: var(--text-1); }
+.composer-chip .icon { width: 14px; height: 14px; }
+.composer-chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.composer-chip[aria-expanded="true"] { border-color: var(--accent-border); color: var(--accent); }
+
+/* model-menu artık topbar'da: yukarı açılmaya devam etsin */
+.composer-topbar .model-menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+}
+
+/* --- 13.2 Telefon düzeni — data-device="phone" VE dar ekran birlikte --- */
+
+/* Otomatik: gerçek telefonlarda uygulanır */
+@media (max-width: 720px) {
+    :root { --touch-min: 44px; }
+
+    body { font-size: 15.5px; }
+
+    /* Kenar çubuğu tam kaplama, büyük kapatma alanı */
+    .sidebar { width: min(86vw, 320px); }
+
+    /* Composer üst çubuğu tam genişlik, dokunma dostu */
+    .composer-topbar { flex-wrap: wrap; padding-bottom: var(--s-2); }
+    .composer-chip { min-height: 40px; font-size: 13.5px; }
+
+    /* Mesaj baloncuğu daha büyük ve okunur */
+    .messages { padding: var(--s-3) var(--s-2) var(--s-2); }
+    .message-bubble {
+        font-size: 16px;
+        line-height: 1.6;
+    }
+
+    /* Girdi ve butonlar parmak için büyür */
+    .composer-input { font-size: 16px; min-height: 44px; }
+    .composer-btn {
+        width: 46px;
+        height: 46px;
+    }
+    .composer-hint { display: none; }
+}
+
+/* Telefon modu ZORLAMASI: data-device="phone" — ekran genişliğinden bağımsız */
+html[data-device="phone"] {
+    /* Telefona uyumlu renk paleti: daha koyu, daha yüksek kontrast */
+    --bg: #050507;
+    --surface-1: #0d0d12;
+    --surface-2: #121218;
+    --surface-3: #191922;
+    --surface-hover: rgba(255, 255, 255, 0.06);
+    --border: rgba(255, 255, 255, 0.11);
+    --border-strong: rgba(255, 255, 255, 0.2);
+    --text-1: #f4f4f8;
+    --text-2: #b8b8c8;
+    --text-3: #8d8da0;
+
+    --sidebar-w: min(86vw, 300px);
+}
+html[data-device="phone"] body {
+    font-size: 15.5px;
+}
+html[data-device="phone"] .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.22s var(--ease);
+    box-shadow: var(--shadow-lg);
+    width: min(86vw, 300px);
+}
+html[data-device="phone"] .sidebar.open { transform: none; }
+html[data-device="phone"] .hud-frame { display: none; }
+html[data-device="phone"] .topbar::before { display: none; }
+html[data-device="phone"] .composer-hint { display: none; }
+html[data-device="phone"] .messages { padding: var(--s-3) var(--s-2) var(--s-2); }
+html[data-device="phone"] .message-bubble {
+    font-size: 16.5px;
+    line-height: 1.65;
+    color: var(--text-1);
+}
+html[data-device="phone"] .composer-input { font-size: 16px; min-height: 44px; }
+html[data-device="phone"] .composer-btn { width: 46px; height: 46px; }
+html[data-device="phone"] .composer-topbar { flex-wrap: wrap; }
+html[data-device="phone"] .composer-chip { min-height: 42px; font-size: 14px; }
+html[data-device="phone"] .icon-btn { width: 42px; height: 42px; }
+html[data-device="phone"] .btn { min-height: 44px; }
+html[data-device="phone"] .btn-action-pill { height: 36px; font-size: 13.5px; }
+html[data-device="phone"] .history-item { height: 44px; }
+html[data-device="phone"] .suggestions { grid-template-columns: 1fr; margin-top: var(--s-6); }
+html[data-device="phone"] .welcome-hero { padding: var(--s-6) 0 var(--s-4); }
+html[data-device="phone"] .welcome-title { font-size: 21px; }
+html[data-device="phone"] .model-menu { width: min(92vw, 420px); }
+html[data-device="phone"] .model-menu-list .model-option {
+    min-height: 48px;
+    padding-block: var(--s-3);
+}
+html[data-device="phone"] .modal-card {
+    max-height: 94dvh;
+    width: min(96vw, 560px);
+}
+html[data-device="phone"] .nav-item { height: 46px; }
+

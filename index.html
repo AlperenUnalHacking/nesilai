@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="assets/logo.png?v=2">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
-    <link rel="stylesheet" href="css/style.css?v=perm1">
+    <link rel="stylesheet" href="css/style.css?v=spacehud">
 </head>
 <body>
 
@@ -46,6 +46,9 @@
     <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
     <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol>
 </svg>
+
+<!-- Uzay teknolojisi HUD köşe çerçevesi (saf dekoratif) -->
+<div class="hud-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 
 <div class="app">
 
@@ -216,35 +219,38 @@
                 </button>
             </div>
 
+            <!-- Üretim modu + model seçicileri: baloncuğun TEPESİNDE, kolay dokunma -->
+            <div id="model-picker-wrap" class="composer-topbar">
+                <div class="composer-topbar-left">
+                    <button id="mode-picker-btn" class="composer-chip" type="button" aria-haspopup="listbox" title="Üretim modu seç">
+                        <svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>
+                        <span id="mode-picker-label">Sohbet</span>
+                        <svg class="icon model-caret" aria-hidden="true"><use href="#i-caret"/></svg>
+                    </button>
+                    <button id="model-picker-btn" class="composer-chip" type="button" aria-haspopup="listbox" title="Yapay zeka modelini değiştir">
+                        <svg class="icon" aria-hidden="true"><use href="#i-cpu"/></svg>
+                        <span id="model-picker-label">Model</span>
+                        <svg class="icon model-caret" aria-hidden="true"><use href="#i-caret"/></svg>
+                    </button>
+                </div>
+                <div id="model-picker-menu" class="model-menu hidden" role="listbox" aria-label="Model seç">
+                    <div class="model-menu-search">
+                        <input id="model-picker-search" type="text" placeholder="Model ara…" autocomplete="off" spellcheck="false">
+                    </div>
+                    <div class="model-menu-list" id="model-menu-list"><!-- JS doldurur --></div>
+                    <p class="model-menu-foot">Kendi API anahtarını eklemek için Ayarlar → Yapay Zeka.</p>
+                </div>
+                <div id="mode-menu" class="model-menu hidden" role="listbox" aria-label="Üretim modu seç">
+                    <div class="model-menu-list" id="mode-menu-list"><!-- JS doldurur --></div>
+                    <p class="model-menu-foot">Seçtiğin mod, gönderdiğin her mesajı o türde üretir.</p>
+                </div>
+            </div>
+
             <div class="composer">
                 <button id="attach-btn" class="composer-btn" aria-label="Görsel yükle" title="Görsel yükle ve metnini okut">
                     <svg class="icon" aria-hidden="true"><use href="#i-paperclip"/></svg>
                 </button>
                 <input type="file" id="file-input" accept="image/*" class="hidden">
-
-                <div id="model-picker-wrap" class="model-picker-wrap">
-                    <button id="mode-picker-btn" class="model-picker-btn mode-picker-btn" type="button" aria-haspopup="listbox" title="Üretim modu seç">
-                        <svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>
-                        <span id="mode-picker-label">Sohbet</span>
-                        <svg class="icon model-caret" aria-hidden="true"><use href="#i-caret"/></svg>
-                    </button>
-                    <button id="model-picker-btn" class="model-picker-btn" type="button" aria-haspopup="listbox" title="Yapay zeka modelini değiştir">
-                        <svg class="icon" aria-hidden="true"><use href="#i-cpu"/></svg>
-                        <span id="model-picker-label">Model</span>
-                        <svg class="icon model-caret" aria-hidden="true"><use href="#i-caret"/></svg>
-                    </button>
-                    <div id="model-picker-menu" class="model-menu hidden" role="listbox" aria-label="Model seç">
-                        <div class="model-menu-search">
-                            <input id="model-picker-search" type="text" placeholder="Model ara…" autocomplete="off" spellcheck="false">
-                        </div>
-                        <div class="model-menu-list" id="model-menu-list"><!-- JS doldurur --></div>
-                        <p class="model-menu-foot">Kendi API anahtarını eklemek için Ayarlar → Yapay Zeka.</p>
-                    </div>
-                    <div id="mode-menu" class="model-menu hidden" role="listbox" aria-label="Üretim modu seç">
-                        <div class="model-menu-list" id="mode-menu-list"><!-- JS doldurur --></div>
-                        <p class="model-menu-foot">Seçtiğin mod, gönderdiğin her mesajı o türde üretir.</p>
-                    </div>
-                </div>
 
                 <textarea
                     id="user-input"
@@ -715,6 +721,22 @@
                 <button id="clear-all-chats-btn" class="btn btn-danger-outline">Tüm sohbet geçmişini sil</button>
             </section>
 
+            <section class="settings-section">
+                <h3 class="settings-title">
+                    <svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>
+                    Görünüm
+                </h3>
+                <div class="field">
+                    <label for="device-mode-select">Cihaz modu</label>
+                    <select id="device-mode-select" class="input">
+                        <option value="auto">Otomatik (ekran genişliğine göre)</option>
+                        <option value="phone">📱 Telefon — kompakt tek kolon, büyük dokunma hedefleri</option>
+                        <option value="desktop">💻 Masaüstü — tam arayüz</option>
+                    </select>
+                    <p class="field-note">Telefon modunda renkler, yazı boyutları ve dokunma alanları tamamen telefona göre ayarlanır; hangi ekranda olursan ol telefon düzeninde kalır.</p>
+                </div>
+            </section>
+
         </div>
 
         <footer class="modal-foot">
@@ -731,8 +753,8 @@
 <script src="js/ai.js?v=pool"></script>
 <script src="js/tts.js?v=pool"></script>
 <script src="js/stt.js?v=pool"></script>
-<script src="js/textToPhoto.js?v=pool"></script>
+<script src="js/textToPhoto.js?v=tr3"></script>
 <script src="js/photoToText.js?v=pool"></script>
-<script src="js/app.js?v=perm1"></script>
+<script src="js/app.js?v=dev3"></script>
 </body>
 </html>

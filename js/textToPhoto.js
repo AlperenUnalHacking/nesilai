@@ -151,11 +151,116 @@
         container.appendChild(card);
     }
 
+    // ----------------------------------------------------------
+    // Prompt Çevirisi — Türkçe görsel promptlarını İngilizce'ye çevirir
+    // ----------------------------------------------------------
+    // Pollinations (ve genel olarak dağıtım modelleri) İngilizce
+    // promptlarla belirgin biçimde daha iyi sonuç verir. Strateji:
+    //   1) Kullanıcının LLM7 anahtarsız sohbet modeli çevirir (kaliteli, bağlam duyarlı)
+    //   2) Olmazsa Pollinations metin modeli denenebilir (aynı ücretsiz havuz)
+    //   3) Her iki yol da başarısızsa: küçük yerel sözlük + son çare orijinal prompt
+    // Uygulama hızı için sonuçlar 100 kayıta kadar önbelleklenir.
+    const TRANSLATE_TIMEOUT_MS = 6000;
+    const translateCache = new Map();
+
+    const FALLBACK_TR_EN = {
+        'kedi': 'cat', 'köpek': 'dog', 'araba': 'car', 'bozuk': 'broken',
+        'uzay': 'space', 'uzayda': 'in space', 'yüzen': 'floating',
+        'şehir': 'city', 'orman': 'forest', 'dağ': 'mountain', 'dağlar': 'mountains',
+        'deniz': 'sea', 'okyanus': 'ocean', 'gökyüzü': 'sky', 'güneş': 'sun',
+        'ay': 'moon', 'yıldız': 'star', 'yıldızlar': 'stars', 'nebula': 'nebula',
+        'gece': 'night', 'gündüz': 'day', 'gün batımı': 'sunset', 'gün doğumu': 'sunrise',
+        'kadın': 'woman', 'erkek': 'man', 'çocuk': 'child', 'insan': 'person',
+        'ev': 'house', 'ağaç': 'tree', 'ağaçlar': 'trees', 'çiçek': 'flower',
+        'kuş': 'bird', 'at': 'horse', 'aslan': 'lion', 'kurt': 'wolf',
+        'nehir': 'river', 'göl': 'lake', 'kar': 'snow', 'yağmur': 'rain',
+        'sis': 'fog', 'bulut': 'cloud', 'bulutlar': 'clouds', 'fırtına': 'storm',
+        'siberpunk': 'cyberpunk', 'neon': 'neon', 'ışıklı': 'lit', 'ışıklar': 'lights',
+        'manzara': 'landscape', 'portre': 'portrait', 'doğa': 'nature',
+        'fotoğraf': 'photo', 'fotoğrafı': 'photo', 'fotoğraf': 'photo',
+        'resim': 'picture', 'resmi': 'picture', 'görsel': 'image', 'görseli': 'image',
+        'çizim': 'drawing', 'tablo': 'painting', 'sanat': 'art', 'sanatçı': 'artist',
+        'dijital': 'digital', 'gerçekçi': 'realistic', 'detaylı': 'detailed',
+        'uçan': 'flying', 'koşan': 'running', 'dans': 'dance', 'savaş': 'war',
+        'ejderha': 'dragon', 'kılıç': 'sword', 'zırh': 'armor', 'robot': 'robot',
+        'yüz': 'face', 'göz': 'eye', 'saç': 'hair', 'el': 'hand', 'kalp': 'heart',
+        'kızılötesi': 'infrared', 'su altı': 'underwater', 'volkan': 'volcano',
+        'kale': 'castle', 'köy': 'village', 'kule': 'tower', 'köprü': 'bridge',
+        'beyaz': 'white', 'siyah': 'black', 'kırmızı': 'red', 'mavi': 'blue',
+        'yeşil': 'green', 'sarı': 'yellow', 'mor': 'purple', 'turuncu': 'orange',
+        'pembe': 'pink', 'altın': 'golden', 'gümüş': 'silver',
+        'büyük': 'large', 'küçük': 'small', 'eski': 'old', 'yeni': 'new',
+        'güzel': 'beautiful', 'harika': 'amazing', 'mutlu': 'happy', 'üzgün': 'sad',
+        'hızlı': 'fast', 'yavaş': 'slow', 'sıcak': 'hot', 'soğuk': 'cold',
+        'içinde': 'inside', 'üstünde': 'on top of', 'altında': 'under', 'yanında': 'next to',
+        'ile': 'with', 've': 'and', 'üzerinde': 'on', 'yakınında': 'near'
+    };
+
+    function localFallbackTranslate(text) {
+        let hit = 0;
+        const out = text.replace(/[\p{L}\p{M}]+/gu, (word) => {
+            const key = word.toLocaleLowerCase('tr');
+            const en = FALLBACK_TR_EN[key];
+            if (en !== undefined) { hit++; return en; }
+            return word;
+        });
+        // Yarıdan azı çevrildiyse orijinali koru (anlamsız karışım üretme)
+        const total = (text.match(/[\p{L}\p{M}]+/gu) || []).length;
+        return hit > 0 && hit * 2 > total ? out : text;
+    }
+
+    function isEnglish(text) {
+        // Tipik Türkçe karakterler ya da yaygın Türkçe işlev sözcükleri varsa İngilizce değildir
+        if (/[çğıöşüÇĞİÖŞÜ]/.test(text)) return false;
+        return !/\b(bir|ve|ile|için|gibi|olan|the|and|of|in|on)\b/i.test(text) ||
+               !/[çğıöşüÇĞİÖŞÜ]/.test(text) && /\b(the|and|of|with|in|on|at)\b/i.test(text);
+    }
+
+    async function translatePrompt(text) {
+        const prompt = (text || '').trim();
+        if (!prompt) return prompt;
+        // Zaten İngilizceyse çevirme
+        if (isEnglish(prompt)) return prompt;
+        // Önbellek
+        const cached = translateCache.get(prompt);
+        if (cached) return cached;
+
+        let translated = null;
+        // 1) Anahtarsız LLM7 yolu
+        try {
+            if (window.NesilAI && typeof window.NesilAI.ask === 'function') {
+                const sys = 'You are a precise Turkish-to-English translator for image generation prompts. ' +
+                    'Output ONLY the English translation - no explanations, no quotes, no extra words. ' +
+                    'Preserve every detail of the original meaning exactly.';
+                const userMsg = 'Translate this image prompt to English, preserving all meaning:\n\n' + prompt;
+                const res = await Promise.race([
+                    window.NesilAI.ask(userMsg, { system: sys, temperature: 0.1 }),
+                    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), TRANSLATE_TIMEOUT_MS))
+                ]);
+                const clean = String(res || '').trim().replace(/^"|"$/g, '');
+                if (clean && clean.length <= prompt.length * 4 + 40) translated = clean;
+            }
+        } catch (e) { /* aşağıya düş */ }
+
+        // 2) Yerel sözlük yolu
+        if (!translated) {
+            const local = localFallbackTranslate(prompt);
+            if (local !== prompt) translated = local;
+        }
+
+        // 3) Son çare: orijinal
+        const finalPrompt = translated || prompt;
+        if (translateCache.size > 100) translateCache.clear();
+        translateCache.set(prompt, finalPrompt);
+        return finalPrompt;
+    }
+
     window.NesilT2P = {
         isImagePrompt,
         extractImagePrompt,
         generateImageUrl,
-        appendImageCard
+        appendImageCard,
+        translatePrompt
     };
 
 })();

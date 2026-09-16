@@ -760,11 +760,20 @@
                 const [w, h] = (poolImageSize.value || '1024x768').split('x').map(n => parseInt(n, 10));
 
                 poolImageBtn.disabled = true;
-                poolImageStatus.textContent = `${count} görsel üretiliyor…`;
+                poolImageStatus.textContent = "Prompt İngilizce'ye çevriliyor…";
                 poolImageResults.innerHTML = '';
 
+                // Türkçe promptu İngilizce'ye çevir (görsel modelleri İngilizce'de daha iyi)
+                let enPrompt = prompt;
+                if (window.NesilT2P && typeof window.NesilT2P.translatePrompt === 'function') {
+                    try {
+                        enPrompt = await window.NesilT2P.translatePrompt(prompt);
+                    } catch (e) { /* çevrilemedi — orijinal promptla devam */ }
+                }
+                poolImageStatus.textContent = `${count} görsel üretiliyor…`;
+
                 for (let i = 0; i < count; i++) {
-                    const url = window.NesilT2P.generateImageUrl(prompt, w, h);
+                    const url = window.NesilT2P.generateImageUrl(buildMasterPrompt(enPrompt), w, h);
                     const cell = document.createElement('div');
                     cell.className = 'pool-image-cell';
                     const skeleton = document.createElement('div');
@@ -1463,13 +1472,40 @@
         // 2. Üretim modları (sohbet hariç hepsi burada rotalanır)
         if (isImage) {
             incrementQuota('images');
-            const visualPrompt = window.NesilT2P ? window.NesilT2P.extractImagePrompt(text) : text;
-            const imageUrl = window.NesilT2P ? window.NesilT2P.generateImageUrl(visualPrompt) : '';
+            const originalPrompt = window.NesilT2P ? window.NesilT2P.extractImagePrompt(text) : text;
+
+            // Prompt çevirisi: Türkçe promptlar İngilizce'ye çevrilerek gönderilir —
+            // görsel modelleri İngilizce'de belirgin biçimde daha iyi sonuç verir.
+            let visualPrompt = originalPrompt;
+            const needsTranslate = window.NesilT2P && typeof window.NesilT2P.translatePrompt === 'function';
+            let translateRow = null;
+            if (needsTranslate) {
+                translateRow = document.createElement('div');
+                translateRow.className = 'message-row assistant thinking';
+                translateRow.innerHTML = `
+                    <div class="assistant-avatar"><img src="assets/logo.png?v=2" alt="" draggable="false"></div>
+                    <div class="message-content-wrapper">
+                        <div class="thinking-bubble">
+                            <span class="typing-dots"><i></i><i></i><i></i></span>
+                            <span class="thinking-label">Prompt İngilizce'ye çevriliyor</span>
+                        </div>
+                    </div>
+                `;
+                chatMessages.appendChild(translateRow);
+                scrollToBottom();
+                try {
+                    visualPrompt = await window.NesilT2P.translatePrompt(originalPrompt);
+                } catch (e) { /* çevrilemedi — orijinal promptla devam */ }
+                translateRow.remove();
+                translateRow = null;
+            }
+
+            const imageUrl = window.NesilT2P ? window.NesilT2P.generateImageUrl(buildMasterPrompt(visualPrompt)) : '';
 
             const aiMsg = {
                 id: 'msg_' + (Date.now() + 1),
                 role: 'assistant',
-                text: `"${visualPrompt}" için görsel oluşturuldu:`,
+                text: `"${originalPrompt}" için görsel oluşturuldu:`,
                 isImageGen: true,
                 imagePrompt: visualPrompt,
                 imageUrl: imageUrl,
@@ -2239,6 +2275,40 @@
         bubble.appendChild(dl);
     }
 
+    // ========================================================
+    // Görsel Master Prompt — her üretimde otomatik kalite öneki
+    // "4k full hd errorless" + kullanıcının İngilizce promptu
+    // ========================================================
+    const IMAGE_MASTER_PREFIX = '4k full hd errorless, ultra detailed, sharp focus, high quality, ';
+    function buildMasterPrompt(userPrompt) {
+        const p = (userPrompt || '').trim();
+        // Zaten master prompt ile başlıyorsa çoğaltma (regenerate senaryosu)
+        if (/^4k full hd errorless/i.test(p)) return p;
+        return IMAGE_MASTER_PREFIX + p;
+    }
+
+    // ========================================================
+    // Cihaz Modu — Telefon / Masaüstü / Otomatik
+    // ========================================================
+    function applyDeviceMode() {
+        const mode = localStorage.getItem('nesilai_device_mode') || 'auto';
+        const isNarrow = window.matchMedia('(max-width: 720px)').matches;
+        const html = document.documentElement;
+        if (mode === 'phone' || (mode === 'auto' && isNarrow)) {
+            html.setAttribute('data-device', 'phone');
+        } else {
+            html.removeAttribute('data-device');
+        }
+    }
+
+    // Ekran döndürme / boyut değişiminde otomatik modu güncelle
+    let deviceModeTimer = null;
+    window.addEventListener('resize', () => {
+        clearTimeout(deviceModeTimer);
+        deviceModeTimer = setTimeout(applyDeviceMode, 120);
+    }, { passive: true });
+    applyDeviceMode();
+
     function hideModelPicker() {
         if (modelMenu) modelMenu.classList.add('hidden');
     }
@@ -2385,10 +2455,25 @@
             modePickerBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleModeMenu(); });
         }
         document.addEventListener('click', (e) => {
-            if (modeMenu && !modeMenu.classList.contains('hidden') && modePickerWrap && !modePickerWrap.contains(e.target)) {
+            if (modeMenu && !modeMenu.classList.contains('hidden') && modelPickerWrap && !modelPickerWrap.contains(e.target)) {
                 hideModeMenu();
             }
+            if (modelMenu && !modelMenu.classList.contains('hidden') && modelPickerWrap && !modelPickerWrap.contains(e.target)) {
+                hideModelPicker();
+            }
         });
+
+        // Cihaz modu (telefon / masaüstü / otomatik)
+        const deviceModeSelect = document.getElementById('device-mode-select');
+        if (deviceModeSelect) {
+            deviceModeSelect.value = localStorage.getItem('nesilai_device_mode') || 'auto';
+            deviceModeSelect.addEventListener('change', () => {
+                const v = deviceModeSelect.value || 'auto';
+                localStorage.setItem('nesilai_device_mode', v);
+                applyDeviceMode();
+                showToast(v === 'phone' ? '📱 Telefon modu açıldı' : v === 'desktop' ? '💻 Masaüstü modu açıldı' : 'Cihaz modu: Otomatik', 'success');
+            });
+        }
 
         // Plan Seç Butonları
         selectPlanBtns.forEach(btn => {
@@ -2570,11 +2655,56 @@
     AI.showToast = showToast;
     AI.copyToClipboard = copyTextToClipboard;
 
+    // ========================================================
+    // Uzay Teknolojisi HUD — İnce Etkileşimler
+    // (saf kozmetik; yüklenemezse arayüz hiç etkilenmez)
+    // ========================================================
+    function initSpaceHud() {
+        try {
+            const reducedMotion = window.matchMedia &&
+                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reducedMotion) return;
+
+            // 1) Öneri kartlarında fare takipli yıldız ışıması
+            document.querySelectorAll('.suggestion-card').forEach(card => {
+                card.addEventListener('pointermove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    card.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width * 100).toFixed(1) + '%');
+                    card.style.setProperty('--my', ((e.clientY - rect.top) / rect.height * 100).toFixed(1) + '%');
+                });
+            });
+
+            // 2) Yıldız alanına çok hafif paralaks (pointer'lı cihazlar)
+            const finePointer = window.matchMedia &&
+                window.matchMedia('(pointer: fine)').matches;
+            if (finePointer && !('ontouchstart' in window)) {
+                let rafPending = false, lastX = 0, lastY = 0;
+                document.addEventListener('pointermove', (e) => {
+                    lastX = e.clientX / window.innerWidth - 0.5;
+                    lastY = e.clientY / window.innerHeight - 0.5;
+                    if (rafPending) return;
+                    rafPending = true;
+                    requestAnimationFrame(() => {
+                        rafPending = false;
+                        const stars = document.body;
+                        if (stars) {
+                            const px = (lastX * 14).toFixed(1);
+                            const py = (lastY * 14).toFixed(1);
+                            stars.style.backgroundPosition =
+                                `${px}px ${py}px, ${-px} ${py}px, ${px} ${-py}px, ${-px} ${-py}px, ${px}px ${py}px, ${-px} ${py}px, ${px} ${-py}px, ${-px} ${-py}px, ${px}px ${py}px, ${-px} ${py}px`;
+                        }
+                    });
+                }, { passive: true });
+            }
+        } catch (e) { /* kozmetik — asla kırılmaz */ }
+    }
+
     // Başlat!
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initApp);
+        document.addEventListener('DOMContentLoaded', () => { initApp(); initSpaceHud(); });
     } else {
         initApp();
+        initSpaceHud();
     }
 
 })();
