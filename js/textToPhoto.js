@@ -150,7 +150,7 @@
         const skeleton = document.createElement('div');
         skeleton.className = 'image-loading-skeleton';
         skeleton.innerHTML = `
-            <div style="font-size: 28px;">🎨</div>
+            <div style="font-size: 28px; color: #a9baff;"><svg class="icon" aria-hidden="true"><use href="#i-palette"/></svg></div>
             <div>Görseliniz oluşturuluyor...</div>
             <div style="font-size: 11px; opacity: 0.7;">"${promptText.slice(0, 50)}..."</div>
         `;
@@ -169,9 +169,9 @@
             const footer = document.createElement('div');
             footer.className = 'image-card-footer';
             footer.innerHTML = `
-                <span>🎨 NesilAI Görsel Motoru</span>
+                <span>NesilAI Görsel Motoru</span>
                 <button class="btn-download-img" title="Görseli İndir">
-                    <span>⬇️</span> İndir
+                    <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg> İndir
                 </button>
             `;
 
@@ -197,7 +197,7 @@
 
         img.onerror = () => {
             skeleton.innerHTML = `
-                <div style="color: #ef4444; font-size: 24px;">❌</div>
+                <div style="color: #ef4444; font-size: 24px;"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></div>
                 <div>Görsel oluşturulamadı. Lütfen tekrar deneyin.</div>
             `;
         };

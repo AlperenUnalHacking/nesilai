@@ -119,7 +119,7 @@
 
         const head = document.createElement('div');
         head.className = 'project-files-head';
-        head.innerHTML = '<span class="pfc-icon">🗂️</span><span>Proje dosyaları <b>' +
+        head.innerHTML = '<span class="pfc-icon"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg></span><span>Proje dosyaları <b>' +
             files.length + ' dosya</b> — hazır</span>';
         card.appendChild(head);
 
@@ -131,7 +131,7 @@
 
             const icon = document.createElement('span');
             icon.className = 'pfile-icon';
-            icon.textContent = fileIcon(f.name);
+            icon.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#' + fileIcon(f.name) + '"/></svg>';
 
             const label = document.createElement('span');
             label.className = 'pfile-name';
@@ -144,7 +144,7 @@
             const dl = document.createElement('button');
             dl.className = 'pfile-dl';
             dl.title = 'İndir';
-            dl.textContent = '⬇';
+            dl.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>';
             dl.addEventListener('click', () => download(f.name, contentToBlob(f.content)));
 
             row.appendChild(icon); row.appendChild(label); row.appendChild(size); row.appendChild(dl);
@@ -156,15 +156,15 @@
         actions.className = 'project-files-actions';
         const allBtn = document.createElement('button');
         allBtn.className = 'btn-action-pill primary';
-        allBtn.innerHTML = '<span>📦</span> <span>Tümünü indir (zip)</span>';
+        const zipIcon = '<svg class="icon" aria-hidden="true"><use href="#i-zip"/></svg>';
+        const okIcon = '<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>';
+        allBtn.innerHTML = zipIcon + ' <span>Tümünü indir (zip)</span>';
         allBtn.addEventListener('click', async () => {
             allBtn.disabled = true;
             const mode = await downloadAll(files);
-            allBtn.innerHTML = mode === 'zip'
-                ? '<span>✅</span> <span>Zip indirildi</span>'
-                : '<span>✅</span> <span>Dosyalar indirildi</span>';
+            allBtn.innerHTML = okIcon + ' <span>' + (mode === 'zip' ? 'Zip indirildi' : 'Dosyalar indirildi') + '</span>';
             setTimeout(() => {
-                allBtn.innerHTML = '<span>📦</span> <span>Tümünü indir (zip)</span>';
+                allBtn.innerHTML = zipIcon + ' <span>Tümünü indir (zip)</span>';
                 allBtn.disabled = false;
             }, 2500);
         });
@@ -176,14 +176,14 @@
     }
 
     function fileIcon(name) {
-        if (/\.html?$/i.test(name)) return '🌐';
-        if (/\.css$/i.test(name)) return '🎨';
-        if (/\.m?js$/i.test(name)) return '📜';
-        if (/\.json$/i.test(name)) return '🧩';
-        if (/\.md$/i.test(name)) return '📝';
-        if (/\.py$/i.test(name)) return '🐍';
-        if (/\.(png|jpe?g|svg|gif)$/i.test(name)) return '🖼️';
-        return '📄';
+        if (/\.html?$/i.test(name)) return 'i-globe';
+        if (/\.css$/i.test(name)) return 'i-palette';
+        if (/\.m?js$/i.test(name)) return 'i-scroll';
+        if (/\.json$/i.test(name)) return 'i-puzzle';
+        if (/\.md$/i.test(name)) return 'i-markdown';
+        if (/\.py$/i.test(name)) return 'i-py';
+        if (/\.(png|jpe?g|svg|gif)$/i.test(name)) return 'i-photo';
+        return 'i-file';
     }
 
     function formatBytes(n) {

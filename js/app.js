@@ -26,7 +26,8 @@
         premium: {
             id: 'premium',
             name: 'Premium',
-            badge: 'Premium ⭐',
+            badge: 'Premium',
+            badgeIcon: 'i-star',
             price: '49₺/ay',
             limits: {
                 images: 10,  // 5 * 2
@@ -40,7 +41,8 @@
         premium_go: {
             id: 'premium_go',
             name: 'Premium Go',
-            badge: 'Premium Go 🚀',
+            badge: 'Premium Go',
+            badgeIcon: 'i-bolt',
             price: '89₺/ay',
             limits: {
                 images: 20,  // 10 * 2
@@ -54,7 +56,8 @@
         premium_plus: {
             id: 'premium_plus',
             name: 'Premium Plus',
-            badge: 'Premium Plus 👑',
+            badge: 'Premium Plus',
+            badgeIcon: 'i-crown',
             price: '149₺/ay',
             limits: {
                 images: 40,  // 20 * 2
@@ -68,7 +71,8 @@
         unlimited: {
             id: 'unlimited',
             name: 'Sınırsız (Unlimited)',
-            badge: '♾️ Sınırsız',
+            badge: 'Sınırsız',
+            badgeIcon: 'i-infinity',
             price: '—',
             limits: {
                 images: Infinity,
@@ -435,7 +439,7 @@
                 video: 'Video üretimi'
             };
             const label = typeLabels[type] || type;
-            showToast(`⚠️ ${label} limitinize ulaştınız (${current}/${limit})!`, 'warning');
+            showToast(`${label} limitinize ulaştınız (${current}/${limit})!`, 'warning');
             openSubscriptionModal();
             return false;
         }
@@ -453,9 +457,10 @@
         const plan = getPlan();
         const usage = currentSubscription.usage;
 
-        // Rozetler
-        if (sidebarPlanBadge) sidebarPlanBadge.textContent = plan.badge;
-        if (headerPlanName) headerPlanName.textContent = plan.badge;
+        // Rozetler (ikonlu)
+        const badgeHtml = plan.badgeIcon ? icon(plan.badgeIcon) + ' ' + plan.badge : plan.badge;
+        if (sidebarPlanBadge) sidebarPlanBadge.innerHTML = badgeHtml;
+        if (headerPlanName) headerPlanName.innerHTML = badgeHtml;
         if (widgetPlanName) widgetPlanName.textContent = plan.name;
         if (dashActivePlan) dashActivePlan.textContent = plan.name;
 
@@ -482,7 +487,7 @@
             if (currentSubscription.couponUntil && Date.now() < currentSubscription.couponUntil) {
                 const end = new Date(currentSubscription.couponUntil);
                 const days = Math.ceil((currentSubscription.couponUntil - Date.now()) / 86400000);
-                subCouponStatus.textContent = `🎟️ Kupon "${currentSubscription.coupon}" aktif — ${end.toLocaleDateString('tr-TR')} tarihine kadar (${days} gün) sınırsız erişim.`;
+                subCouponStatus.innerHTML = icon('i-key') + ` Kupon "${currentSubscription.coupon}" aktif — ${end.toLocaleDateString('tr-TR')} tarihine kadar (${days} gün) sınırsız erişim.`;
                 subCouponStatus.classList.remove('hidden');
             } else {
                 subCouponStatus.classList.add('hidden');
@@ -496,7 +501,7 @@
             if (tier === currentSubscription.plan) {
                 card.classList.add('active-plan');
                 if (btn) {
-                    btn.textContent = '✅ Aktif Plan';
+                    btn.innerHTML = icon('i-check') + ' Aktif Plan';
                     btn.disabled = true;
                     btn.classList.remove('btn-primary', 'btn-glow');
                 }
@@ -504,7 +509,7 @@
                 card.classList.remove('active-plan');
                 if (btn) {
                     btn.disabled = false;
-                    btn.textContent = tier === 'unlimited' ? '♾️ Sınırsız\'a geç' : `${PLANS[tier].name}'a Geç`;
+                    btn.innerHTML = tier === 'unlimited' ? icon('i-infinity') + " Sınırsız'a geç" : icon('i-crown') + ` ${PLANS[tier].name}'a Geç`;
                     if (tier !== 'free') btn.classList.add('btn-primary');
                     if (tier === 'premium_plus' || tier === 'unlimited') btn.classList.add('btn-glow');
                 }
@@ -516,7 +521,7 @@
         if (!PLANS[newPlanId]) return;
         currentSubscription.plan = newPlanId;
         saveSubscription();
-        showToast(`🎉 Tebrikler! ${PLANS[newPlanId].name} paketine geçtiniz!`);
+        showToast(`Tebrikler! ${PLANS[newPlanId].name} paketine geçtiniz!`, 'success');
     }
 
     // ========================================================
@@ -566,7 +571,7 @@
         const result = activateCoupon(code, planId);
 
         if (!result.ok) {
-            couponError.textContent = '⚠️ ' + result.message;
+            couponError.textContent = result.message;
             couponError.classList.remove('hidden');
             return;
         }
@@ -577,10 +582,10 @@
 
         const end = new Date(result.until);
         couponSuccessText.textContent =
-            `🎟️ ${PLANS[result.planId].name} planı ${end.toLocaleDateString('tr-TR')} tarihine kadar (18 ay) ` +
+            `${PLANS[result.planId].name} planı ${end.toLocaleDateString('tr-TR')} tarihine kadar (18 ay) ` +
             'ücretsiz aktifleştirildi. Tüm limitler kaldırıldı — sınırsız sohbet, görsel ve seslendirme.';
         updateAiStatusChip();
-        showToast('Abonelik aktifleştirildi 🎉', 'success');
+        showToast('Abonelik aktifleştirildi', 'success');
     }
 
     // ========================================================
@@ -683,7 +688,7 @@
                     poolGalleryGrid.innerHTML = '<p class="pool-status">Henüz üretim yok. Görsel, ses ve metin çıktıların burada birikecek.</p>';
                     return;
                 }
-                const kindLabels = { image: '🎨 Görsel', tts: '🔊 Sesi', stt: '🎙️ Transkript', ocr: '📖 OCR', music: '🎵 Müzik', video: '🎬 Video' };
+                const kindLabels = { image: 'Görsel', tts: 'Sesi', stt: 'Transkript', ocr: 'OCR', music: 'Müzik', video: 'Video' };
                 items.forEach(it => {
                     const card = document.createElement('div');
                     card.className = 'pool-gallery-card';
@@ -829,7 +834,7 @@
 
                 poolImageBtn.disabled = false;
                 poolImageStatus.textContent = `Havuza eklendi: ${count} görsel üretildi.`;
-                showToast('Üretim havuzu: görseller hazır 🎨', 'success');
+                showToast('Üretim havuzu: görseller hazır', 'success');
             });
         }
 
@@ -1010,9 +1015,9 @@
                         if (window.NesilStore && text) {
                             window.NesilStore.addPoolItem('ocr', { text: text, meta: 'Görselden metin' }).catch(() => {});
                         }
-                        poolOcrStatus.textContent = text ? '✅ Metin çıkarıldı.' : 'ℹ️ Metin bulunamadı.';
+                        poolOcrStatus.innerHTML = text ? icon('i-check') + ' Metin çıkarıldı.' : icon('i-info') + ' Metin bulunamadı.';
                     } catch (err) {
-                        poolOcrStatus.textContent = '⚠️ OCR başarısız oldu.';
+                        poolOcrStatus.textContent = 'OCR başarısız oldu.';
                     }
                 } else {
                     poolOcrStatus.textContent = 'OCR motoru yüklenemedi.';
@@ -1116,7 +1121,7 @@
 
             const delBtn = document.createElement('button');
             delBtn.className = 'btn-delete-chat';
-            delBtn.innerHTML = '🗑️';
+            delBtn.innerHTML = icon('i-trash');
             delBtn.title = 'Sohbeti Sil';
             delBtn.addEventListener('click', (e) => deleteChat(chat.id, e));
 
@@ -1204,6 +1209,14 @@
     }
 
     // ========================================================
+    // İkon yardımcısı — UI'da emoji yerine SVG sembolleri
+    // (AI yanıtlarındaki emojilere dokunulmaz)
+    // ========================================================
+    function icon(name, cls) {
+        return '<svg class="icon' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#' + name + '"/></svg>';
+    }
+
+    // ========================================================
     // Mesaj Ekleme & Görünüm (DOM Rendering)
     // ========================================================
     function appendMessageToDom(msg, shouldScroll = true) {
@@ -1275,10 +1288,10 @@
             const actions = document.createElement('div');
             actions.className = 'message-actions';
 
-            // 🔊 Seslendir butonu
+            // Seslendir butonu
             const speakBtn = document.createElement('button');
             speakBtn.className = 'btn-action-pill';
-            speakBtn.innerHTML = '<span>🔊</span> <span>Dinle</span>';
+            speakBtn.innerHTML = icon('i-volume') + ' <span>Dinle</span>';
             speakBtn.title = 'Seslendir (Yazıdan Sese)';
 
             speakBtn.addEventListener('click', () => {
@@ -1287,12 +1300,12 @@
                 if (window.NesilTTS) {
                     if (currentlySpeakingBtn === speakBtn) {
                         window.NesilTTS.stop();
-                        speakBtn.innerHTML = '<span>🔊</span> <span>Dinle</span>';
+                        speakBtn.innerHTML = icon('i-volume') + ' <span>Dinle</span>';
                         speakBtn.classList.remove('speaking');
                         currentlySpeakingBtn = null;
                     } else {
                         if (currentlySpeakingBtn) {
-                            currentlySpeakingBtn.innerHTML = '<span>🔊</span> <span>Dinle</span>';
+                            currentlySpeakingBtn.innerHTML = icon('i-volume') + ' <span>Dinle</span>';
                             currentlySpeakingBtn.classList.remove('speaking');
                         }
 
@@ -1300,17 +1313,17 @@
                             msg.text,
                             () => {
                                 incrementQuota('tts');
-                                speakBtn.innerHTML = '<span>⏹️</span> <span>Durdur</span>';
+                                speakBtn.innerHTML = icon('i-stop') + ' <span>Durdur</span>';
                                 speakBtn.classList.add('speaking');
                                 currentlySpeakingBtn = speakBtn;
                             },
                             () => {
-                                speakBtn.innerHTML = '<span>🔊</span> <span>Dinle</span>';
+                                speakBtn.innerHTML = icon('i-volume') + ' <span>Dinle</span>';
                                 speakBtn.classList.remove('speaking');
                                 if (currentlySpeakingBtn === speakBtn) currentlySpeakingBtn = null;
                             },
                             (err) => {
-                                speakBtn.innerHTML = '<span>🔊</span> <span>Dinle</span>';
+                                speakBtn.innerHTML = icon('i-volume') + ' <span>Dinle</span>';
                                 speakBtn.classList.remove('speaking');
                                 if (currentlySpeakingBtn === speakBtn) currentlySpeakingBtn = null;
                                 showToast('Seslendirme başlatılamadı', 'error');
@@ -1320,10 +1333,10 @@
                 }
             });
 
-            // 📋 Kopyala butonu
+            // Kopyala butonu
             const copyBtn = document.createElement('button');
             copyBtn.className = 'btn-action-pill';
-            copyBtn.innerHTML = '<span>📋</span> <span>Kopyala</span>';
+            copyBtn.innerHTML = icon('i-copy') + ' <span>Kopyala</span>';
             copyBtn.title = 'Metni Kopyala';
             copyBtn.addEventListener('click', () => {
                 copyTextToClipboard(msg.text);
@@ -1385,8 +1398,8 @@
                     <div class="code-header">
                         <span>${lang}</span>
                         <button class="btn-copy-code" onclick="window.NesilAI_copyCode(this)">
-                            <span>📋</span> Kodu Kopyala
-                        </button>
+                        <span class="code-copy-icon"></span> Kodu Kopyala
+                    </button>
                     </div>
                     <pre><code class="language-${lang}">${escapedCode}</code></pre>
                 </div>
@@ -1430,9 +1443,9 @@
         const pre = button.closest('.code-container').querySelector('pre code');
         if (pre) {
             copyTextToClipboard(pre.innerText);
-            button.innerHTML = '<span>✅</span> Kopyalandı!';
+            button.innerHTML = icon('i-check') + ' Kopyalandı!';
             setTimeout(() => {
-                button.innerHTML = '<span>📋</span> Kodu Kopyala';
+                button.innerHTML = icon('i-copy') + ' Kodu Kopyala';
             }, 2000);
         }
     };
@@ -1538,7 +1551,7 @@
             if (window.NesilT2P) {
                 if (typeof window.NesilT2P.generateImageWithFallback === 'function') {
                     // Sağlayıcı zinciri: Pollinations → Flux → Turbo; biri düşerse sıradaki
-                    setThinkingLabel('🎨 Görsel oluşturuluyor');
+                    setThinkingLabel('Görsel oluşturuluyor');
                     try {
                         const gen = await window.NesilT2P.generateImageWithFallback(masterP, 1024, 768);
                         imageUrl = gen.url;
@@ -1668,7 +1681,7 @@
             const wantResearch = (cmdInfo && (cmdInfo.cmd === 'report' || cmdInfo.cmd === 'ultracode')) ||
                 (!cmdInfo && webSearchToggle && webSearchToggle.checked);
             if (wantResearch && window.NesilResearch) {
-                setThinkingLabel('🌐 İnternette araştırılıyor');
+                setThinkingLabel('İnternette araştırılıyor');
                 try {
                     const results = await window.NesilResearch.research(cmdInfo ? (cmdInfo.body || text) : text, {
                         deep: !!(cmdInfo && (cmdInfo.cmd === 'report' || cmdInfo.cmd === 'ultracode')),
@@ -1684,7 +1697,7 @@
             // ULTRACODE: kod yazmadan önce kısa mimari plan çıkar
             let planBlock = '';
             if (cmdInfo && cmdInfo.cmd === 'ultracode') {
-                setThinkingLabel('🧠 Mimari plan çıkarılıyor');
+                setThinkingLabel('Mimari plan çıkarılıyor');
                 try {
                     const plan = await AI.ask(
                         'Şu isteği gerçekleştirmek için 3-6 maddelik kısa bir uygulama planı yaz. Sadece madde listesi ver, kod yazma. Kullanıcının dilinde yaz:\n\n' + (cmdInfo.body || text),
@@ -1724,7 +1737,7 @@
             console.error('AI yanıt hatası:', error);
 
             // Yarım kalan cevabı gösterme: hata mesajı yerine geçer
-            const errorText = '⚠️ ' + describeAiError(error);
+            const errorText = describeAiError(error);
 
             startAssistantMessage();
             aiMsg.text = errorText;
@@ -1925,7 +1938,7 @@
                 onStart: () => {
                     incrementQuota('stt');
                     micBtn.classList.add('listening');
-                    showToast('🎙️ Sizi dinliyorum, konuşabilirsiniz...');
+                    showToast('Sizi dinliyorum, konuşabilirsiniz...');
                 },
                 onFinal: (text) => {
                     const current = userInput.value;
@@ -2103,10 +2116,10 @@
                         attachmentStatus.textContent = `🔍 Taranıyor... %${p}`;
                     });
                     activeAttachment.extractedText = text;
-                    attachmentStatus.textContent = text ? '✅ Metin okundu' : 'ℹ️ Metin bulunamadı';
+                    attachmentStatus.innerHTML = text ? icon('i-check') + ' Metin okundu' : icon('i-info') + ' Metin bulunamadı';
                     showToast('Görsel başarıyla analiz edildi');
                 } catch (err) {
-                    attachmentStatus.textContent = '⚠️ OCR başarısız oldu';
+                    attachmentStatus.textContent = 'OCR başarısız oldu';
                 }
             }
         };
@@ -2464,7 +2477,7 @@
         dl.className = 'btn-action-pill';
         dl.href = msg.mediaUrl;
         dl.download = 'nesilai-' + msg.mediaKind + '-' + Date.now();
-        dl.innerHTML = '<span>⬇️</span> <span>İndir</span>';
+        dl.innerHTML = icon('i-download') + ' <span>İndir</span>';
         bubble.appendChild(dl);
     }
 
@@ -2513,9 +2526,9 @@
     const slashMenuList = document.getElementById('slash-menu-list');
 
     const SLASH_COMMANDS = [
-        { cmd: '/ultrathink', name: 'ULTRATHINK', desc: 'Derin düşünür, detaylı araştırıp yanıtlar', icon: '🧠' },
-        { cmd: '/report', name: 'REPORT', desc: 'İnternette derin araştırma yapıp rapor hazırlar', icon: '📊' },
-        { cmd: '/ultracode', name: 'ULTRACODE', desc: 'Araştırır, plan çıkarır, kod yazar', icon: '⚡' }
+        { cmd: '/ultrathink', name: 'ULTRATHINK', desc: 'Derin düşünür, detaylı araştırıp yanıtlar', icon: 'i-brain' },
+        { cmd: '/report', name: 'REPORT', desc: 'İnternette derin araştırma yapıp rapor hazırlar', icon: 'i-report' },
+        { cmd: '/ultracode', name: 'ULTRACODE', desc: 'Araştırır, plan çıkarır, kod yazar', icon: 'i-bolt' }
     ];
 
     function buildSlashMenu(filter) {
@@ -2535,7 +2548,7 @@
             item.type = 'button';
             item.className = 'model-option slash-option';
             item.innerHTML =
-                '<span class="slash-option-icon">' + c.icon + '</span>' +
+                '<span class="slash-option-icon"><svg class="icon" aria-hidden="true"><use href="#' + c.icon + '"/></svg></span>' +
                 '<span class="mode-option-texts"><span class="mode-option-name">' + c.name + '</span>' +
                 '<span class="mode-option-desc">' + c.desc + '</span></span>';
             item.addEventListener('click', () => {
@@ -2612,7 +2625,7 @@
                 const del = document.createElement('button');
                 del.className = 'memory-del';
                 del.title = 'Sil';
-                del.textContent = '✕';
+                del.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>';
                 del.addEventListener('click', () => {
                     window.NesilMemory.remove(m.id);
                     renderMemoryList();
@@ -2779,7 +2792,7 @@
         if (webSearchToggle) {
             webSearchToggle.addEventListener('change', () => {
                 localStorage.setItem('nesilai_web_search', webSearchToggle.checked ? 'true' : 'false');
-                showToast(webSearchToggle.checked ? '🌐 İnternet araştırması açık' : 'İnternet araştırması kapalı');
+                showToast(webSearchToggle.checked ? 'İnternet araştırması açık' : 'İnternet araştırması kapalı');
             });
         }
 
@@ -2791,7 +2804,7 @@
                 const v = deviceModeSelect.value || 'auto';
                 localStorage.setItem('nesilai_device_mode', v);
                 applyDeviceMode();
-                showToast(v === 'phone' ? '📱 Telefon modu açıldı' : v === 'desktop' ? '💻 Masaüstü modu açıldı' : 'Cihaz modu: Otomatik', 'success');
+                showToast(v === 'phone' ? 'Telefon modu açıldı' : v === 'desktop' ? 'Masaüstü modu açıldı' : 'Cihaz modu: Otomatik', 'success');
             });
         }
 
@@ -2809,7 +2822,7 @@
         resetUsageBtn.addEventListener('click', () => {
             currentSubscription.usage = { images: 0, chats: 0, stt: 0, tts: 0, music: 0, video: 0 };
             saveSubscription();
-            showToast('Kullanım kotaları sıfırlandı (Test) 🔄');
+            showToast('Kullanım kotaları sıfırlandı (Test)');
         });
 
         // Sesli Sohbet Butonları
