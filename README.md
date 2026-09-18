@@ -156,3 +156,14 @@ js/tts.js           Yazı → ses (SpeechSynthesis)
 - Hiçbir dosyadan çağrılmayan ve var olmayan bir API'ye başvuran `js/coding.js` ile
   `js/writing.js` dosyaları kaldırıldı.
 - Karşılama ekranının sohbet geçmişi varken DOM'dan tamamen silinmesine yol açan hata düzeltildi.
+
+## 5. Katkıda Bulunanlar
+
+| | Kişi | Rol |
+|---|---|---|
+| <img src="assets/bloodline-logo.png" width="48" alt="Bloodline INC logosu" /> | **Bloodline INC** | Kurucu ortak · Ürün ve tasarım |
+| <img src="assets/logo.png" width="48" alt="Acsida" /> | **[Acsida](https://github.com/Acsida)** | Kurucu ortak · Baş geliştirici |
+
+> Not: Bloodline INC'nin GitHub hesabı bulunmadığı için profili kurumsal logo ile temsil edilir
+> ([logo kaynağı](https://hizliresim.com/svg3anb1)). Gerçek hesap açıldığında bu satır
+> GitHub profiline bağlanacaktır.
