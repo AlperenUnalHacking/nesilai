@@ -1941,231 +1941,71 @@ select.input { cursor: pointer; appearance: none; padding-right: var(--s-8); bac
 }
 
 /* ==========================================================
-   12. UZAY TEKNOLOJİSİ HUD KATMANI
+   12. UZAY ATMOSFERİ — yıldız alanı + ay
    ----------------------------------------------------------
-   Tüm dekorasyon pseudo-element'lerle yapılır; HTML ve JS
-   değişmez. Ana katmanlar:
-   • Hareketli yıldız sürüklenmesi (drift) + kayan meteorlar
-   • HUD köşe çerçevesi (hedefleme ekranı estetiği)
-   • Üst çubukta HUD etiketi + tarama çizgisi süpürmesi
-   • Composer'da kuantal benzeri nabız halkası
-   • Karşılama ekranında yükselen yıldız haritası + yazı ışıması
-   • Mesajlarda warp-in girişi, kartlarda cam ışıması
-   reduced-motion: tüm dekorasyon kapanır (§erişilebilirlik).
+   Sade uzay teması: durağan yıldızlar ve köşede yumuşak bir ay.
+   Meteor, HUD çerçevesi, tarama süpürmesi, nabız halkası ve
+   warp-in dekorları bilinçli olarak kaldırıldı.
    ========================================================== */
 
-/* --- 12.1 Yıldız sürüklenmesi (drift) ---
-   Mevcut body::before yıldız alanı çok yavaş kayar; derin uzay
-   hissi verir ama dikkat dağıtmaz. */
-@keyframes star-drift {
-    from { background-position:
-        0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
-    to   { background-position:
-        -210px 105px, -190px -95px, -230px 115px, 170px -85px,
-        -260px 130px, 200px 100px, -220px -110px, 180px 90px,
-        -240px 120px, -210px 105px; }
-}
-body::before {
-    animation: star-drift 480s linear infinite;
-}
+/* --- 12.1 Yıldız alanı durağandır; animasyon yok (akıcılık) --- */
 
-/* --- 12.2 Meteor / uydu izleri ---
-   .app::before — nadiren geçen ince ışık izleri. */
-@keyframes meteor {
-    0%   { transform: translate3d(-12vw, -8vh, 0) rotate(38deg);
-           opacity: 0; }
-    4%   { opacity: .55; }
-    14%  { transform: translate3d(112vw, 78vh, 0) rotate(38deg);
-           opacity: 0; }
-    100% { transform: translate3d(112vw, 78vh, 0) rotate(38deg);
-           opacity: 0; }
-}
-.app::before {
-    content: '';
+/* --- 12.1b Ay: sağ üstte yumuşak parlayan dolunay --- */
+.moon {
     position: fixed;
-    top: -10vh;
-    left: 0;
-    width: 150px;
-    height: 1.5px;
+    top: 6vh;
+    right: 7vw;
+    width: 84px;
+    height: 84px;
     z-index: -1;
-    background: linear-gradient(90deg,
-        transparent, rgba(190, 205, 255, 0.85), transparent);
-    border-radius: var(--r-full);
-    pointer-events: none;
-    animation: meteor 26s linear infinite;
-}
-.app::after {
-    content: '';
-    position: fixed;
-    top: 30vh;
-    left: 0;
-    width: 110px;
-    height: 1px;
-    z-index: -1;
-    background: linear-gradient(90deg,
-        transparent, rgba(255, 255, 255, 0.6), transparent);
-    border-radius: var(--r-full);
-    pointer-events: none;
-    animation: meteor 39s linear infinite;
-    animation-delay: 13s;
-}
-
-/* --- 12.3 HUD köşe çerçevesi ---
-   Ekranın dört köşesinde ince, köşeli hedefleme çerçevesi.
-   Tek element, dört köşe: background konumlarıyla çizilir. */
-.hud-frame {
-    position: fixed;
-    inset: 10px;
-    z-index: 40;
-    pointer-events: none;
-    opacity: .85;
-}
-.hud-frame i {
-    position: absolute;
-    width: 22px;
-    height: 22px;
-    border: 0 solid var(--accent-border);
-}
-.hud-frame i:nth-child(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; border-top-left-radius: 8px; }
-.hud-frame i:nth-child(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; border-top-right-radius: 8px; }
-.hud-frame i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; border-bottom-left-radius: 8px; }
-.hud-frame i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; border-bottom-right-radius: 8px; }
-.hud-frame::after {
-    /* köşelerdeki minik ışık noktaları */
-    content: '';
-    position: absolute;
-    inset: -1px;
+    border-radius: 50%;
     background:
-        radial-gradient(2px 2px at 0 0, var(--accent) 40%, transparent 41%),
-        radial-gradient(2px 2px at 100% 0, var(--accent) 40%, transparent 41%),
-        radial-gradient(2px 2px at 0 100%, var(--accent) 40%, transparent 41%),
-        radial-gradient(2px 2px at 100% 100%, var(--accent) 40%, transparent 41%);
-    opacity: .6;
-}
-
-/* --- 12.4 Üst çubuk HUD etiketi + tarama süpürmesi --- */
-.topbar { position: relative; overflow: hidden; }
-.topbar::before {
-    content: 'NESILAI · ORBITAL COMMAND';
-    position: absolute;
-    right: var(--s-4);
-    top: 50%;
-    transform: translateY(-50%);
-    font-family: var(--font-mono);
-    font-size: 9.5px;
-    font-weight: 600;
-    letter-spacing: .22em;
-    color: var(--accent);
-    opacity: .5;
+        radial-gradient(circle at 34% 32%,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(236, 240, 255, 0.88) 38%,
+            rgba(196, 206, 232, 0.75) 72%,
+            rgba(160, 172, 205, 0.6) 100%);
+    box-shadow:
+        0 0 24px rgba(220, 228, 255, 0.35),
+        0 0 80px rgba(190, 205, 255, 0.18);
     pointer-events: none;
 }
-@keyframes hud-sweep {
-    0%   { transform: translateX(-100%); opacity: 0; }
-    12%  { opacity: .5; }
-    60%  { opacity: .25; }
-    100% { transform: translateX(240%); opacity: 0; }
-}
-.topbar::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 34%;
-    background: linear-gradient(100deg,
-        transparent, rgba(124, 156, 255, 0.10), transparent);
-    pointer-events: none;
-    animation: hud-sweep 9s var(--ease) infinite;
-}
-
-/* --- 12.5 Composer: kuantal nabız halkası --- */
-.composer { position: relative; }
-@keyframes ring-pulse {
-    0%   { opacity: .0; transform: scale(.985); }
-    50%  { opacity: .5; }
-    100% { opacity: 0; transform: scale(1.012); }
-}
-.composer::after {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: var(--r-xl);
-    border: 1px solid var(--accent-border);
-    pointer-events: none;
-    animation: ring-pulse 4.5s var(--ease) infinite;
-}
-.composer:focus-within::after { animation-play-state: paused; opacity: 0; }
-
-/* --- 12.6 Karşılama: yükselen yıldız haritası + yazı ışıması --- */
-.welcome-hero { position: relative; }
-.welcome-hero::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    bottom: -8%;
-    width: min(560px, 92%);
-    height: 190px;
-    transform: translateX(-50%);
-    background:
-        radial-gradient(1.5px 1.5px at 18% 70%, rgba(124,156,255,.8) 50%, transparent 51%),
-        radial-gradient(1px 1px at 32% 40%, rgba(255,255,255,.7) 50%, transparent 51%),
-        radial-gradient(1.2px 1.2px at 47% 78%, rgba(210,220,255,.75) 50%, transparent 51%),
-        radial-gradient(1px 1px at 61% 30%, rgba(255,255,255,.6) 50%, transparent 51%),
-        radial-gradient(1.6px 1.6px at 74% 62%, rgba(124,156,255,.85) 50%, transparent 51%),
-        radial-gradient(1px 1px at 86% 44%, rgba(255,255,255,.65) 50%, transparent 51%),
-        radial-gradient(140px 60px at 50% 100%, rgba(124, 156, 255, 0.12), transparent 70%);
-    -webkit-mask-image: linear-gradient(to top, #000 30%, transparent 95%);
-    mask-image: linear-gradient(to top, #000 30%, transparent 95%);
-    pointer-events: none;
-}
-.welcome-title {
-    background: linear-gradient(180deg,
-        var(--text-1) 30%, rgba(236, 236, 242, 0.72));
-    -webkit-background-clip: text;
-    background-clip: text;
-    animation: title-shimmer 6s ease-in-out infinite;
-}
-@keyframes title-shimmer {
-    0%, 100% { filter: drop-shadow(0 0 6px rgba(124, 156, 255, 0.0)); }
-    50%      { filter: drop-shadow(0 0 14px rgba(124, 156, 255, 0.35)); }
-}
-
-/* --- 12.7 Mesaj warp-in girişi --- */
-@keyframes warp-in {
-    from { opacity: 0; transform: translateY(10px) scale(0.985); filter: blur(3px); }
-    to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-}
-.message-row { animation: warp-in .28s var(--ease) both; }
-
-/* --- 12.8 Suggestion kartlarında HUD ışıması --- */
-.suggestion-card {
-    position: relative;
-    overflow: hidden;
-}
-.suggestion-card::before {
+/* Ay yüzeyindeki hafif krater dokusu */
+.moon::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(120px 70px at var(--mx, 50%) var(--my, 0%),
-        rgba(124, 156, 255, 0.12), transparent 70%);
-    opacity: 0;
-    transition: opacity .2s var(--ease);
-    pointer-events: none;
+    border-radius: 50%;
+    background:
+        radial-gradient(9px 9px at 30% 62%, rgba(120, 132, 165, 0.35) 50%, transparent 51%),
+        radial-gradient(6px 6px at 58% 40%, rgba(120, 132, 165, 0.3) 50%, transparent 51%),
+        radial-gradient(4px 4px at 68% 70%, rgba(120, 132, 165, 0.28) 50%, transparent 51%),
+        radial-gradient(5px 5px at 44% 26%, rgba(120, 132, 165, 0.25) 50%, transparent 51%);
 }
-.suggestion-card:hover::before { opacity: 1; }
+[data-theme="light"] .moon { opacity: .5; }
+@media (max-width: 720px) {
+    .moon { width: 56px; height: 56px; top: 4vh; right: 6vw; }
+}
 
-/* --- 12.9 Reduced motion: dekorasyonu tamamen kapat --- */
+/* --- 12.9 Reduced motion: dekorasyon kapatma --- */
 @media (prefers-reduced-motion: reduce) {
     body::before { animation: none; }
-    .app::before, .app::after,
-    .topbar::after,
-    .composer::after { animation: none; opacity: 0; }
-    .welcome-title { animation: none; }
-    .message-row { animation: none; }
 }
+
+/* ==========================================================
+   12.10 AKICILIK PAKETİ — takılma kaynaklarını kes
+   ========================================================== */
+/* Uzun sohbet listesi: render ağacını izole et, scroll sırasında
+   tüm sayfanın yeniden düzenlenmesini engelle. */
+#chat-messages {
+    contain: layout style;
+    overscroll-behavior: contain;
+}
+/* Modal ve mesaj balonlarında blur pahalıdır; chat akışındaki
+   backdrop-filter'ı hafiflet. */
 @media (max-width: 720px) {
-    .hud-frame { display: none; }
-    .topbar::before { display: none; }
+    .message-bubble,
+    .thinking-bubble { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 }
 
 /* ==========================================================
@@ -2280,7 +2120,7 @@ html[data-device="phone"] .sidebar {
     width: min(86vw, 300px);
 }
 html[data-device="phone"] .sidebar.open { transform: none; }
-html[data-device="phone"] .hud-frame { display: none; }
+/* hud-frame kaldırıldı */
 html[data-device="phone"] .topbar::before { display: none; }
 html[data-device="phone"] .composer-hint { display: none; }
 html[data-device="phone"] .messages { padding: var(--s-3) var(--s-2) var(--s-2); }
@@ -2311,3 +2151,156 @@ html[data-device="phone"] .modal-card {
 }
 html[data-device="phone"] .nav-item { height: 46px; }
 
+
+/* ==========================================================
+   14. KOMUT ROZETLERİ + İSTATİSTİK + PROJE KARTI + BELLEK UI
+   ========================================================== */
+
+/* --- 14.1 Slash komut rozetleri: yanıtın üstünde, italik, %50 şeffaf ---
+   ULTRATHINK: mavi-sarı · REPORT: mor · ULTRACODE: kırmızı-siyah */
+.command-badge {
+    font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace);
+    font-size: 10.5px;
+    font-style: italic;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    margin-bottom: 6px;
+    width: fit-content;
+    border-radius: var(--r-full, 999px);
+    background: linear-gradient(100deg, #0a1430 0%, #2f6bff 48%, #ffd60a 100%);
+    color: rgba(230, 238, 255, 0.5);
+    border: 1px solid rgba(47, 107, 255, 0.25);
+    pointer-events: none;
+    user-select: none;
+}
+.command-badge.cmd-report { background: linear-gradient(100deg, #1a1030 0%, #7c4dff 55%, #12081f 100%); color: rgba(220, 208, 255, 0.5); border-color: rgba(124, 77, 255, 0.25); }
+.command-badge.cmd-ultracode { background: linear-gradient(100deg, #2b0a0e 0%, #e11d2e 55%, #180404 100%); color: rgba(255, 214, 214, 0.5); border-color: rgba(225, 29, 46, 0.25); }
+
+/* --- 14.2 Yanıt istatistik çubuğu: "Thinked: 1M 2S - Token: 1k - 23:58" ---
+   Komut rozetleriyle aynı gösterge dili: italik + %50 şeffaf */
+.msg-stats {
+    margin-top: 6px;
+    font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace);
+    font-size: 10.5px;
+    font-style: italic;
+    letter-spacing: 0.04em;
+    color: var(--text-3, #8a8fa3);
+    opacity: 0.5;
+    user-select: none;
+}
+
+/* --- 14.3 Web araştırma çipi --- */
+.web-chip { cursor: pointer; position: relative; }
+.web-chip .web-chip-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text-3, #8a8fa3);
+    transition: background 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    flex: none;
+}
+.web-chip:has(input:checked) { border-color: rgba(124, 156, 255, 0.55); background: rgba(124, 156, 255, 0.10); }
+.web-chip:has(input:checked) .web-chip-dot {
+    background: #7c9cff;
+    box-shadow: 0 0 8px rgba(124, 156, 255, 0.9);
+}
+.slash-help {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 30px;
+    border-radius: var(--r-md, 10px);
+    border: 1px dashed var(--glass-border, rgba(255,255,255,0.12));
+    color: var(--text-3, #8a8fa3);
+    font-family: var(--mono, monospace); font-size: 13px;
+    cursor: help; user-select: none; flex: none;
+}
+
+/* --- 14.4 Proje dosyaları kartı --- */
+.project-files-card {
+    margin-top: 10px;
+    border: 1px solid var(--glass-border, rgba(255,255,255,0.10));
+    border-radius: var(--r-lg, 14px);
+    background: var(--surface-2, rgba(255,255,255,0.04));
+    overflow: hidden;
+}
+.project-files-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    font-size: 12.5px; color: var(--text-2, #c8cbe0);
+    background: rgba(124, 156, 255, 0.06);
+    border-bottom: 1px solid var(--glass-border, rgba(255,255,255,0.08));
+}
+.pfc-icon { font-size: 15px; }
+.project-files-tree { max-height: 260px; overflow-y: auto; }
+.project-file-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px;
+    font-family: var(--mono, monospace);
+    font-size: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.pfile-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-1, #ececf2); }
+.pfile-size { color: var(--text-3, #8a8fa3); font-size: 10.5px; flex: none; }
+.pfile-dl {
+    flex: none; width: 26px; height: 26px;
+    border-radius: 8px; border: 1px solid var(--glass-border, rgba(255,255,255,0.12));
+    background: transparent; color: var(--text-2, #c8cbe0);
+    cursor: pointer; font-size: 12px;
+}
+.pfile-dl:hover { background: rgba(124, 156, 255, 0.12); border-color: rgba(124, 156, 255, 0.4); }
+.project-files-actions { padding: 10px 12px; display: flex; }
+.project-files-actions .btn-action-pill.primary {
+    background: linear-gradient(100deg, #e11d2e, #b31226);
+    border-color: transparent; color: #fff;
+}
+
+/* --- 14.5 Bellek yönetimi (Ayarlar → Bellek) --- */
+.memory-list { display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; }
+.memory-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    border: 1px solid var(--glass-border, rgba(255,255,255,0.08));
+    border-radius: var(--r-md, 10px);
+    background: var(--surface-2, rgba(255,255,255,0.03));
+}
+.memory-cat {
+    flex: none; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 999px;
+    background: rgba(124, 156, 255, 0.12); color: #a9baff;
+}
+.memory-text { flex: 1; min-width: 0; font-size: 12.5px; color: var(--text-1, #ececf2); }
+.memory-del {
+    flex: none; width: 22px; height: 22px;
+    border-radius: 6px; border: none; background: transparent;
+    color: var(--text-3, #8a8fa3); cursor: pointer; font-size: 11px;
+}
+.memory-del:hover { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+.memory-empty { font-size: 12px; color: var(--text-3, #8a8fa3); padding: 8px 2px; }
+
+/* Telefon modunda yeni öğeler de dokunma dostu */
+html[data-device="phone"] .pfile-dl { width: 32px; height: 32px; }
+html[data-device="phone"] .web-chip,
+html[data-device="phone"] .composer-chip { height: 40px; }
+
+/* --- 14.6 Slash komut menüsü ("/" tetiklemeli) --- */
+.slash-menu { z-index: 60; }
+.slash-option { align-items: center; }
+.slash-option-icon {
+    flex: none;
+    width: 30px; height: 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    border-radius: 9px;
+    background: rgba(124, 156, 255, 0.10);
+    border: 1px solid rgba(124, 156, 255, 0.18);
+}
+.slash-menu-none {
+    padding: 14px;
+    font-size: 12px;
+    color: var(--text-3, #8a8fa3);
+    text-align: center;
+}
+/* Komut menüsü konumu: diğer menülerle aynı, girdinin üstünde */
+.composer-topbar .slash-menu {
+    bottom: calc(100% + 8px);
+    left: 0;
+}

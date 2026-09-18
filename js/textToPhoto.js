@@ -76,7 +76,63 @@
         return clean || text;
     }
 
-    // Pollinations.ai görsel URL'si üretir
+    // Görsel sağlayıcı zinciri: hepsi anahtarsız. Sıradaki, önceki hata verirse
+    // (5xx / kuyruk dolu / zaman aşımı) devreye girer. Modeller canlı test edildi.
+    const IMAGE_PROVIDERS = [
+        { name: 'Pollinations', build: (p, w, h, seed) => `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=${w}&height=${h}&seed=${seed}&nologo=true&enhance=true` },
+        { name: 'Pollinations-Flux', build: (p, w, h, seed) => `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=${w}&height=${h}&seed=${seed}&nologo=true&model=flux` },
+        { name: 'Pollinations-Turbo', build: (p, w, h, seed) => `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=${w}&height=${h}&seed=${seed}&nologo=true&model=turbo` }
+    ];
+
+    const IMAGE_FALLBACK_SEED = () => Math.floor(Math.random() * 1000000);
+
+    // Tek sağlayıcıya tek deneme: min 12 saniye görsel bekler
+    function tryImageProvider(providerDef, prompt, width, height, seed, signal) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            const timer = setTimeout(() => {
+                img.src = '';
+                reject(new Error(providerDef.name + ' zaman aşımı'));
+            }, 45000);
+            if (signal) {
+                signal.addEventListener('abort', () => {
+                    clearTimeout(timer);
+                    img.src = '';
+                    reject(new Error('iptal'));
+                }, { once: true });
+            }
+            img.onload = () => { clearTimeout(timer); resolve({ url: img.src, provider: providerDef.name }); };
+            img.onerror = () => { clearTimeout(timer); reject(new Error(providerDef.name + ' başarısız')); };
+            img.src = providerDef.build(prompt, width, height, seed);
+        });
+    }
+
+    /**
+     * Anahtarsız görsel üretimi — sağlayıcı zincirli.
+     * Döner: { url, provider, attempts: [denenen sağlayıcılar] }
+     * UI göstermek istemezse URL'yi doğrudan da kullanabilirsin.
+     */
+    async function generateImageWithFallback(prompt, width = 1024, height = 768, opts = {}) {
+        const attempts = [];
+        for (const def of IMAGE_PROVIDERS) {
+            const seed = IMAGE_FALLBACK_SEED();
+            const url = def.build(prompt, width, height, seed);
+            attempts.push({ name: def.name, url });
+            try {
+                const ok = await tryImageProvider(def, prompt, width, height, seed, opts.signal);
+                return { url: ok.url, provider: ok.provider, attempts };
+            } catch (e) {
+                if (opts.signal && opts.signal.aborted) throw e;
+                // sonraki sağlayıcıyı dene
+            }
+        }
+        const err = new Error('Tüm görsel sağlayıcıları şu an yanıt vermedi. Lütfen tekrar dene.');
+        err.attempts = attempts;
+        throw err;
+    }
+
+    // Pollinations.ai görsel URL'si üretir (geriye dönük uyumluluk — ilk sağlayıcı)
     function generateImageUrl(prompt, width = 1024, height = 768) {
         const seed = Math.floor(Math.random() * 1000000);
         const encoded = encodeURIComponent(prompt);
@@ -259,6 +315,7 @@
         isImagePrompt,
         extractImagePrompt,
         generateImageUrl,
+        generateImageWithFallback,
         appendImageCard,
         translatePrompt
     };

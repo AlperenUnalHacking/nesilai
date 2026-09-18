@@ -272,6 +272,7 @@
     function toggleModeMenu() {
         if (!modeMenu) return;
         if (modelMenu && !modelMenu.classList.contains('hidden')) hideModelPicker();
+        hideSlashMenu();           // ← komut menüsü de kapatılsın
         if (modeMenu.classList.contains('hidden')) {
             buildModeMenu();
             modeMenu.classList.remove('hidden');
@@ -302,6 +303,11 @@
     const settingVoiceSpeed = document.getElementById('setting-voice-speed');
     const settingVoicePitch = document.getElementById('setting-voice-pitch');
     const settingAutoSpeak = document.getElementById('setting-auto-speak');
+    const webSearchToggle = document.getElementById('web-search-toggle');
+    const settingMemoryEnabled = document.getElementById('setting-memory-enabled');
+    const memoryListEl = document.getElementById('memory-list');
+    const memoryCountNote = document.getElementById('memory-count-note');
+    const memoryClearBtn = document.getElementById('memory-clear-btn');
     const clearAllChatsBtn = document.getElementById('clear-all-chats-btn');
 
     // Ayarlar Modalı — Yapay Zeka Sağlayıcı
@@ -1236,6 +1242,14 @@
             const contentWrapper = document.createElement('div');
             contentWrapper.className = 'message-content-wrapper';
 
+            // Slash komut rozeti: yarı saydam italik, yanıtın üstünde
+            if (msg.command && msg.commandLabel) {
+                const badge = document.createElement('div');
+                badge.className = 'command-badge cmd-' + msg.command;
+                badge.textContent = msg.commandLabel;
+                contentWrapper.appendChild(badge);
+            }
+
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';                if (msg.isMediaGen) {
                     renderMediaIntoBubble(bubble, msg);
@@ -1249,6 +1263,10 @@
                 }
             } else {
                 bubble.innerHTML = renderMarkdown(msg.text);
+                // Proje dosyası üretimi: yanıt içinde dosya blokları varsa kart göster
+                if (window.NesilProjectFiles && !msg.streaming) {
+                    try { window.NesilProjectFiles.renderProjectCard(contentWrapper, msg); } catch (e) { /* kart isteğe bağlı */ }
+                }
             }
 
             contentWrapper.appendChild(bubble);
@@ -1309,11 +1327,12 @@
             copyBtn.title = 'Metni Kopyala';
             copyBtn.addEventListener('click', () => {
                 copyTextToClipboard(msg.text);
-            });
-
-            actions.appendChild(speakBtn);
+            });            actions.appendChild(speakBtn);
             actions.appendChild(copyBtn);
             contentWrapper.appendChild(actions);
+
+            // Kalıcı istatistik çubuğu (eski mesajlarda da görünür)
+            if (msg.stats) updateStatsBar(row, msg.stats, msg);
 
             row.appendChild(contentWrapper);
         }
@@ -1427,13 +1446,16 @@
 
         if (!text && !attachment) return;
 
+        // Slash komutları: /ultrathink /report /ultracode → sohbet rotasına zorlar
+        const cmdInfo = parseSlashCommand(text);
+
         // Üretim modu rotası: mod neyse mesaj o türe gider — kelime tetiklemesi yok
-        const isImage = currentGenMode === 'image';
+        const isImage = !cmdInfo && currentGenMode === 'image';
 
         // KOTA KONTROLÜ
         if (isImage) {
             if (!checkQuota('images')) return;
-        } else if (currentGenMode === 'music' || currentGenMode === 'video') {
+        } else if (!cmdInfo && (currentGenMode === 'music' || currentGenMode === 'video')) {
             if (!checkQuota(currentGenMode === 'music' ? 'music' : 'video')) return;
         } else {
             if (!checkQuota('chats')) return;
@@ -1444,6 +1466,7 @@
         clearAttachment();
         autoResizeTextarea();
         sendBtn.disabled = true;
+        hideSlashMenu();   // gönderim sonrası komut menüsü kapansın
 
         const activeChat = getCurrentChat();
         if (!activeChat) return;
@@ -1460,6 +1483,7 @@
             id: 'msg_' + Date.now(),
             role: 'user',
             text: text,
+            command: cmdInfo ? cmdInfo.cmd : null,
             attachmentDataUrl: attachment ? attachment.dataUrl : null,
             extractedText: attachment ? attachment.extractedText : null,
             timestamp: Date.now()
@@ -1468,6 +1492,14 @@
         activeChat.messages.push(userMsg);
         appendMessageToDom(userMsg);
         saveChatsToStorage();
+
+        // Gönderme bildirimi (sessiz, kısa)
+        if (window.NesilSFX) window.NesilSFX.sent();
+
+        // Bellek çıkarımı: kalıcı bilgiler (ad, proje, tercih…) sessizce kaydedilir
+        if (window.NesilMemory) {
+            try { window.NesilMemory.extractAndStore(text); } catch (e) { /* sessiz */ }
+        }
 
         // 2. Üretim modları (sohbet hariç hepsi burada rotalanır)
         if (isImage) {
@@ -1500,7 +1532,25 @@
                 translateRow = null;
             }
 
-            const imageUrl = window.NesilT2P ? window.NesilT2P.generateImageUrl(buildMasterPrompt(visualPrompt)) : '';
+            const masterP = buildMasterPrompt(visualPrompt);
+            let imageUrl = '';
+            let imageProviderNote = '';
+            if (window.NesilT2P) {
+                if (typeof window.NesilT2P.generateImageWithFallback === 'function') {
+                    // Sağlayıcı zinciri: Pollinations → Flux → Turbo; biri düşerse sıradaki
+                    setThinkingLabel('🎨 Görsel oluşturuluyor');
+                    try {
+                        const gen = await window.NesilT2P.generateImageWithFallback(masterP, 1024, 768);
+                        imageUrl = gen.url;
+                        imageProviderNote = gen.provider + ' · ' + gen.attempts.map(a => a.name).join(' → ');
+                    } catch (e) {
+                        // Tüm sağlayıcılar düşerse kart yine de üretilsin (tarayıcı yeniden dener)
+                        imageUrl = window.NesilT2P.generateImageUrl(masterP);
+                    }
+                } else {
+                    imageUrl = window.NesilT2P.generateImageUrl(masterP);
+                }
+            }
 
             const aiMsg = {
                 id: 'msg_' + (Date.now() + 1),
@@ -1509,6 +1559,7 @@
                 isImageGen: true,
                 imagePrompt: visualPrompt,
                 imageUrl: imageUrl,
+                imageProvider: imageProviderNote || null,
                 timestamp: Date.now()
             };
 
@@ -1536,6 +1587,14 @@
         // 3. Normal Sohbet İşlemi (Kota Artır)
         incrementQuota('chats');
 
+        // Komut rozetleri: yanıtın üstünde yarı saydam italik gösterilir
+        const commandMeta = {
+            ultrathink: { label: 'ULTRATHINK', tip: 'Derin düşünme modu' },
+            report: { label: 'REPORT', tip: 'Derin araştırma raporu' },
+            ultracode: { label: 'ULTRACODE', tip: 'Derin araştırma + kodlama' }
+        };
+        const cmdMeta = cmdInfo ? commandMeta[cmdInfo.cmd] : null;
+
         // İlk parça gelene kadar gösterilen "yanıt hazırlanıyor" satırı
         const loadingRow = document.createElement('div');
         loadingRow.className = 'message-row assistant thinking';
@@ -1559,6 +1618,10 @@
             timestamp: Date.now(),
             streaming: true
         };
+        if (cmdMeta) {
+            aiMsg.command = cmdInfo.cmd;
+            aiMsg.commandLabel = cmdMeta.label;
+        }
 
         let aiRow = null;
         let bubble = null;
@@ -1582,7 +1645,8 @@
             bubble = aiRow.querySelector('.message-bubble');
         };
 
-        // Sunucudan gelen her parça
+        // Sunucudan gelen her parça — kaydırma da kare başına bir kez (akışkanlık)
+        let scrollQueued = false;
         const onDelta = (chunk, fullText) => {
             aiMsg.text = fullText;
             startAssistantMessage();
@@ -1590,11 +1654,50 @@
                 renderQueued = true;
                 requestAnimationFrame(paint);
             }
-            scrollToBottom();
+            if (!scrollQueued) {
+                scrollQueued = true;
+                requestAnimationFrame(() => { scrollQueued = false; scrollToBottom(); });
+            }
         };
 
+        const T0 = Date.now();
+
         try {
-            await generateAiResponse(text, attachment, activeChat.messages, onDelta);
+            let researchBlock = '';
+            // ARAŞTIRMA: /report, /ultracode veya arama anahtarı açıkken internet devreye girer
+            const wantResearch = (cmdInfo && (cmdInfo.cmd === 'report' || cmdInfo.cmd === 'ultracode')) ||
+                (!cmdInfo && webSearchToggle && webSearchToggle.checked);
+            if (wantResearch && window.NesilResearch) {
+                setThinkingLabel('🌐 İnternette araştırılıyor');
+                try {
+                    const results = await window.NesilResearch.research(cmdInfo ? (cmdInfo.body || text) : text, {
+                        deep: !!(cmdInfo && (cmdInfo.cmd === 'report' || cmdInfo.cmd === 'ultracode')),
+                        lang: (navigator.language || 'tr').slice(0, 2)
+                    });
+                    researchBlock = '\n\nAŞAĞIDAKİ GÜNCEL WEB ARAŞTIRMA SONUÇLARINI KULLAN (bu sonuçlara dayanarak yanıt ver; kendi bilgi tarihin güncel olmayabilir):\n\n' +
+                        window.NesilResearch.formatResultsForPrompt(results);
+                } catch (e) {
+                    researchBlock = '\n\n(Not: internet araştırması şu an kullanılamadı; kendi bilgilerinle yanıt ver.)';
+                }
+            }
+
+            // ULTRACODE: kod yazmadan önce kısa mimari plan çıkar
+            let planBlock = '';
+            if (cmdInfo && cmdInfo.cmd === 'ultracode') {
+                setThinkingLabel('🧠 Mimari plan çıkarılıyor');
+                try {
+                    const plan = await AI.ask(
+                        'Şu isteği gerçekleştirmek için 3-6 maddelik kısa bir uygulama planı yaz. Sadece madde listesi ver, kod yazma. Kullanıcının dilinde yaz:\n\n' + (cmdInfo.body || text),
+                        { temperature: 0.4, timeoutMs: 45000 }
+                    );
+                    if (plan && plan.length > 20) {
+                        planBlock = '\n\nUYGULAMA PLANIN (bu plana sadık kalarak kodla):\n' + plan;
+                    }
+                } catch (e) { /* plan üretilemedi — doğrudan kodla */ }
+            }
+
+            setThinkingLabel(cmdMeta ? cmdMeta.label + ' çalışıyor' : 'Yanıt yazılıyor');
+            await generateAiResponse(text, attachment, activeChat.messages, onDelta, researchBlock + planBlock);
 
             // Akış desteklenmediyse cevap tek parça gelmiş olabilir
             startAssistantMessage();
@@ -1606,7 +1709,15 @@
                 if (window.Prism) Prism.highlightAllUnder(aiRow);
             }
 
+            // Yanıt istatistikleri: düşünme süresi + token + saat
+            aiMsg.stats = buildStats(T0);
+            if (aiRow) updateStatsBar(aiRow, aiMsg.stats, aiMsg);
+
             saveChatsToStorage();
+            // iMessage tarzı yanıt bildirimi (sesli modda çalınmaz)
+            if (window.NesilSFX && localStorage.getItem('nesilai_auto_speak') !== 'true') {
+                window.NesilSFX.reply();
+            }
             checkAutoSpeak(aiMsg.text);
         } catch (error) {
             loadingRow.remove();
@@ -1631,8 +1742,44 @@
 
             const needsSetup = !AI.isReady().ok || error.kind === 'auth' || error.kind === 'quota';
             showToast(needsSetup ? 'Yapay zeka kaynağı yeniden ayarlanmalı' : 'Yapay zekadan yanıt alınamadı', 'error');
+            if (window.NesilSFX) window.NesilSFX.error();
             if (needsSetup) openSettingsModal();
         }
+    }
+
+    // ========================================================
+    // Yanıt İstatistikleri — "Thinked: 1M 2S - Token: 1k - 23:58"
+    // ========================================================
+    function buildStats(t0) {
+        const ms = Date.now() - t0;
+        const totalSec = Math.round(ms / 1000);
+        const min = Math.floor(totalSec / 60);
+        const sec = totalSec % 60;
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        return { thinked: min + 'M ' + sec + 'S', hour: hh + ':' + mm, ms: ms };
+    }
+
+    function formatTokens(aiMsg) {
+        // Karakter sayısından yaklaşık token tahmini (TR metin için ~3.2 kar/token)
+        const n = Math.max(1, Math.round((aiMsg.text || '').length / 3.2));
+        if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k';
+        return String(n);
+    }
+
+    function updateStatsBar(aiRow, stats, aiMsg) {
+        if (!aiRow || !stats) return;
+        let bar = aiRow.querySelector('.msg-stats');
+        if (!bar) {
+            const wrap = aiRow.querySelector('.message-content-wrapper');
+            if (!wrap) return;
+            bar = document.createElement('div');
+            bar.className = 'msg-stats';
+            wrap.appendChild(bar);
+        }
+        const tokenText = aiMsg ? formatTokens(aiMsg) : '';
+        bar.textContent = 'Thinked: ' + stats.thinked + ' - Token: ' + tokenText + ' - ' + stats.hour;
     }
 
     function checkAutoSpeak(text) {
@@ -1653,11 +1800,28 @@
     // ========================================================
     const HISTORY_LIMIT = 20;
 
+    // ========================================================
+    // Slash Komutları — /ultrathink /report /ultracode
+    // ========================================================
+    function parseSlashCommand(rawText) {
+        const m = String(rawText || '').match(/^\s*\/(ultrathink|report|ultracode)\b\s*([\s\S]*)$/i);
+        if (!m) return null;
+        return { cmd: m[1].toLowerCase(), body: m[2].trim(), original: rawText };
+    }
+
+    // "Yanıt hazırlanıyor" göstergesinin etiketini değiştirir (en son eklenen
+    // düşünme satırını bulur — hem sohbet bekleyişi hem üretim göstergeleri)
+    function setThinkingLabel(label) {
+        const rows = chatMessages.querySelectorAll('.message-row.thinking .thinking-label');
+        const el = rows[rows.length - 1];
+        if (el && label) el.textContent = label;
+    }
+
     // Sohbet bağlamını sağlayıcı formatına çevirir
-    function buildConversation(userPrompt, attachment, historyMessages) {
-        // Görsel üretim mesajları sohbet bağlamına girmez
+    function buildConversation(userPrompt, attachment, historyMessages, extraContext) {
+        // Görsel üretim mesajları ve hata mesajları sohbet bağlamına girmez
         const history = (historyMessages || [])
-            .filter(msg => !msg.isImageGen && typeof msg.text === 'string' && msg.text.trim())
+            .filter(msg => !msg.isImageGen && !msg.isError && typeof msg.text === 'string' && msg.text.trim())
             .slice(-HISTORY_LIMIT);
 
         const messages = history.map(msg => ({
@@ -1670,6 +1834,20 @@
         const isAlreadyLast = last && last.role === 'user' && last.content.trim() === userPrompt.trim();
         if (!isAlreadyLast) {
             messages.push({ role: 'user', content: userPrompt });
+        }
+
+        // Kalıcı bellek + araştırma/plan blokları son kullanıcı mesajına eklenir
+        const target = messages[messages.length - 1];
+        if (target && target.role === 'user') {
+            let injected = '';
+            if (window.NesilMemory) {
+                try {
+                    const mem = window.NesilMemory.buildMemoryContext();
+                    if (mem) injected += '\n\n' + mem;
+                } catch (e) { /* bellek kapalı */ }
+            }
+            if (extraContext) injected += extraContext;
+            if (injected) target.content += '\n\n' + injected;
         }
 
         // Ekli görsel: OCR metni her sağlayıcıda, görselin kendisi vision destekliyorsa gönderilir
@@ -1690,8 +1868,8 @@
         return messages;
     }
 
-    async function generateAiResponse(userPrompt, attachment, historyMessages, onDelta) {
-        const messages = buildConversation(userPrompt, attachment, historyMessages);
+    async function generateAiResponse(userPrompt, attachment, historyMessages, onDelta, extraContext) {
+        const messages = buildConversation(userPrompt, attachment, historyMessages, extraContext || '');
         const result = await AI.chat({
             messages: messages,
             onDelta: onDelta
@@ -1952,6 +2130,19 @@
     function loadSettings() {
         const autoSpeak = localStorage.getItem('nesilai_auto_speak') === 'true';
         if (settingAutoSpeak) settingAutoSpeak.checked = autoSpeak;
+        if (webSearchToggle) webSearchToggle.checked = localStorage.getItem('nesilai_web_search') === 'true';
+
+        // Bellek bölümü: açma/kapama + kayıt listesi
+        if (settingMemoryEnabled && window.NesilMemory) {
+            settingMemoryEnabled.checked = window.NesilMemory.isEnabled();
+            renderMemoryList();
+        }
+
+        // Bildirim sesleri
+        const settingSfx = document.getElementById('setting-sfx-enabled');
+        if (settingSfx && window.NesilSFX) {
+            settingSfx.checked = window.NesilSFX.enabled();
+        }
 
         // Sağlayıcı listesini doldur
         if (aiProviderSelect) {
@@ -2162,6 +2353,8 @@
     function toggleModelPicker() {
         if (!modelMenu) return;
         if (modelMenu.classList.contains('hidden')) {
+            hideModeMenu();          // ← diğer menü açıksa kapat
+            hideSlashMenu();         // ← komut menüsü de kapatılsın
             buildModelMenu();
             filterModelMenu(modelPickerSearch ? modelPickerSearch.value : '');
             modelMenu.classList.remove('hidden');
@@ -2313,6 +2506,67 @@
         if (modelMenu) modelMenu.classList.add('hidden');
     }
 
+    // ========================================================
+    // Slash Komut Menüsü — "/" yazınca otomatik açılır
+    // ========================================================
+    const slashMenu = document.getElementById('slash-menu');
+    const slashMenuList = document.getElementById('slash-menu-list');
+
+    const SLASH_COMMANDS = [
+        { cmd: '/ultrathink', name: 'ULTRATHINK', desc: 'Derin düşünür, detaylı araştırıp yanıtlar', icon: '🧠' },
+        { cmd: '/report', name: 'REPORT', desc: 'İnternette derin araştırma yapıp rapor hazırlar', icon: '📊' },
+        { cmd: '/ultracode', name: 'ULTRACODE', desc: 'Araştırır, plan çıkarır, kod yazar', icon: '⚡' }
+    ];
+
+    function buildSlashMenu(filter) {
+        if (!slashMenuList) return;
+        const f = String(filter || '').toLowerCase();
+        slashMenuList.innerHTML = '';
+        const items = SLASH_COMMANDS.filter(c => !f || c.name.toLowerCase().includes(f) || c.desc.toLowerCase().includes(f));
+        if (!items.length) {
+            const none = document.createElement('p');
+            none.className = 'slash-menu-none';
+            none.textContent = 'Bu isimde komut yok — yazmaya devam et, normal mesaj olarak gönderilir.';
+            slashMenuList.appendChild(none);
+            return;
+        }
+        items.forEach(c => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'model-option slash-option';
+            item.innerHTML =
+                '<span class="slash-option-icon">' + c.icon + '</span>' +
+                '<span class="mode-option-texts"><span class="mode-option-name">' + c.name + '</span>' +
+                '<span class="mode-option-desc">' + c.desc + '</span></span>';
+            item.addEventListener('click', () => {
+                userInput.value = c.cmd + ' ';
+                userInput.focus();
+                hideSlashMenu();
+                autoResizeTextarea();
+                sendBtn.disabled = !userInput.value.trim() && !activeAttachment;
+            });
+            slashMenuList.appendChild(item);
+        });
+    }
+
+    function showSlashMenu() {
+        if (!slashMenu) return;
+        hideModelPicker();
+        hideModeMenu();
+        const filter = (userInput.value || '').replace(/^\s*\//, '').trim();
+        buildSlashMenu(filter);
+        slashMenu.classList.remove('hidden');
+    }
+
+    function hideSlashMenu() {
+        if (slashMenu) slashMenu.classList.add('hidden');
+    }
+
+    /** Girdi "/" ile mi başlıyor ve menü gösterilmeli mi? */
+    function shouldShowSlashMenu(value) {
+        return /^\s*\/\S*$/.test(value || '');
+    }
+
     function openSettingsModal() {
         loadSettings();
         settingsModal.classList.remove('hidden');
@@ -2321,11 +2575,63 @@
 
     saveSettingsBtn.addEventListener('click', () => {
         localStorage.setItem('nesilai_auto_speak', settingAutoSpeak.checked ? 'true' : 'false');
+        localStorage.setItem('nesilai_web_search', webSearchToggle && webSearchToggle.checked ? 'true' : 'false');
+        if (settingMemoryEnabled && window.NesilMemory) {
+            window.NesilMemory.setEnabled(settingMemoryEnabled.checked);
+        }
+        const settingSfx = document.getElementById('setting-sfx-enabled');
+        if (settingSfx && window.NesilSFX) {
+            window.NesilSFX.setEnabled(settingSfx.checked);
+        }
         AI.saveSettings(collectSettingsFromForm());
         updateAiStatusChip();
         settingsModal.classList.add('hidden');
         showToast('Ayarlar kaydedildi', 'success');
     });
+
+    // ========================================================
+    // Bellek Yönetimi UI — Ayarlar → Bellek
+    // ========================================================
+    function renderMemoryList() {
+        if (!memoryListEl || !window.NesilMemory) return;
+        const list = window.NesilMemory.getAll();
+        memoryListEl.innerHTML = '';
+
+        if (!list.length) {
+            memoryListEl.innerHTML = '<p class="memory-empty">Henüz kayıtlı bilgi yok. Sohbet ederken "adım Alperen" gibi kalıcı bilgiler yazarsan burada görünür.</p>';
+        } else {
+            list.forEach(m => {
+                const row = document.createElement('div');
+                row.className = 'memory-row';
+                const cat = document.createElement('span');
+                cat.className = 'memory-cat';
+                cat.textContent = m.category;
+                const txt = document.createElement('span');
+                txt.className = 'memory-text';
+                txt.textContent = m.content;
+                const del = document.createElement('button');
+                del.className = 'memory-del';
+                del.title = 'Sil';
+                del.textContent = '✕';
+                del.addEventListener('click', () => {
+                    window.NesilMemory.remove(m.id);
+                    renderMemoryList();
+                });
+                row.appendChild(cat); row.appendChild(txt); row.appendChild(del);
+                memoryListEl.appendChild(row);
+            });
+        }
+        if (memoryCountNote) memoryCountNote.textContent = list.length + ' kayıtlı bilgi · cihazında saklanıyor';
+    }
+
+    if (memoryClearBtn) {
+        memoryClearBtn.addEventListener('click', () => {
+            if (!confirm('Kalıcı bellekteki tüm bilgiler silinecek. Emin misin?')) return;
+            if (window.NesilMemory) window.NesilMemory.clear();
+            renderMemoryList();
+            showToast('Bellek temizlendi');
+        });
+    }
 
     if (aiProviderSelect) {
         aiProviderSelect.addEventListener('change', syncProviderFields);
@@ -2461,7 +2767,21 @@
             if (modelMenu && !modelMenu.classList.contains('hidden') && modelPickerWrap && !modelPickerWrap.contains(e.target)) {
                 hideModelPicker();
             }
+            // Komut menüsü: composer alanı dışına tıklanınca kapanır
+            if (slashMenu && !slashMenu.classList.contains('hidden') &&
+                !slashMenu.contains(e.target) && e.target !== userInput &&
+                !userInput.contains(e.target)) {
+                hideSlashMenu();
+            }
         });
+
+        // Web araştırma çipi: tıklanınca anında aç/kapa (ayar beklemeden)
+        if (webSearchToggle) {
+            webSearchToggle.addEventListener('change', () => {
+                localStorage.setItem('nesilai_web_search', webSearchToggle.checked ? 'true' : 'false');
+                showToast(webSearchToggle.checked ? '🌐 İnternet araştırması açık' : 'İnternet araştırması kapalı');
+            });
+        }
 
         // Cihaz modu (telefon / masaüstü / otomatik)
         const deviceModeSelect = document.getElementById('device-mode-select');
@@ -2512,9 +2832,19 @@
         userInput.addEventListener('input', () => {
             autoResizeTextarea();
             sendBtn.disabled = !userInput.value.trim() && !activeAttachment;
+            // "/" ile başlayan girdide komut menüsünü otomatik aç/kapat
+            if (shouldShowSlashMenu(userInput.value)) {
+                showSlashMenu();
+            } else {
+                hideSlashMenu();
+            }
         });
 
         userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && slashMenu && !slashMenu.classList.contains('hidden')) {
+                hideSlashMenu();
+                return;
+            }
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 if (!sendBtn.disabled) {
@@ -2655,56 +2985,11 @@
     AI.showToast = showToast;
     AI.copyToClipboard = copyTextToClipboard;
 
-    // ========================================================
-    // Uzay Teknolojisi HUD — İnce Etkileşimler
-    // (saf kozmetik; yüklenemezse arayüz hiç etkilenmez)
-    // ========================================================
-    function initSpaceHud() {
-        try {
-            const reducedMotion = window.matchMedia &&
-                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            if (reducedMotion) return;
-
-            // 1) Öneri kartlarında fare takipli yıldız ışıması
-            document.querySelectorAll('.suggestion-card').forEach(card => {
-                card.addEventListener('pointermove', (e) => {
-                    const rect = card.getBoundingClientRect();
-                    card.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width * 100).toFixed(1) + '%');
-                    card.style.setProperty('--my', ((e.clientY - rect.top) / rect.height * 100).toFixed(1) + '%');
-                });
-            });
-
-            // 2) Yıldız alanına çok hafif paralaks (pointer'lı cihazlar)
-            const finePointer = window.matchMedia &&
-                window.matchMedia('(pointer: fine)').matches;
-            if (finePointer && !('ontouchstart' in window)) {
-                let rafPending = false, lastX = 0, lastY = 0;
-                document.addEventListener('pointermove', (e) => {
-                    lastX = e.clientX / window.innerWidth - 0.5;
-                    lastY = e.clientY / window.innerHeight - 0.5;
-                    if (rafPending) return;
-                    rafPending = true;
-                    requestAnimationFrame(() => {
-                        rafPending = false;
-                        const stars = document.body;
-                        if (stars) {
-                            const px = (lastX * 14).toFixed(1);
-                            const py = (lastY * 14).toFixed(1);
-                            stars.style.backgroundPosition =
-                                `${px}px ${py}px, ${-px} ${py}px, ${px} ${-py}px, ${-px} ${-py}px, ${px}px ${py}px, ${-px} ${py}px, ${px} ${-py}px, ${-px} ${-py}px, ${px}px ${py}px, ${-px} ${py}px`;
-                        }
-                    });
-                }, { passive: true });
-            }
-        } catch (e) { /* kozmetik — asla kırılmaz */ }
-    }
-
     // Başlat!
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => { initApp(); initSpaceHud(); });
+        document.addEventListener('DOMContentLoaded', initApp);
     } else {
         initApp();
-        initSpaceHud();
     }
 
 })();

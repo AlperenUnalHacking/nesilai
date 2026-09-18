@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="assets/logo.png?v=2">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
-    <link rel="stylesheet" href="css/style.css?v=spacehud">
+    <link rel="stylesheet" href="css/style.css?v=clean1">
 </head>
 <body>
 
@@ -43,12 +43,13 @@
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.2v.1"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 13l4.5 4.5L19 7"/></symbol>
     <symbol id="i-caret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3z"/></symbol>
     <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
     <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol>
 </svg>
 
 <!-- Uzay teknolojisi HUD köşe çerçevesi (saf dekoratif) -->
-<div class="hud-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<div class="moon" aria-hidden="true"></div>
 
 <div class="app">
 
@@ -232,6 +233,13 @@
                         <span id="model-picker-label">Model</span>
                         <svg class="icon model-caret" aria-hidden="true"><use href="#i-caret"/></svg>
                     </button>
+                    <label class="composer-chip web-chip" title="Yanıt verirken internette araştırma yap">
+                        <input type="checkbox" id="web-search-toggle" style="display:none">
+                        <span class="web-chip-dot" aria-hidden="true"></span>
+                        <svg class="icon" aria-hidden="true"><use href="#i-globe"/></svg>
+                        <span>Ara</span>
+                    </label>
+                    <span class="slash-help" title="Komutlar: /ultrathink /report /ultracode">/</span>
                 </div>
                 <div id="model-picker-menu" class="model-menu hidden" role="listbox" aria-label="Model seç">
                     <div class="model-menu-search">
@@ -243,6 +251,10 @@
                 <div id="mode-menu" class="model-menu hidden" role="listbox" aria-label="Üretim modu seç">
                     <div class="model-menu-list" id="mode-menu-list"><!-- JS doldurur --></div>
                     <p class="model-menu-foot">Seçtiğin mod, gönderdiğin her mesajı o türde üretir.</p>
+                </div>
+                <div id="slash-menu" class="model-menu slash-menu hidden" role="listbox" aria-label="Komut seç">
+                    <div class="model-menu-list" id="slash-menu-list"><!-- JS doldurur --></div>
+                    <p class="model-menu-foot">Komutu seç ya da yazmaya devam et — boşluk bırakınca talimatını ekleyebilirsin.</p>
                 </div>
             </div>
 
@@ -711,6 +723,29 @@
                     <span class="switch-track" aria-hidden="true"></span>
                     <span class="switch-label">Yanıtları otomatik olarak seslendir</span>
                 </label>
+
+                <label class="switch">
+                    <input type="checkbox" id="setting-sfx-enabled">
+                    <span class="switch-track" aria-hidden="true"></span>
+                    <span class="switch-label">Bildirim sesleri — yanıt gelince iMessage tarzı çal</span>
+                </label>
+            </section>
+
+            <section class="settings-section">
+                <h3 class="settings-title">
+                    <svg class="icon" aria-hidden="true"><use href="#i-cpu"/></svg>
+                    Bellek
+                </h3>
+                <label class="switch">
+                    <input type="checkbox" id="setting-memory-enabled">
+                    <span class="switch-track" aria-hidden="true"></span>
+                    <span class="switch-label">Kalıcı bellek açık — adın, projelerin ve tercihleriniz yeni sohbetlerde hatırlanır</span>
+                </label>
+                <div class="field">
+                    <div class="memory-list" id="memory-list"></div>
+                    <p class="field-note" id="memory-count-note"></p>
+                </div>
+                <button id="memory-clear-btn" class="btn btn-danger-outline">Tüm belleği temizle</button>
             </section>
 
             <section class="settings-section">
@@ -748,13 +783,18 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="js/sfx.js?v=s1"></script>
 <script src="js/storage.js?v=perm1"></script>
 <script src="js/media.js?v=perm1"></script>
+<script src="js/memory.js?v=m3"></script>
+<script src="js/research.js?v=r1"></script>
+<script src="js/projectfiles.js?v=p1"></script>
 <script src="js/ai.js?v=pool"></script>
 <script src="js/tts.js?v=pool"></script>
 <script src="js/stt.js?v=pool"></script>
 <script src="js/textToPhoto.js?v=tr3"></script>
 <script src="js/photoToText.js?v=pool"></script>
-<script src="js/app.js?v=dev3"></script>
+<script src="js/app.js?v=m4"></script>
 </body>
 </html>
