@@ -14,27 +14,16 @@ nesilai-proje.zip
 *.zip
 *.apk
 
-# Node / Capacitor (mobil/)
+# Mobil ve masaüstü sürümler — yerelde geliştirilir, bu (web) reposuna girmez
+mobil/
+PC & Desktop/
+NesilAI-PC/
+
+# Node / Capacitor
 node_modules/
-mobil/dist/
+dist/
 
 # Android derleme araç zinciri (yerel kurulum — repoya girmez)
-mobil/tools/
-
-# Android build çıktıları
-mobil/android/.gradle/
-mobil/android/app/build/
-mobil/android/build/
-mobil/android/local.properties
-mobil/android/capacitor-cordova-android-plugins/
-mobil/android/*.keystore
-mobil/android/*.jks
-
-# Masaüstü (PC & Desktop) derleme çıktıları
-PC & Desktop/app/
-PC & Desktop/dist/
-PC & Desktop/node_modules/
-PC & Desktop/electron_test.log
-*.exe
+tools/
 *.apk
 NesilAI-PC/

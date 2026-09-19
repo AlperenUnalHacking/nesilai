@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">NesilAI</string>
-    <string name="title_activity_main">NesilAI</string>
-    <string name="package_name">app.nesilai.client</string>
-    <string name="custom_url_scheme">app.nesilai.client</string>
-</resources>

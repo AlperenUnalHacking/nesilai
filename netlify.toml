@@ -1,7 +1,7 @@
 # Netlify dağıtım yapılandırması — NesilAI statik sitedir, derleme adımı yoktur.
-# Site dosyaları website/ klasöründe yaşar; mobil/ Android uygulamasıdır ve yayına girmez.
+# Site dosyaları depo kökündedir (index.html); mobil/ ve PC & Desktop/ yerelde kalır.
 [build]
-  publish = "website"
+  publish = "."
 
 # Uzun önbellek: sürümlü statik varlıklar (js/css ?v= sorgu parametresiyle kırılır)
 [[headers]]
