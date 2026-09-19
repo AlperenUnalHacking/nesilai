@@ -132,6 +132,7 @@
     // Alt Mesaj Kutusu
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
+    const stopBtn = document.getElementById('stop-btn');
     const micBtn = document.getElementById('mic-btn');
     const attachBtn = document.getElementById('attach-btn');
     const fileInput = document.getElementById('file-input');
@@ -1474,6 +1475,32 @@
     // ========================================================
     // Mesaj Gönderme & Yapay Zeka İşlemi (Main Handler)
     // ========================================================
+    // ========================================================
+    // Yanıtı Durdur — aktif AI akışını keser, kısmi metin korunur
+    // ========================================================
+    let activeAiAbort = null; // aktif akışın AbortController'ı (null = boşta)
+
+    function setStreamingUi(isStreaming) {
+        if (!stopBtn || !sendBtn) return;
+        stopBtn.classList.toggle('hidden', !isStreaming);
+        if (isStreaming) {
+            sendBtn.classList.add('hidden');
+            stopBtn.disabled = false;
+        } else {
+            sendBtn.classList.remove('hidden');
+            sendBtn.disabled = !userInput.value.trim() && !activeAttachment;
+            stopBtn.disabled = true;
+        }
+    }
+
+    function stopActiveAiStream() {
+        if (activeAiAbort) {
+            try { activeAiAbort.abort(); } catch (e) { /* zaten durdurulmuş */ }
+        }
+    }
+
+    stopBtn.addEventListener('click', stopActiveAiStream);
+
     async function handleSendMessage(customPrompt = null) {
         const text = (customPrompt !== null ? customPrompt : userInput.value).trim();
         const attachment = activeAttachment;
@@ -1740,6 +1767,9 @@
 
         const T0 = Date.now();
 
+        // Yanıtı durdur: akışın kontrol sinyali — Dur (■) butonu bunu tetikler
+        activeAiAbort = new AbortController();
+
         try {
             let researchBlock = '';
             // ARAŞTIRMA: /report, /ultracode veya arama anahtarı açıkken internet devreye girer
@@ -1775,7 +1805,8 @@
             }
 
             setThinkingLabel(cmdMeta ? cmdMeta.label + ' çalışıyor' : 'Yanıt yazılıyor');
-            await generateAiResponse(text, attachment, activeChat.messages, onDelta, researchBlock + planBlock);
+            setStreamingUi(true);
+            await generateAiResponse(text, attachment, activeChat.messages, onDelta, researchBlock + planBlock, activeAiAbort ? activeAiAbort.signal : null);
 
             // Akış desteklenmediyse cevap tek parça gelmiş olabilir
             startAssistantMessage();
@@ -1801,6 +1832,21 @@
             loadingRow.remove();
             console.error('AI yanıt hatası:', error);
 
+            // Kullanıcı akışı durdurdu: kısmi metin korunur, hata gösterilmez
+            if (error && (error.name === 'AbortError' || /abort/i.test(String(error && error.message)))) {
+                const partial = (aiMsg.text || '').trim();
+                aiMsg.streaming = false;
+                if (partial) {
+                    aiMsg.text = partial + '\n\n*(yanıt durduruldu)*';
+                    if (bubble) bubble.innerHTML = renderMarkdown(aiMsg.text);
+                    if (aiRow && window.Prism) Prism.highlightAllUnder(aiRow);
+                }
+                if (aiRow) aiRow.classList.remove('streaming');
+                saveChatsToStorage();
+                showToast('Yanıt durduruldu');
+                return;
+            }
+
             // Yarım kalan cevabı gösterme: hata mesajı yerine geçer
             const errorText = describeAiError(error);
 
@@ -1822,6 +1868,9 @@
             showToast(needsSetup ? 'Yapay zeka kaynağı yeniden ayarlanmalı' : 'Yapay zekadan yanıt alınamadı', 'error');
             if (window.NesilSFX) window.NesilSFX.error();
             if (needsSetup) openSettingsModal();
+        } finally {
+            activeAiAbort = null;
+            setStreamingUi(false);
         }
     }
 
@@ -2054,11 +2103,12 @@
         return messages;
     }
 
-    async function generateAiResponse(userPrompt, attachment, historyMessages, onDelta, extraContext) {
+    async function generateAiResponse(userPrompt, attachment, historyMessages, onDelta, extraContext, signal) {
         const messages = buildConversation(userPrompt, attachment, historyMessages, extraContext || '');
         const result = await AI.chat({
             messages: messages,
-            onDelta: onDelta
+            onDelta: onDelta,
+            signal: signal
         });
         return typeof result === 'string' ? result : result.text;
     }

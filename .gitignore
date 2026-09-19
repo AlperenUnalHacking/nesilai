@@ -12,3 +12,28 @@ Desktop.ini
 # Proje arşivi — repoya dahil edilmez (push'u büyütür/engeller)
 nesilai-proje.zip
 *.zip
+*.apk
+
+# Node / Capacitor (mobil/)
+node_modules/
+mobil/dist/
+
+# Android derleme araç zinciri (yerel kurulum — repoya girmez)
+mobil/tools/
+
+# Android build çıktıları
+mobil/android/.gradle/
+mobil/android/app/build/
+mobil/android/build/
+mobil/android/local.properties
+mobil/android/capacitor-cordova-android-plugins/
+mobil/android/*.keystore
+mobil/android/*.jks
+
+# Masaüstü (PC & Desktop) derleme çıktıları
+PC & Desktop/app/
+PC & Desktop/dist/
+PC & Desktop/node_modules/
+PC & Desktop/electron_test.log
+*.exe
+*.apk

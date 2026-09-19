@@ -66,11 +66,12 @@ tahsil edilmez. Amaç, limitli bir ürün akışını denemektir.
 ## 3. Çalıştırma
 
 ```bash
-python -m http.server 8123 --directory .
+python -m http.server 8123 --directory website
 ```
 
 Ardından `http://localhost:8123` adresini aç. Depoyu kopyaladıktan sonra doğrudan
-`index.html` dosyasına çift tıklamak da çalışır (modüller `file://` üzerinden de yüklenir).
+`website/index.html` dosyasına çift tıklamak da çalışır (modüller `file://` üzerinden de
+yüklenir).
 
 ### 🚀 Yayına alma (dağıtım)
 
@@ -102,7 +103,12 @@ anahtarları tarayıcıda kalır, sağlayıcı istekleri doğrudan tarayıcıdan
 4. 1-2 dakika içinde `https://KULLANICI_ADIN.github.io/nesilai/` yayında olur.
    (Depodaki `.nojekyll` dosyası Jekyll derlemesini atlar; dosyalar olduğu gibi servis edilir.)
 
-> **Not:** GitHub Pages alt dizinde barındırır (`/nesilai/`); uygulama tüm varlık yollarını
+> **Not 1:** Site dosyaları `website/` klasöründedir. GitHub Pages'te **Branch: main →
+> Folder: `/website`** seçimi yapılamıyorsa (Pages yalnız `/ (root)` ve `/docs` kabul eder),
+> ya `website` klasörünü `docs` olarak kullanın ya da **Source: GitHub Actions** ile statik
+> site akışı kurun. En kolayı Netlify'dır: `netlify.toml` zaten `publish = "website"` diyor.
+>
+> **Not 2:** GitHub Pages alt dizinde barındırır (`/nesilai/`); uygulama tüm varlık yollarını
 > göreli kullandığı için ek yapılandırma gerekmez.
 
 #### Dağıtımdan sonra
@@ -137,16 +143,58 @@ ile 18 aylığına ücretsiz açılabilir. Kupon süresi dolduğunda uygulama ot
 
 ## 4. Proje Yapısı
 
+Depo iki ayrı sürüm içerir:
+
 ```
-index.html          Arayüz iskeleti + SVG ikon seti
-css/style.css       Tasarım sistemi (belirteçler, bileşenler, temalar)
-js/ai.js            Tek yapay zeka katmanı: sağlayıcılar, akış, hata eşleme
-js/app.js           Sohbet, mesaj akışı, ayarlar, sesli sohbet, OCR bağlantıları
-js/textToPhoto.js   Görsel oluşturma (Pollinations görsel API)
-js/photoToText.js   OCR (Tesseract.js)
-js/stt.js           Ses → yazı (Web Speech API)
-js/tts.js           Yazı → ses (SpeechSynthesis)
+website/                    🌐 Web sürümü (Netlify/GitHub Pages'ten yayına giren)
+  index.html          Arayüz iskeleti + SVG ikon seti
+  css/style.css       Tasarım sistemi (belirteçler, bileşenler, temalar)
+  js/ai.js            Tek yapay zeka katmanı: sağlayıcılar, akış, hata eşleme
+  js/app.js           Sohbet, mesaj akışı, ayarlar, sesli sohbet, OCR bağlantıları
+  js/textToPhoto.js   Görsel oluşturma (Pollinations görsel API)
+  js/photoToText.js   OCR (Tesseract.js)
+  js/stt.js           Ses → yazı (Web Speech API)
+  js/tts.js           Yazı → ses (SpeechSynthesis)
+  assets/             Logolar ve görseller
+
+mobil/                      📱 Android sürümü (Capacitor sarmalayıcı)
+  android/            Native Android projesi (Gradle)
+  scripts/            website/ → dist/ kopyalama betiği + ikon üretici
+  package.json        Capacitor bağımlılıkları ve derleme komutları
+  logo.png            Uygulama simgesi (tüm ikonlar bundan üretilir)
+  NesilAI-debug.apk   Derlenmiş kurulum dosyası (repo dışı)
+
+PC & Desktop/               🖥️ Masaüstü sürümü (Electron)
+  main.js             Electron ana süreç (pencere, dış linkler tarayıcıda)
+  scripts/            website/ → app/ kopyalama betiği
+  icon.ico/.png       Uygulama simgesi (mobil/logo.png'den üretilir)
+  dist/NesilAI-Portable.exe  Taşınabilir derleme (repo dışı)
 ```
+
+### Android APK derleme
+
+```bash
+cd mobil
+npm install
+npm run android   # website/ → dist/ kopyalar, senkronize eder, APK derler
+```
+
+APK çıktısı: `mobil/android/app/build/outputs/apk/debug/app-debug.apk`
+(derleme araçları `mobil/tools/` altındadır; JDK 21 + Android SDK içerir ve repoya girmez).
+
+### Masaüstü (Windows) derleme
+
+```bash
+cd "PC & Desktop"
+npm install
+npm start        # pencerede çalıştırır (test için)
+npm run dist     # taşınabilir exe üretir
+```
+
+Exe çıktısı: `PC & Desktop/dist/NesilAI-Portable.exe` — kurulumsuz çalışır,
+taşınabilir (USB'den bile açılır). Uygulama simgesi `mobil/logo.png` ile aynıdır;
+değiştirmek için `PC & Desktop` içindeki `icon.ico`/`icon.png`yi yeniden üretin
+veya ikonu değiştirip `npm run dist` çalıştırın.
 
 ### Kod tarafında yapılan temizlik
 - Şablon cevap üreten `generateDeepLocalIntelligence` / `generateCodeResponse` /

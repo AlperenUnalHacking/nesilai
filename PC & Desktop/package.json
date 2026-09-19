@@ -1,0 +1,38 @@
+{
+  "name": "nesilai-desktop",
+  "version": "1.0.0",
+  "description": "NesilAI - Bloodline üzerindeki yapay zeka asistanı (Masaüstü sürümü)",
+  "private": true,
+  "main": "main.js",
+  "author": "Bloodline INC · Acsida",
+  "scripts": {
+    "build-www": "node scripts/build-www.js",
+    "start": "node scripts/build-www.js && electron .",
+    "dist": "node scripts/build-www.js && electron-builder --win portable --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "app.nesilai.desktop",
+    "productName": "NesilAI",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "app/**/*"
+    ],
+    "win": {
+      "icon": "icon.ico",
+      "target": "portable"
+    },
+    "portable": {
+      "artifactName": "NesilAI-Portable.exe"
+    }
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
+}

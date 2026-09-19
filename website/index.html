@@ -2,14 +2,14 @@
 <html lang="tr" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
     <title>NesilAI — Yapay Zeka Asistanı</title>
     <meta name="description" content="NesilAI — sohbet, görsel oluşturma, sesle yazma, sesli okuma ve görsel okuma özellikli yapay zeka asistanı.">
     <meta name="color-scheme" content="dark light">
     <link rel="icon" type="image/png" href="assets/logo.png?v=2">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
-    <link rel="stylesheet" href="css/style.css?v=links1">
+    <link rel="stylesheet" href="css/style.css?v=dl1">
 </head>
 <body>
 
@@ -22,6 +22,7 @@
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
     <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 12a1 1 0 001 1h8a1 1 0 001-1l1-12"/></symbol>
     <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h13M12 6l6 6-6 6"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5"/></symbol>
     <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 15a3.5 3.5 0 003.5-3.5v-5a3.5 3.5 0 10-7 0v5A3.5 3.5 0 0012 15z"/><path d="M5.5 11.5a6.5 6.5 0 0013 0M12 18.5V21"/></symbol>
     <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="M20 11l-7.6 7.6a4.6 4.6 0 01-6.5-6.5l7.3-7.3a3.1 3.1 0 014.4 4.4l-7.2 7.2a1.6 1.6 0 01-2.2-2.2l6.6-6.6"/></symbol>
     <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-2.9 1.2 2 2 0 11-4 0 1.7 1.7 0 00-2.9-1.2l-.1.1a2 2 0 11-2.8-2.8l.1-.1A1.7 1.7 0 003 15a2 2 0 110-4 1.7 1.7 0 001.2-2.9l-.1-.1a2 2 0 112.8-2.8l.1.1A1.7 1.7 0 0010 4.1a2 2 0 114 0A1.7 1.7 0 0016.9 5.3l.1-.1a2 2 0 112.8 2.8l-.1.1A1.7 1.7 0 0021 11a2 2 0 110 4z"/></symbol>
@@ -32,7 +33,7 @@
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 13.2A9 9 0 1110.8 3a7 7 0 1010.2 10.2z"/></symbol>
     <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5.5A2.5 2.5 0 0012.5 3H6a2 2 0 00-2 2v7a2.5 2.5 0 002.5 2.5"/></symbol>
     <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 9.5a3.5 3.5 0 010 5"/></symbol>
-    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></symbol>
+    <symbol id="i-android" viewBox="0 0 24 24"><path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85-.29-.15-.65-.06-.83.22l-1.88 3.24a11.46 11.46 0 00-8.94 0L5.65 5.67c-.19-.29-.58-.38-.87-.2-.28.18-.37.54-.22.83L6.4 9.48A10.78 10.78 0 001 18h22a10.78 10.78 0 00-5.4-8.52zM7 15.25a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5zm10 0a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></symbol>
     <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3v2M14 3v2M10 19v2M14 19v2M3 10h2M3 14h2M19 10h2M19 14h2"/></symbol>
     <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="3.5"/><path d="M10.5 12.5L19 4M16 4h3.5V7.5"/></symbol>
@@ -117,6 +118,10 @@
             </div>
 
             <nav class="sidebar-nav">
+                <a class="nav-item nav-download" href="https://drive.google.com/file/d/1l8Ca6vvPI0E6s2mgTI1BcoU7nIA9AaJN/view?usp=sharing" target="_blank" rel="noopener noreferrer">
+                    <svg class="icon icon-fill" aria-hidden="true"><use href="#i-android"/></svg>
+                    <span>Uygulamayı indir</span>
+                </a>
                 <button id="open-pool-btn" class="nav-item">
                     <svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg>
                     <span>Üretim havuzu</span>
@@ -294,6 +299,9 @@
 
                 <button id="mic-btn" class="composer-btn" aria-label="Sesle yaz" title="Sesle yaz">
                     <svg class="icon" aria-hidden="true"><use href="#i-mic"/></svg>
+                </button>
+                <button id="stop-btn" class="composer-btn composer-btn-stop hidden" aria-label="Yanıtı durdur" title="Yanıtı durdur">
+                    <svg class="icon" aria-hidden="true"><use href="#i-stop"/></svg>
                 </button>
                 <button id="send-btn" class="composer-btn composer-btn-send" aria-label="Gönder" title="Gönder" disabled>
                     <svg class="icon" aria-hidden="true"><use href="#i-send"/></svg>
@@ -815,6 +823,6 @@
 <script src="js/stt.js?v=pool"></script>
 <script src="js/textToPhoto.js?v=tr4"></script>
 <script src="js/photoToText.js?v=pool"></script>
-<script src="js/app.js?v=links1"></script>
+<script src="js/app.js?v=dl1"></script>
 </body>
 </html>
