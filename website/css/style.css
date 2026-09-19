@@ -672,9 +672,13 @@ select.input { cursor: pointer; appearance: none; padding-right: var(--s-8); bac
     stroke: none;
 }
 
-/* "Uygulamayı indir" — Üretim havuzunun üstündeki Android indirme bağlantısı */
-.nav-download {
+/* "Uygulamayı indir" — Üretim havuzunun üstündeki indirme menüsü */
+.download-wrap {
+    position: relative;
     margin-bottom: var(--s-2);
+}
+.nav-download {
+    width: 100%;
 }
 .nav-download .icon {
     color: #3ddc84;                       /* Android yeşili */
@@ -689,6 +693,69 @@ select.input { cursor: pointer; appearance: none; padding-right: var(--s-8); bac
     filter: drop-shadow(0 0 10px rgba(61, 220, 132, 0.75));
     transform: translateY(1px);
 }
+.nav-download[aria-expanded="true"] {
+    background: var(--surface-hover);
+    color: var(--text-1);
+}
+
+/* Açılır seçenek menüsü: Android / Bilgisayar */
+.download-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    background: var(--surface-1);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-lg, 0 12px 32px rgba(0, 0, 0, 0.45));
+    animation: dl-menu-in 0.16s var(--ease);
+}
+@keyframes dl-menu-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: none; }
+}
+.download-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: var(--r-sm);
+    text-decoration: none;
+    transition: background 0.12s var(--ease);
+}
+.download-option:hover { background: var(--surface-hover); }
+.download-option .icon {
+    width: 20px;
+    height: 20px;
+}
+.download-option .dl-android {
+    color: #3ddc84;
+    filter: drop-shadow(0 0 5px rgba(61, 220, 132, 0.5));
+}
+.download-option .dl-windows {
+    color: #4da3ff;
+    filter: drop-shadow(0 0 5px rgba(77, 163, 255, 0.5));
+}
+.download-option .dl-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+.download-option .dl-text strong {
+    color: var(--text-1);
+    font-size: 13px;
+    font-weight: 600;
+}
+.download-option .dl-text small {
+    color: var(--text-3);
+    font-size: 11px;
+}
+.download-menu.hidden { display: none; }
 
 .sidebar-note {
     color: var(--text-3);

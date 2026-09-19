@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="assets/logo.png?v=2">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
-    <link rel="stylesheet" href="css/style.css?v=dl1">
+    <link rel="stylesheet" href="css/style.css?v=dlmenu1">
 </head>
 <body>
 
@@ -34,6 +34,7 @@
     <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5.5A2.5 2.5 0 0012.5 3H6a2 2 0 00-2 2v7a2.5 2.5 0 002.5 2.5"/></symbol>
     <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 9.5a3.5 3.5 0 010 5"/></symbol>
     <symbol id="i-android" viewBox="0 0 24 24"><path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85-.29-.15-.65-.06-.83.22l-1.88 3.24a11.46 11.46 0 00-8.94 0L5.65 5.67c-.19-.29-.58-.38-.87-.2-.28.18-.37.54-.22.83L6.4 9.48A10.78 10.78 0 001 18h22a10.78 10.78 0 00-5.4-8.52zM7 15.25a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5zm10 0a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z"/></symbol>
+    <symbol id="i-windows" viewBox="0 0 24 24"><path d="M3 5.5L10.5 4.4V11.2H3zM11.6 4.2L21 3V11.2H11.6zM3 12.8H10.5V19.6L3 18.5zM11.6 12.8H21V21L11.6 19.8z"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></symbol>
     <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3v2M14 3v2M10 19v2M14 19v2M3 10h2M3 14h2M19 10h2M19 14h2"/></symbol>
     <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="3.5"/><path d="M10.5 12.5L19 4M16 4h3.5V7.5"/></symbol>
@@ -118,10 +119,28 @@
             </div>
 
             <nav class="sidebar-nav">
-                <a class="nav-item nav-download" href="https://drive.google.com/file/d/1l8Ca6vvPI0E6s2mgTI1BcoU7nIA9AaJN/view?usp=sharing" target="_blank" rel="noopener noreferrer">
-                    <svg class="icon icon-fill" aria-hidden="true"><use href="#i-android"/></svg>
-                    <span>Uygulamayı indir</span>
-                </a>
+                <div class="download-wrap">
+                    <button id="download-toggle" class="nav-item nav-download" aria-haspopup="true" aria-expanded="false">
+                        <svg class="icon icon-fill" aria-hidden="true"><use href="#i-android"/></svg>
+                        <span>Uygulamayı indir</span>
+                    </button>
+                    <div id="download-menu" class="download-menu hidden" role="menu">
+                        <a class="download-option" href="https://drive.google.com/file/d/1l8Ca6vvPI0E6s2mgTI1BcoU7nIA9AaJN/view?usp=sharing" target="_blank" rel="noopener noreferrer" role="menuitem">
+                            <svg class="icon icon-fill dl-android" aria-hidden="true"><use href="#i-android"/></svg>
+                            <span class="dl-text">
+                                <strong>Android uygulaması</strong>
+                                <small>APK · Android 6.0+</small>
+                            </span>
+                        </a>
+                        <a class="download-option" href="https://github.com/AlperenUnalHacking/NesilAI-PC/releases/latest/download/NesilAI-Setup-1.0.0.exe" role="menuitem">
+                            <svg class="icon icon-fill dl-windows" aria-hidden="true"><use href="#i-windows"/></svg>
+                            <span class="dl-text">
+                                <strong>Bilgisayar uygulaması</strong>
+                                <small>Windows · Installer</small>
+                            </span>
+                        </a>
+                    </div>
+                </div>
                 <button id="open-pool-btn" class="nav-item">
                     <svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg>
                     <span>Üretim havuzu</span>
@@ -823,6 +842,6 @@
 <script src="js/stt.js?v=pool"></script>
 <script src="js/textToPhoto.js?v=tr4"></script>
 <script src="js/photoToText.js?v=pool"></script>
-<script src="js/app.js?v=dl1"></script>
+<script src="js/app.js?v=dlmenu1"></script>
 </body>
 </html>

@@ -8,7 +8,9 @@
   "scripts": {
     "build-www": "node scripts/build-www.js",
     "start": "node scripts/build-www.js && electron .",
-    "dist": "node scripts/build-www.js && electron-builder --win portable --publish never"
+    "dist": "node scripts/build-www.js && electron-builder --win portable nsis --publish never",
+    "dist:portable": "node scripts/build-www.js && electron-builder --win portable --publish never",
+    "dist:installer": "node scripts/build-www.js && electron-builder --win nsis --publish never"
   },
   "devDependencies": {
     "electron": "^33.0.0",
@@ -26,7 +28,24 @@
     ],
     "win": {
       "icon": "icon.ico",
-      "target": "portable"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "artifactName": "NesilAI-Setup-${version}.exe",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NesilAI"
     },
     "portable": {
       "artifactName": "NesilAI-Portable.exe"

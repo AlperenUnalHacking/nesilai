@@ -662,6 +662,47 @@
         URL.revokeObjectURL(url);
     }
 
+    // ========================================================
+    // "Uygulamayı indir" açılır menüsü — Android / Bilgisayar
+    // ========================================================
+    const downloadToggle = document.getElementById('download-toggle');
+    const downloadMenu = document.getElementById('download-menu');
+
+    function closeDownloadMenu() {
+        if (!downloadMenu) return;
+        downloadMenu.classList.add('hidden');
+        if (downloadToggle) downloadToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    if (downloadToggle && downloadMenu) {
+        downloadToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const willOpen = downloadMenu.classList.contains('hidden');
+            downloadMenu.classList.toggle('hidden', !willOpen);
+            downloadToggle.setAttribute('aria-expanded', String(willOpen));
+        });
+
+        // Menü dışına tıklanınca kapan
+        document.addEventListener('click', (e) => {
+            if (!downloadMenu.classList.contains('hidden') &&
+                !downloadMenu.contains(e.target) &&
+                e.target !== downloadToggle &&
+                !downloadToggle.contains(e.target)) {
+                closeDownloadMenu();
+            }
+        });
+
+        // Esc ile kapan
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeDownloadMenu();
+        });
+
+        // Seçenek seçilince menü kapansın (indirme başlar)
+        downloadMenu.querySelectorAll('.download-option').forEach(opt => {
+            opt.addEventListener('click', closeDownloadMenu);
+        });
+    }
+
     function initPool() {
         if (!poolModal) return;
 
