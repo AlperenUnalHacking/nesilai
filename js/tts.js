@@ -31,6 +31,8 @@
             .replace(/_{1,3}(.*?)_{1,3}/g, '$1')
             // Bağlantıları kaldır
             .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+            // NesilAI link kuralı: (Başlık) [URL] → yalnızca başlık okunur, ham URL okunmaz
+            .replace(/\(([^)\n]{1,200})\)\s*\[(https?:\/\/[^\]\s]+)\]/gi, '$1')
             // Madde işaretlerini sadeleştir
             .replace(/^[\*\-\+]\s+/gm, '')
             // Emojileri temizle (opsiyonel)
@@ -41,6 +43,30 @@
     function getVoices() {
         if (!isSupported()) return [];
         return window.speechSynthesis.getVoices();
+    }
+
+    // Türkçe ses bul: kaydedilmiş seçim yoksa en uygun TR sesini döndür
+    function findTurkishVoice() {
+        const voices = getVoices();
+        if (!voices.length) return null;
+        // Önce tam tr-TR, sonra tr ile başlayan herhangi bir ses, sonra yerel TR
+        return voices.find(v => v.lang.toLowerCase() === 'tr-tr') ||
+               voices.find(v => v.lang.toLowerCase().startsWith('tr') && v.localService) ||
+               voices.find(v => v.lang.toLowerCase().startsWith('tr')) ||
+               null;
+    }
+
+    // Ses listesi geç gelmiş olabilir: ses yüklenene kadar kısa aralıklarla dene
+    function waitForVoices(maxWaitMs) {
+        return new Promise((resolve) => {
+            const start = Date.now();
+            const poll = () => {
+                if (getVoices().length > 0) return resolve(true);
+                if (Date.now() - start >= (maxWaitMs || 3000)) return resolve(false);
+                setTimeout(poll, 150);
+            };
+            poll();
+        });
     }
 
     function initVoiceSettings(voiceSelectEl, speedEl, pitchEl) {
@@ -135,7 +161,7 @@
         }
     }
 
-    function speak(rawText, onStart, onEnd, onError) {
+    async function speak(rawText, onStart, onEnd, onError) {
         if (!isSupported()) {
             if (onError) onError(new Error('TTS desteklenmiyor.'));
             return;
@@ -149,35 +175,44 @@
             return;
         }
 
-        currentUtterance = new SpeechSynthesisUtterance(cleanText);
-
-        if (!selectedVoice) {
-            const voices = getVoices();
-            selectedVoice = voices.find(v => v.lang.startsWith('tr')) || voices[0];
+        // Sesler tarayıcıda geç yükleniyorsa kısaca bekle (ilk konuşmada kritik)
+        if (!selectedVoice && getVoices().length === 0) {
+            await waitForVoices(3000);
         }
+
+        // Kaydedilmiş seçim yoksa Türkçe sesi zorunlu kıl — İngilizce sesin
+        // Türkçe metni bozuk okumasını engeller
+        if (!selectedVoice) {
+            selectedVoice = findTurkishVoice();
+        }
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
 
         if (selectedVoice) {
-            currentUtterance.voice = selectedVoice;
-            currentUtterance.lang = selectedVoice.lang;
+            utterance.voice = selectedVoice;
+            utterance.lang = selectedVoice.lang;
+        } else {
+            // Ses yoksa bile dili Türkçe işaretle — tarayıcı genelde uygun sesi seçer
+            utterance.lang = 'tr-TR';
         }
 
-        currentUtterance.rate = speechRate;
-        currentUtterance.pitch = speechPitch;
+        utterance.rate = speechRate;
+        utterance.pitch = speechPitch;
 
         onCurrentEndCallback = onEnd;
 
-        currentUtterance.onstart = () => {
+        utterance.onstart = () => {
             isSpeakingState = true;
             if (onStart) onStart();
         };
 
-        currentUtterance.onend = () => {
+        utterance.onend = () => {
             isSpeakingState = false;
             currentUtterance = null;
             if (onEnd) onEnd();
         };
 
-        currentUtterance.onerror = (e) => {
+        utterance.onerror = (e) => {
             isSpeakingState = false;
             currentUtterance = null;
             if (e.error !== 'interrupted' && e.error !== 'canceled') {
@@ -187,7 +222,55 @@
             }
         };
 
-        window.speechSynthesis.speak(currentUtterance);
+        currentUtterance = utterance;
+
+        // Chrome bug: uzun metinler ~15 sn'de kesilir; güvenli parça boyutu 200 karakter
+        const MAX_CHUNK = 200;
+        if (cleanText.length <= MAX_CHUNK) {
+            window.speechSynthesis.speak(utterance);
+            return;
+        }
+
+        // Metni cümle sınırlarından böl, sırayla seslendir
+        const chunks = [];
+        let rest = cleanText;
+        while (rest.length > 0) {
+            if (rest.length <= MAX_CHUNK) {
+                chunks.push(rest);
+                break;
+            }
+            let cut = -1;
+            // Parça sınırına yakın cümle sonu (. ! ? :) ara
+            for (let i = MAX_CHUNK; i >= MAX_CHUNK - 60 && i > 10; i--) {
+                if (/[.!?:]\s/.test(rest.slice(i - 1, i + 1))) { cut = i; break; }
+            }
+            if (cut === -1) {
+                // Cümle sonu yoksa boşluktan böl
+                cut = rest.lastIndexOf(' ', MAX_CHUNK);
+                if (cut <= 10) cut = MAX_CHUNK;
+            }
+            chunks.push(rest.slice(0, cut).trim());
+            rest = rest.slice(cut).trim();
+        }
+
+        chunks.forEach((chunk, idx) => {
+            const part = new SpeechSynthesisUtterance(chunk);
+            if (selectedVoice) { part.voice = selectedVoice; part.lang = selectedVoice.lang; }
+            else { part.lang = 'tr-TR'; }
+            part.rate = speechRate;
+            part.pitch = speechPitch;
+            if (idx === 0) {
+                part.onstart = utterance.onstart;
+                part.onend = utterance.onend;
+                part.onerror = utterance.onerror;
+            } else {
+                // Son parça değilse: sonraki parça konuşulmaya devam etsin
+                part.onend = () => { /* devam ediyor */ };
+                part.onerror = () => { /* yoksay */ };
+            }
+            // Sıraya al — tarayıcı parçaları sırayla okur
+            window.speechSynthesis.speak(part);
+        });
     }
 
     function stop() {
@@ -212,7 +295,8 @@
         cleanTextForSpeech,
         speak,
         stop,
-        isSpeaking
+        isSpeaking,
+        findTurkishVoice
     };
 
 })();

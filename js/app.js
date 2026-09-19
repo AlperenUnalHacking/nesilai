@@ -1426,6 +1426,7 @@
             .replace(/`([^`]+)`/gim, '<code class="inline-code">$1</code>')
             .replace(/^\- (.*$)/gim, '<li>$1</li>')
             .replace(/^\* (.*$)/gim, '<li>$1</li>')
+            .replace(renderParenthesisLinks, renderNesilLink)
             .split(/\n\n+/)
             .map(p => {
                 p = p.trim();
@@ -1437,6 +1438,26 @@
                 return `<p>${p.replace(/\n/g, '<br>')}</p>`;
             })
             .join('');
+    }
+
+    // ========================================================
+    // Link Rendering Rule — (Başlık) [URL] → tıklanabilir başlık
+    // Ham URL ASLA gösterilmez; parantez içindeki metin mavi neon
+    // bağlantıya dönüşür, tıklanınca köşeli parantezdeki URL'e gider.
+    // URL bozulmaz, kısaltılmaz, çözülmez — yalnızca görünüm değişir.
+    // Aynı mesajda birden fazla link desteklenir.
+    // ========================================================
+    const PAREN_LINK_REGEX = /\(([^)\n]{1,200})\)\s*\[(https?:\/\/[^\]\s]+)\]/gi;
+
+    function renderParenthesisLinks(text) {
+        return String(text || '').replace(PAREN_LINK_REGEX, renderNesilLink);
+    }
+
+    function renderNesilLink(m, title, url) {
+        // URL'i hiçbir şekilde değiştirme — escape yalnızca attribute güvenliği için
+        const safeUrl = escapeHtml(url);
+        const safeTitle = escapeHtml(title.trim());
+        return '<a class="nesil-link" href="' + safeUrl + '" target="_blank" rel="noopener noreferrer" title="' + safeUrl + '">' + safeTitle + '</a>';
     }
 
     window.NesilAI_copyCode = function (button) {
@@ -1515,6 +1536,27 @@
         }
 
         // 2. Üretim modları (sohbet hariç hepsi burada rotalanır)
+        // AYAR KOMUTLARI: /ayarlar /tema /ses /temizle /yardim → yerelde çalışır, API'ye gitmez
+        if (cmdInfo && !cmdInfo.body) {
+            const settingsReply = runSettingsCommand(cmdInfo.cmd);
+            if (settingsReply) {
+                incrementQuota('chats');
+                const settingsAiMsg = {
+                    id: 'msg_' + (Date.now() + 1),
+                    role: 'assistant',
+                    text: settingsReply,
+                    command: cmdInfo.cmd,
+                    commandLabel: cmdInfo.cmd.toUpperCase(),
+                    timestamp: Date.now()
+                };
+                activeChat.messages.push(settingsAiMsg);
+                appendMessageToDom(settingsAiMsg);
+                saveChatsToStorage();
+                checkAutoSpeak(settingsAiMsg.text);
+                return;
+            }
+        }
+
         if (isImage) {
             incrementQuota('images');
             const originalPrompt = window.NesilT2P ? window.NesilT2P.extractImagePrompt(text) : text;
@@ -1599,6 +1641,29 @@
 
         // 3. Normal Sohbet İşlemi (Kota Artır)
         incrementQuota('chats');
+
+        // ANAHTAR KELİME MOTORU: Betty/Beste, kimlik, Acsida, Bloodline soruları → anında yanıt
+        // Not: yalnızca kullanıcı düz mesaj yazdığında çalışır; slash komutlarında devre dışı
+        if (!cmdInfo) {
+            const quickAnswer = matchQuickIdentity(text);
+            if (quickAnswer) {
+                const quickAiMsg = {
+                    id: 'msg_' + (Date.now() + 1),
+                    role: 'assistant',
+                    text: quickAnswer,
+                    timestamp: Date.now()
+                };
+                activeChat.messages.push(quickAiMsg);
+                appendMessageToDom(quickAiMsg);
+                saveChatsToStorage();
+
+                if (window.NesilSFX && localStorage.getItem('nesilai_auto_speak') !== 'true') {
+                    window.NesilSFX.reply();
+                }
+                checkAutoSpeak(quickAiMsg.text);
+                return;
+            }
+        }
 
         // Komut rozetleri: yanıtın üstünde yarı saydam italik gösterilir
         const commandMeta = {
@@ -1814,12 +1879,120 @@
     const HISTORY_LIMIT = 20;
 
     // ========================================================
-    // Slash Komutları — /ultrathink /report /ultracode
+    // Slash Komutları — /ultrathink /report /ultracode + ayar komutları
     // ========================================================
     function parseSlashCommand(rawText) {
-        const m = String(rawText || '').match(/^\s*\/(ultrathink|report|ultracode)\b\s*([\s\S]*)$/i);
+        const m = String(rawText || '').match(/^\s*\/(ultrathink|report|ultracode|ayarlar|settings|tema|theme|ses|voice|temizle|clear|yardim|yardım|help)\b\s*([\s\S]*)$/i);
         if (!m) return null;
         return { cmd: m[1].toLowerCase(), body: m[2].trim(), original: rawText };
+    }
+
+    // ========================================================
+    // Ayar Slash Komutları — /ayarlar /tema /ses /temizle /yardim
+    // API'ye gitmeden yerelde çalışır; anında yanıt döner
+    // ========================================================
+    function runSettingsCommand(cmd) {
+        switch (cmd) {
+            case 'ayarlar':
+            case 'settings':
+                openSettingsModal();
+                return 'Ayarlar panelini açtım. Sağlayıcı, model, ses ve veri seçeneklerini oradan yönetebilirsin.';
+            case 'tema':
+            case 'theme':
+                toggleTheme();
+                return 'Tema değiştirildi: şu an **' + (document.documentElement.dataset.theme === 'light' ? 'açık' : 'koyu') + '** moddesin.';
+            case 'ses':
+            case 'voice':
+                openVoiceMode();
+                return 'Sesli sohbet modunu açtım — konuşmaya başlayabilirsin.';
+            case 'temizle':
+            case 'clear':
+                if (clearAllChatsBtn) {
+                    clearAllChatsBtn.click();
+                    return 'Tüm sohbet geçmişi silindi. Yeni bir sayfa açtık!';
+                }
+                return 'Sohbet geçmişi şu an temizlenemiyor.';
+            case 'yardim':
+            case 'yardım':
+            case 'help':
+                return [
+                    '**NesilAI Komutları**',
+                    '',
+                    'Üretim komutları:',
+                    '- `/ultrathink` — derin düşünür, detaylı araştırıp yanıtlar',
+                    '- `/report` — internette derin araştırma yapıp rapor hazırlar',
+                    '- `/ultracode` — araştırır, plan çıkarır, kod yazar',
+                    '',
+                    'Ayar komutları:',
+                    '- `/ayarlar` — ayarlar panelini açar',
+                    '- `/tema` — açık/koyu temayı değiştirir',
+                    '- `/ses` — sesli sohbet modunu açar',
+                    '- `/temizle` — tüm sohbet geçmişini siler',
+                    '- `/yardim` — bu listeyi gösterir'
+                ].join('\n');
+            default:
+                return null;
+        }
+    }
+
+    // ========================================================
+    // Anahtar Kelime Motoru — Betty/Beste, kimlik, Acsida, Bloodline
+    // API çağrısı yapmadan anında yerel yanıt verir
+    // ========================================================
+    const QUICK_IDENTITY_ANSWERS = [
+        {
+            // Betty / Beste → Acsida'nın sevgilisi
+            // Anahtar kelimeler: Betty, Beste, Kim, Kimdir, Acsidanın sevgilisi
+            test: (t) => {
+                // "Acsida'nın sevgilisi" ifadesi tek başına yeterli
+                if (/acsida.?n[ıi]n\s+sevgilisi/i.test(t) || /sevgilisi\s+kim/i.test(t)) return true;
+                const hasBettyBeste = /\b(betty|beste)\b/i.test(t);
+                const isWhoQuestion = /\b(kim|kimdir|nedir|hakkında|about|who)\b/i.test(t);
+                return hasBettyBeste && (isWhoQuestion || t.split(/\s+/).length <= 4);
+            },
+            answer: "**Betty** (Beste), Acsida'nın sevdiği kız, diğer ifadeyle sevgilisidir. 💙"
+        },
+        {
+            // Seni kim yaptı / Acsida kim / yaratıcın kim
+            test: (t) =>
+                /(seni|sizi)\s+(kim\s+)?(yaptı|geliştirdi|oluşturdu|kodladı|yazdı| tasarladı)/i.test(t) ||
+                /(yaratıcın|geliştiricin|yapıcın|sahibin|üreticin)\s+kim/i.test(t) ||
+                /^\s*acsida\s+(kim|kimdir|ne)/i.test(t) ||
+                /acsida\s+kim(dir)?\s*\?*$/i.test(t),
+            answer: "Ben aslında **Bloodline** üzerindeki yapay zeka asistanıyım; burada Bloodline'dan bağımsız herkese yardım etmeyi amaçlıyorum. Beni **Acsida** yaptı. 🛠️"
+        },
+        {
+            // Bloodline linki / Bloodline sitesi
+            test: (t) =>
+                /bloodline\s*(link|adres|site|url|web)/i.test(t) ||
+                /link(ini|ini|)?\s*(ver|gönder|at| gönder)\s*bloodline/i.test(t) ||
+                /^\s*bloodline\s*\?*\s*$/i.test(t) ||
+                /(bloodline.{0,20}(link|url|site))|((link|url|site).{0,20}bloodline)/i.test(t),
+            answer: "Bloodline bağlantısı: **https://bloodline.agentui.app/** 🔗"
+        },
+        {
+            // Sen kimsin / adın ne — "Ben NesilAI (...)" biçiminde
+            test: (t) =>
+                /sen\s+kim(dir)?s?in/i.test(t) ||
+                /kimsin\s+sen/i.test(t) ||
+                /sen\s+nesin/i.test(t) ||
+                /ad[ıi]n\s+ne/i.test(t) ||
+                /kendini\s+tanıt/i.test(t) ||
+                /who\s+are\s+you/i.test(t) ||
+                /^\s*(nesilai|nesil\s*ai)\s*\?*\s*$/i.test(t),
+            answer: "**Ben NesilAI** — seninle sohbet etmek, görsel üretmek, sesli yazışmak ve daha birçok konuda yardımcı olmak için buradayım. 🚀"
+        }
+    ];
+
+    function matchQuickIdentity(text) {
+        const t = String(text || '').trim();
+        if (!t || t.length > 120) return null;
+        for (const entry of QUICK_IDENTITY_ANSWERS) {
+            try {
+                if (entry.test(t)) return entry.answer;
+            } catch (e) { /* sonraki kurala geç */ }
+        }
+        return null;
     }
 
     // "Yanıt hazırlanıyor" göstergesinin etiketini değiştirir (en son eklenen
@@ -2528,7 +2701,12 @@
     const SLASH_COMMANDS = [
         { cmd: '/ultrathink', name: 'ULTRATHINK', desc: 'Derin düşünür, detaylı araştırıp yanıtlar', icon: 'i-brain' },
         { cmd: '/report', name: 'REPORT', desc: 'İnternette derin araştırma yapıp rapor hazırlar', icon: 'i-report' },
-        { cmd: '/ultracode', name: 'ULTRACODE', desc: 'Araştırır, plan çıkarır, kod yazar', icon: 'i-bolt' }
+        { cmd: '/ultracode', name: 'ULTRACODE', desc: 'Araştırır, plan çıkarır, kod yazar', icon: 'i-bolt' },
+        { cmd: '/ayarlar', name: 'AYARLAR', desc: 'Ayarlar panelini açar (sağlayıcı, model, ses, veri)', icon: 'i-settings' },
+        { cmd: '/tema', name: 'TEMA', desc: 'Açık/koyu temayı değiştirir', icon: 'i-palette' },
+        { cmd: '/ses', name: 'SES', desc: 'Sesli sohbet modunu açar', icon: 'i-voice' },
+        { cmd: '/temizle', name: 'TEMİZLE', desc: 'Tüm sohbet geçmişini siler', icon: 'i-trash' },
+        { cmd: '/yardim', name: 'YARDIM', desc: 'Tüm komutları listeler', icon: 'i-info' }
     ];
 
     function buildSlashMenu(filter) {

@@ -8,3 +8,7 @@ Desktop.ini
 
 # Local Netlify folder
 .netlify
+
+# Proje arşivi — repoya dahil edilmez (push'u büyütür/engeller)
+nesilai-proje.zip
+*.zip
