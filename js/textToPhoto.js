@@ -76,12 +76,30 @@
         return clean || text;
     }
 
-    // Görsel sağlayıcı zinciri: hepsi anahtarsız. Sıradaki, önceki hata verirse
-    // (5xx / kuyruk dolu / zaman aşımı) devreye girer. Modeller canlı test edildi.
+    // Görsel sağlayıcı zinciri — BAĞIMSIZ backend'ler sırayla denenir:
+    //   1) Pollinations → anahtarsız, hızlı (önbellek isabetinde anında). Anonim
+    //      kota bittiğinde 200 + JSON (402 INSUFFICIENT_BALANCE) döner; <img> bunu
+    //      yükleyemediği için onerror düşer ve sıradaki sağlayıcıya geçilir.
+    //   2) AI Horde → topluluk GPU ağı (stablehorde.net); tamamen ücretsiz,
+    //      anahtarsız ve Pollinations'tan TAMAMEN bağımsız. Base64 webp döner,
+    //      tarayıcıda blob'a çevrilir → IndexedDB kalıcılığı da çalışır.
+    // Tarih notu: eskiden zincirdeki "flux/turbo" varyantları da aynı Pollinations
+    // backend'ine gittiği için tek sağlayıcı düşince üçü birden çöküyordu → kaldırıldı.
+    const POLLINATIONS_TOKEN = (() => {
+        try { return localStorage.getItem('nesilai_pollinations_token') || ''; } catch (e) { return ''; }
+    })();
+
     const IMAGE_PROVIDERS = [
-        { name: 'Pollinations', build: (p, w, h, seed) => `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=${w}&height=${h}&seed=${seed}&nologo=true&enhance=true` },
-        { name: 'Pollinations-Flux', build: (p, w, h, seed) => `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=${w}&height=${h}&seed=${seed}&nologo=true&model=flux` },
-        { name: 'Pollinations-Turbo', build: (p, w, h, seed) => `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=${w}&height=${h}&seed=${seed}&nologo=true&model=turbo` }
+        {
+            name: 'Pollinations',
+            build: (p, w, h, seed) => 'https://image.pollinations.ai/prompt/' + encodeURIComponent(p) +
+                '?width=' + w + '&height=' + h + '&seed=' + seed + '&nologo=true&referrer=nesilai' +
+                (POLLINATIONS_TOKEN ? '&token=' + encodeURIComponent(POLLINATIONS_TOKEN) : '')
+        },
+        {
+            name: 'AI Horde',
+            horde: true // URL tabanlı değil — aşağıdaki tryAiHorde ile çalışır
+        }
     ];
 
     const IMAGE_FALLBACK_SEED = () => Math.floor(Math.random() * 1000000);
@@ -116,15 +134,20 @@
     async function generateImageWithFallback(prompt, width = 1024, height = 768, opts = {}) {
         const attempts = [];
         for (const def of IMAGE_PROVIDERS) {
-            const seed = IMAGE_FALLBACK_SEED();
-            const url = def.build(prompt, width, height, seed);
-            attempts.push({ name: def.name, url });
             try {
-                const ok = await tryImageProvider(def, prompt, width, height, seed, opts.signal);
+                let ok;
+                if (def.horde) {
+                    attempts.push({ name: def.name });
+                    ok = await tryAiHorde(prompt, width, height, opts.signal);
+                } else {
+                    const seed = IMAGE_FALLBACK_SEED();
+                    attempts.push({ name: def.name, url: def.build(prompt, width, height, seed) });
+                    ok = await tryImageProvider(def, prompt, width, height, seed, opts.signal);
+                }
                 return { url: ok.url, provider: ok.provider, attempts };
             } catch (e) {
                 if (opts.signal && opts.signal.aborted) throw e;
-                // sonraki sağlayıcıyı dene
+                // sıradaki sağlayıcıyı dene
             }
         }
         const err = new Error('Tüm görsel sağlayıcıları şu an yanıt vermedi. Lütfen tekrar dene.');
@@ -132,11 +155,95 @@
         throw err;
     }
 
-    // Pollinations.ai görsel URL'si üretir (geriye dönük uyumluluk — ilk sağlayıcı)
+    // ----------------------------------------------------------
+    // AI Horde — topluluk GPU ağı (bağımsız yedek sağlayıcı)
+    // ----------------------------------------------------------
+    // API tarayıcıya CORS izni verir (access-control-allow-origin: *) ve
+    // r2:false ile görseli base64 webp olarak döndürür → CORS'suz imaj
+    // CDN'leri gibi fetch sorunu yaşatmaz.
+    const HORDE_AGENT = 'NesilAI:1.0:web';
+    const HORDE_POLL_MS = 2500;
+    const HORDE_TIMEOUT_MS = 150000;
+
+    function hordeBase64ToBlobUrl(b64) {
+        const clean = String(b64).replace(/^data:[^,]+,/, '');
+        const bin = atob(clean);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return URL.createObjectURL(new Blob([bytes], { type: 'image/webp' }));
+    }
+
+    async function tryAiHorde(prompt, width, height, signal) {
+        // 1) İşi kuyruğa bırak (anonim anahtar: 0000000000 — tamamen ücretsiz)
+        const submitRes = await fetch('https://aihorde.net/api/v2/generate/async', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': '0000000000',
+                'Client-Agent': HORDE_AGENT
+            },
+            body: JSON.stringify({
+                prompt: prompt,
+                params: { width: width, height: height, steps: 22, cfg_scale: 7, sampler_name: 'k_euler_a' },
+                nsfw: false,
+                censor_nsfw: true,
+                r2: false // base64 dönsün — görsel CDN'i CORS'suz olduğundan blob'a çevrilir
+            }),
+            signal: signal
+        });
+        if (!submitRes.ok) {
+            throw new Error('AI Horde işi kabul etmedi (' + submitRes.status + ')');
+        }
+        const submit = await submitRes.json();
+        if (!submit || !submit.id) {
+            throw new Error('AI Horde iş kimliği alınamadı');
+        }
+
+        // 2) Tamamlanmayı bekle (anonim kuyruk: tipik 5 sn – 2 dk)
+        const started = Date.now();
+        while (Date.now() - started < HORDE_TIMEOUT_MS) {
+            if (signal && signal.aborted) {
+                throw new DOMException('İşlem kullanıcı tarafından durduruldu', 'AbortError');
+            }
+            await new Promise(r => setTimeout(r, HORDE_POLL_MS));
+
+            let check;
+            try {
+                const res = await fetch('https://aihorde.net/api/v2/generate/check/' + submit.id, { signal: signal });
+                check = await res.json();
+            } catch (e) {
+                continue; // tek anket hatası ölüm değil
+            }
+
+            if (check.faulted) throw new Error('AI Horde işi hata verdi');
+            if (check.is_possible === false) throw new Error('AI Horde şu an bu isteği karşılayamıyor');
+            if (check.kudos && check.kudos < 0) throw new Error('AI Horde kota reddi (kudos)');
+            if (check.done) {
+                // 3) Sonucu al (status çağrısı işi tüketir)
+                const statusRes = await fetch('https://aihorde.net/api/v2/generate/status/' + submit.id, { signal: signal });
+                if (!statusRes.ok) throw new Error('AI Horde sonuç döndürmedi (' + statusRes.status + ')');
+                const status = await statusRes.json();
+                const gen = status && status.generations && status.generations[0];
+                if (!gen || !gen.img) {
+                    // İş bitti ama görsel yoksa Horde censored/generations boş dönmüş olabilir
+                    throw new Error('AI Horde görsel döndürmedi');
+                }
+                return {
+                    url: hordeBase64ToBlobUrl(gen.img),
+                    provider: 'AI Horde' + (gen.model ? ' · ' + gen.model : '')
+                };
+            }
+        }
+        throw new Error('AI Horde zaman aşımı — kuyruk çok uzun, tekrar dene');
+    }
+
+    // Pollinations.ai görsel URL'si üretir (geriye dönük uyumluluk — son çare kart URL'i)
     function generateImageUrl(prompt, width = 1024, height = 768) {
         const seed = Math.floor(Math.random() * 1000000);
         const encoded = encodeURIComponent(prompt);
-        return `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&seed=${seed}&nologo=true&enhance=true`;
+        return 'https://image.pollinations.ai/prompt/' + encoded +
+            '?width=' + width + '&height=' + height + '&seed=' + seed + '&nologo=true&referrer=nesilai' +
+            (POLLINATIONS_TOKEN ? '&token=' + encodeURIComponent(POLLINATIONS_TOKEN) : '');
     }
 
     // Sohbet mesajının içine zengin görsel kartı ekler
@@ -216,7 +323,7 @@
     //   2) Olmazsa Pollinations metin modeli denenebilir (aynı ücretsiz havuz)
     //   3) Her iki yol da başarısızsa: küçük yerel sözlük + son çare orijinal prompt
     // Uygulama hızı için sonuçlar 100 kayıta kadar önbelleklenir.
-    const TRANSLATE_TIMEOUT_MS = 6000;
+    const TRANSLATE_TIMEOUT_MS = 12000;
     const translateCache = new Map();
 
     const FALLBACK_TR_EN = {
@@ -231,13 +338,17 @@
         'kuş': 'bird', 'at': 'horse', 'aslan': 'lion', 'kurt': 'wolf',
         'nehir': 'river', 'göl': 'lake', 'kar': 'snow', 'yağmur': 'rain',
         'sis': 'fog', 'bulut': 'cloud', 'bulutlar': 'clouds', 'fırtına': 'storm',
-        'siberpunk': 'cyberpunk', 'neon': 'neon', 'ışıklı': 'lit', 'ışıklar': 'lights',
+        'siberpunk': 'cyberpunk', 'neon': 'neon', 'renkli': 'colorful', 'renk': 'color',
+        'ışıklı': 'lit', 'ışıklar': 'lights',
         'manzara': 'landscape', 'portre': 'portrait', 'doğa': 'nature',
         'fotoğraf': 'photo', 'fotoğrafı': 'photo', 'fotoğraf': 'photo',
         'resim': 'picture', 'resmi': 'picture', 'görsel': 'image', 'görseli': 'image',
         'çizim': 'drawing', 'tablo': 'painting', 'sanat': 'art', 'sanatçı': 'artist',
         'dijital': 'digital', 'gerçekçi': 'realistic', 'detaylı': 'detailed',
         'uçan': 'flying', 'koşan': 'running', 'dans': 'dance', 'savaş': 'war',
+        'yanan': 'burning', 'yüzen': 'floating', 'parlayan': 'glowing', 'akan': 'flowing',
+        'düşen': 'falling', 'doğan': 'rising', 'batan': 'setting', 'dönen': 'spinning',
+        'patlayan': 'exploding', 'uyuyan': 'sleeping', 'bakan': 'looking', 'gülen': 'smiling',
         'ejderha': 'dragon', 'kılıç': 'sword', 'zırh': 'armor', 'robot': 'robot',
         'yüz': 'face', 'göz': 'eye', 'saç': 'hair', 'el': 'hand', 'kalp': 'heart',
         'kızılötesi': 'infrared', 'su altı': 'underwater', 'volkan': 'volcano',
@@ -255,8 +366,7 @@
     function localFallbackTranslate(text) {
         let hit = 0;
         const out = text.replace(/[\p{L}\p{M}]+/gu, (word) => {
-            const key = word.toLocaleLowerCase('tr');
-            const en = FALLBACK_TR_EN[key];
+            const en = lookupTrWord(word);
             if (en !== undefined) { hit++; return en; }
             return word;
         });
@@ -265,11 +375,42 @@
         return hit > 0 && hit * 2 > total ? out : text;
     }
 
+    // Türkçe çekim ekleri: "gökyüzünde" → gökyüzü, "kedimi" → kedi gibi.
+    // Uzun ekler önce denenir; kök sözlükte yoksa kelime olduğu gibi kalır.
+    const TR_SUFFIXES = [
+        "'nde", "'nda", "'nde", "'nda", "'den", "'dan", "'te", "'ta", "'nin", "'nın", "'nun", "'nün", "'yi", "'yı", "'yu", "'yü",
+        'ndeki', 'ndaki', 'ları', 'leri', 'nden', 'ndan', 'ntan', 'ntn',
+        'mız', 'miz', 'muz', 'müz', 'ınız', 'iniz', 'unuz', 'ünüz',
+        'nde', 'nda', 'den', 'dan', 'ten', 'tan', 'nın', 'nin', 'nun', 'nün',
+        'sını', 'sini', 'sı', 'si', 'su', 'sü', 'ya', 'ye', 'yı', 'yü',
+        'da', 'de', 'ta', 'te', 'ın', 'in', 'un', 'ün', 'ı', 'i', 'u', 'ü', 'a', 'e'
+    ];
+
+    function lookupTrWord(word) {
+        const key = word.toLocaleLowerCase('tr');
+        if (FALLBACK_TR_EN[key] !== undefined) return FALLBACK_TR_EN[key];
+        if (key.indexOf("'") !== -1) {
+            const stem = key.split("'")[0];
+            if (FALLBACK_TR_EN[stem] !== undefined) return FALLBACK_TR_EN[stem];
+        }
+        for (let s = 0; s < TR_SUFFIXES.length; s++) {
+            const suf = TR_SUFFIXES[s];
+            if (key.length > suf.length + 2 && key.slice(-suf.length) === suf) {
+                const stem = key.slice(0, -suf.length);
+                if (FALLBACK_TR_EN[stem] !== undefined) return FALLBACK_TR_EN[stem];
+            }
+        }
+        return undefined;
+    }
+
     function isEnglish(text) {
-        // Tipik Türkçe karakterler ya da yaygın Türkçe işlev sözcükleri varsa İngilizce değildir
+        // Tipik Türkçe karakterler varsa İngilizce değildir
         if (/[çğıöşüÇĞİÖŞÜ]/.test(text)) return false;
-        return !/\b(bir|ve|ile|için|gibi|olan|the|and|of|in|on)\b/i.test(text) ||
-               !/[çğıöşüÇĞİÖŞÜ]/.test(text) && /\b(the|and|of|with|in|on|at)\b/i.test(text);
+        // Yaygın Türkçe işlev sözcükleri geçiyorsa İngilizce değildir
+        if (/\b(bir|ve|ile|için|gibi|olan|üzerinde|içinde|renkli)\b/i.test(text)) return false;
+        // İngilizce işlev sözcükleri barındırıyorsa İngilizce say
+        return /\b(the|and|of|with|in|on|at|a|an|is|are)\b/i.test(text) ||
+               !/[\p{Lu}]/u.test(text) && !/[çğıöşü]/i.test(text);
     }
 
     async function translatePrompt(text) {

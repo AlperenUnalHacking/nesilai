@@ -227,7 +227,44 @@ architecture rather than policy.
 
 ---
 
-## 🧱 10. Engineering Quality Under the Hood
+## 👁️ 10. OpenView — The PC Screen Assistant
+
+`/openview` turns NesilAI into a **live screen companion** — a floating,
+space-glass panel that docks to the bottom-left corner of your display.
+Ask anything about what is on your screen; the AI answers from what it can
+actually see, and openly says so when a region isn't visible.
+
+- **PC only by design** — mobile and tablet builds never load the module;
+  running `/openview` there returns a clean "PC only" notice.
+- **Ekrandakini Sor** — capture the full screen or draw a rectangle around a
+  bug, chart, or code block and interrogate just that region (frozen-frame
+  selector with live pixel size, Esc to cancel).
+- **Honest vision** — the answer is grounded only in the captured frame;
+  providers without vision fall back to OCR instead of pretending to see.
+- **Streaming answers that breathe** — the response area grows and shrinks
+  with the text (short answer = small panel), scrolls internally past a
+  max height, and shows a live caret while generating.
+- **Yanıtı Durdur** — aborts generation mid-stream, keeps the partial
+  answer, and immediately frees the composer.
+- **Voice in, voice out** — dictation reuses the platform STT engine; spoken
+  replies reuse TTS with an OpenView-specific volume control.
+- **Multi-monitor aware** — in the desktop app, monitors are listed in the
+  panel ("Monitör 1 — Ana Ekran (1920×1080)") and the Electron main process
+  auto-picks the preferred display for capture.
+- **Frugal by design** — the screen is *never* streamed to the model; a frame
+  is grabbed only when you ask, scaled per quality setting, JPEG-compressed,
+  and discarded after the answer. Panel hides itself during capture so it
+  never photographs itself.
+- **Status you can see** — `● Ekran` / `● Mik` indicators glow green while
+  screen sharing or the microphone is active; closing the panel releases the
+  capture stream instantly.
+- **Settings** — mic toggle, voice reply + volume, monitor choice, analysis
+  quality (fast → native), JPEG compression, panel opacity/size/corner,
+  auto-start, and a configurable global shortcut (e.g. Ctrl+Shift+O).
+
+---
+
+## 🧱 11. Engineering Quality Under the Hood
 
 - **Modular script layer**: `ai.js` (providers, SSE streaming, error
   mapping), `media.js` (generation chains), `storage.js` (IndexedDB),

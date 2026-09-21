@@ -10,6 +10,7 @@
     let selectedVoice = null;
     let speechRate = 1.0;
     let speechPitch = 1.0;
+    let speechVolume = 1.0;
     let onCurrentEndCallback = null;
 
     function isSupported() {
@@ -198,6 +199,7 @@
 
         utterance.rate = speechRate;
         utterance.pitch = speechPitch;
+        utterance.volume = speechVolume;
 
         onCurrentEndCallback = onEnd;
 
@@ -259,6 +261,7 @@
             else { part.lang = 'tr-TR'; }
             part.rate = speechRate;
             part.pitch = speechPitch;
+            part.volume = speechVolume;
             if (idx === 0) {
                 part.onstart = utterance.onstart;
                 part.onend = utterance.onend;
@@ -289,6 +292,16 @@
         return isSpeakingState || (isSupported() && window.speechSynthesis.speaking);
     }
 
+    /** OpenView gibi modüller geçici ses seviyesi ayarlayabilir (0.0 – 1.0) */
+    function setVolume(v) {
+        const n = parseFloat(v);
+        if (!isNaN(n)) speechVolume = Math.max(0, Math.min(1, n));
+        return speechVolume;
+    }
+    function getVolume() {
+        return speechVolume;
+    }
+
     window.NesilTTS = {
         isSupported,
         initVoiceSettings,
@@ -296,7 +309,9 @@
         speak,
         stop,
         isSpeaking,
-        findTurkishVoice
+        findTurkishVoice,
+        setVolume,
+        getVolume
     };
 
 })();

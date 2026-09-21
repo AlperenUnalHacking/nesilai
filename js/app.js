@@ -11,61 +11,16 @@
     const PLANS = {
         free: {
             id: 'free',
-            name: 'Free (Ücretsiz)',
-            badge: 'Free Plan',
+            name: 'Ücretsiz',
+            badge: 'Ücretsiz Plan',
             price: '0₺',
             limits: {
-                images: 5,
-                chats: 50,
-                stt: 50,
-                tts: 25,
-                music: 3,
-                video: 2
-            }
-        },
-        premium: {
-            id: 'premium',
-            name: 'Premium',
-            badge: 'Premium',
-            badgeIcon: 'i-star',
-            price: '49₺/ay',
-            limits: {
-                images: 10,  // 5 * 2
-                chats: 100,  // 50 * 2
-                stt: 100,    // 50 * 2
-                tts: 50,     // 25 * 2
-                music: 6,    // 3 * 2
-                video: 4     // 2 * 2
-            }
-        },
-        premium_go: {
-            id: 'premium_go',
-            name: 'Premium Go',
-            badge: 'Premium Go',
-            badgeIcon: 'i-bolt',
-            price: '89₺/ay',
-            limits: {
-                images: 20,  // 10 * 2
-                chats: 200,  // 100 * 2
-                stt: 200,    // 100 * 2
-                tts: 100,    // 50 * 2
-                music: 12,   // 6 * 2
-                video: 8     // 4 * 2
-            }
-        },
-        premium_plus: {
-            id: 'premium_plus',
-            name: 'Premium Plus',
-            badge: 'Premium Plus',
-            badgeIcon: 'i-crown',
-            price: '149₺/ay',
-            limits: {
-                images: 40,  // 20 * 2
-                chats: 400,  // 200 * 2
-                stt: 400,    // 200 * 2
-                tts: 200,    // 100 * 2
-                music: 24,   // 12 * 2
-                video: 16    // 8 * 2
+                images: 100,
+                chats: 100,
+                stt: 100,
+                tts: 100,
+                music: 100,
+                video: 100
             }
         },
         unlimited: {
@@ -107,10 +62,8 @@
     const chatHistoryList = document.getElementById('chat-history-list');
     const openVoiceModeBtn = document.getElementById('open-voice-mode-btn');
     const openSettingsBtn = document.getElementById('open-settings-btn');
-    const openSubscriptionBtn = document.getElementById('open-subscription-btn');
     const sidebarPlanBadge = document.getElementById('sidebar-plan-badge');
     const widgetPlanName = document.getElementById('widget-plan-name');
-    const sidebarUpgradeBtn = document.getElementById('sidebar-upgrade-btn');
     const miniBarImages = document.getElementById('mini-bar-images');
     const miniBarChats = document.getElementById('mini-bar-chats');
     const miniTxtImages = document.getElementById('mini-txt-images');
@@ -120,7 +73,6 @@
     const currentChatTitle = document.getElementById('current-chat-title');
     const headerVoiceBtn = document.getElementById('header-voice-btn');
     const headerSettingsBtn = document.getElementById('header-settings-btn');
-    const headerSubBtn = document.getElementById('header-sub-btn');
     const headerPlanName = document.getElementById('header-plan-name');
     const themeToggleBtn = document.getElementById('theme-toggle');
 
@@ -142,37 +94,17 @@
     const attachmentStatus = document.getElementById('attachment-status');
     const removeAttachmentBtn = document.getElementById('remove-attachment-btn');
 
-    // Abonelik Modalı
-    const subscriptionModal = document.getElementById('subscription-modal');
-    const subscriptionBackdrop = document.getElementById('subscription-backdrop');
-    const closeSubModalBtn = document.getElementById('close-sub-modal-btn');
-    const dashActivePlan = document.getElementById('dash-active-plan');
-    const statValImages = document.getElementById('stat-val-images');
-    const statBarImages = document.getElementById('stat-bar-images');
-    const statValChats = document.getElementById('stat-val-chats');
-    const statBarChats = document.getElementById('stat-bar-chats');
-    const statValStt = document.getElementById('stat-val-stt');
-    const statBarStt = document.getElementById('stat-bar-stt');
-    const statValTts = document.getElementById('stat-val-tts');
-    const statBarTts = document.getElementById('stat-bar-tts');
-    const planCards = document.querySelectorAll('.pricing-card');
-    const selectPlanBtns = document.querySelectorAll('.btn-select-plan');
-    const resetUsageBtn = document.getElementById('reset-usage-btn');
-
-    // Kupon Modalı
-    const couponModal = document.getElementById('coupon-modal');
-    const couponBackdrop = document.getElementById('coupon-backdrop');
-    const closeCouponModalBtn = document.getElementById('close-coupon-modal-btn');
-    const couponFormView = document.getElementById('coupon-form-view');
-    const couponSuccessView = document.getElementById('coupon-success-view');
-    const couponPlanSelect = document.getElementById('coupon-plan-select');
-    const couponCodeInput = document.getElementById('coupon-code-input');
-    const couponActivateBtn = document.getElementById('coupon-activate-btn');
-    const couponError = document.getElementById('coupon-error');
-    const couponSuccessText = document.getElementById('coupon-success-text');
-    const subCouponStatus = document.getElementById('sub-coupon-status');
-    const openCouponModalBtn = document.getElementById('open-coupon-modal-btn');
-    const couponDoneBtn = document.getElementById('coupon-done-btn');
+    // Kendini Tanıt (gizli bellek) + Bilgiler modalları
+    const introduceModal = document.getElementById('introduce-modal');
+    const introduceBackdrop = document.getElementById('introduce-backdrop');
+    const introduceBtn = document.getElementById('introduce-btn');
+    const closeIntroduceBtn = document.getElementById('close-introduce-modal-btn');
+    const introSaveBtn = document.getElementById('intro-save-btn');
+    const introClearBtn = document.getElementById('intro-clear-btn');
+    const infoModal = document.getElementById('info-modal');
+    const infoBackdrop = document.getElementById('info-backdrop');
+    const sidebarInfoBtn = document.getElementById('sidebar-info-btn');
+    const closeInfoBtn = document.getElementById('close-info-modal-btn');
 
     // Üretim Havuzu
     const poolModal = document.getElementById('pool-modal');
@@ -388,11 +320,8 @@
             if (saved) {
                 const parsed = JSON.parse(saved);
                 currentSubscription = {
-                    plan: parsed.plan || 'free',
-                    usage: Object.assign({ images: 0, chats: 0, stt: 0, tts: 0 }, parsed.usage),
-                    coupon: parsed.coupon || null,
-                    couponPlan: parsed.couponPlan || null,
-                    couponUntil: parsed.couponUntil || null
+                    plan: 'free',
+                    usage: Object.assign({ images: 0, chats: 0, stt: 0, tts: 0 }, parsed.usage)
                 };
             }
         } catch (e) {
@@ -402,12 +331,11 @@
             };
         }
 
-        // Kupon süresi dolmuşsa ücretsiz plana geri dön
-        if (currentSubscription.couponUntil && Date.now() > currentSubscription.couponUntil) {
-            currentSubscription.plan = 'free';
-            currentSubscription.coupon = null;
-            currentSubscription.couponPlan = null;
-            currentSubscription.couponUntil = null;
+        // Günlük sıfırlama: takvim günü değişince kotalar sıfırlanır
+        const today = new Date().toDateString();
+        if (currentSubscription.usageDay !== today) {
+            currentSubscription.usageDay = today;
+            currentSubscription.usage = { images: 0, chats: 0, stt: 0, tts: 0, music: 0, video: 0 };
             localStorage.setItem('nesilai_sub_v2', JSON.stringify(currentSubscription));
         }
 
@@ -420,10 +348,15 @@
     }
 
     function getPlan() {
+        // Uygulamalarda (Electron) limitler SINIRSIZ; web'de ücretsiz plan (100'er).
+        const isDesktopApp = !!(window.nesilaiDesktop && window.nesilaiDesktop.isDesktop);
+        if (isDesktopApp) return PLANS.unlimited;
         return PLANS[currentSubscription.plan] || PLANS.free;
     }
 
     function checkQuota(type) {
+        // Abonelik sistemi kaldırıldı: web'de tek ücretsiz plan (100'er),
+        // uygulamalarda sınırsız. Limit bitince bilgi modalı açılır.
         const plan = getPlan();
         const current = currentSubscription.usage[type] || 0;
         const limit = plan.limits[type];
@@ -440,8 +373,8 @@
                 video: 'Video üretimi'
             };
             const label = typeLabels[type] || type;
-            showToast(`${label} limitinize ulaştınız (${current}/${limit})!`, 'warning');
-            openSubscriptionModal();
+            showToast(`${label} günlük kullanım sınırına ulaştı (${current}/${limit}). Yarın sıfırlanır.`, 'warning');
+            openInfoModal();
             return false;
         }
         return true;
@@ -463,7 +396,6 @@
         if (sidebarPlanBadge) sidebarPlanBadge.innerHTML = badgeHtml;
         if (headerPlanName) headerPlanName.innerHTML = badgeHtml;
         if (widgetPlanName) widgetPlanName.textContent = plan.name;
-        if (dashActivePlan) dashActivePlan.textContent = plan.name;
 
         // Kenar Çubuğu Mini Barlar
         const paintMeter = (txtEl, barEl, used, limit) => {
@@ -472,121 +404,6 @@
         };
         paintMeter(miniTxtImages, miniBarImages, usage.images, plan.limits.images);
         paintMeter(miniTxtChats, miniBarChats, usage.chats, plan.limits.chats);
-
-        // Modal İstatistikleri
-        const paintStat = (valEl, barEl, used, limit) => {
-            if (valEl) valEl.textContent = limit === Infinity ? `${used} / ∞` : `${used} / ${limit}`;
-            if (barEl) barEl.style.width = (limit === Infinity ? 0 : Math.min(100, (used / limit) * 100)) + '%';
-        };
-        paintStat(statValImages, statBarImages, usage.images, plan.limits.images);
-        paintStat(statValChats, statBarChats, usage.chats, plan.limits.chats);
-        paintStat(statValStt, statBarStt, usage.stt, plan.limits.stt);
-        paintStat(statValTts, statBarTts, usage.tts, plan.limits.tts);
-
-        // Kupon durumu satırı
-        if (subCouponStatus) {
-            if (currentSubscription.couponUntil && Date.now() < currentSubscription.couponUntil) {
-                const end = new Date(currentSubscription.couponUntil);
-                const days = Math.ceil((currentSubscription.couponUntil - Date.now()) / 86400000);
-                subCouponStatus.innerHTML = icon('i-key') + ` Kupon "${currentSubscription.coupon}" aktif — ${end.toLocaleDateString('tr-TR')} tarihine kadar (${days} gün) sınırsız erişim.`;
-                subCouponStatus.classList.remove('hidden');
-            } else {
-                subCouponStatus.classList.add('hidden');
-            }
-        }
-
-        // Plan Kartları Aktiflik İşareti
-        planCards.forEach(card => {
-            const tier = card.dataset.plan;
-            const btn = card.querySelector('.btn-select-plan');
-            if (tier === currentSubscription.plan) {
-                card.classList.add('active-plan');
-                if (btn) {
-                    btn.innerHTML = icon('i-check') + ' Aktif Plan';
-                    btn.disabled = true;
-                    btn.classList.remove('btn-primary', 'btn-glow');
-                }
-            } else {
-                card.classList.remove('active-plan');
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = tier === 'unlimited' ? icon('i-infinity') + " Sınırsız'a geç" : icon('i-crown') + ` ${PLANS[tier].name}'a Geç`;
-                    if (tier !== 'free') btn.classList.add('btn-primary');
-                    if (tier === 'premium_plus' || tier === 'unlimited') btn.classList.add('btn-glow');
-                }
-            }
-        });
-    }
-
-    function switchPlan(newPlanId) {
-        if (!PLANS[newPlanId]) return;
-        currentSubscription.plan = newPlanId;
-        saveSubscription();
-        showToast(`Tebrikler! ${PLANS[newPlanId].name} paketine geçtiniz!`, 'success');
-    }
-
-    // ========================================================
-    // Kupon ile Abonelik Aktifleştirme
-    //   Kodlar: 1, 2, 3 → seçilen planı 18 ay boyunca ücretsiz açar.
-    // ========================================================
-    const COUPON_CODES = { '1': true, '2': true, '3': true };
-    const COUPON_DURATION_MS = 18 * 30 * 24 * 60 * 60 * 1000; // 18 ay
-
-    function activateCoupon(rawCode, planId) {
-        const code = (rawCode || '').trim();
-        if (!COUPON_CODES[code]) {
-            return { ok: false, message: 'Geçersiz kupon kodu. Kod tek haneli: 1, 2 veya 3.' };
-        }
-        if (!PLANS[planId] || planId === 'free') {
-            return { ok: false, message: 'Aktifleştirmek için listeden bir plan seç.' };
-        }
-
-        currentSubscription.plan = planId;
-        currentSubscription.coupon = code;
-        currentSubscription.couponPlan = planId;
-        currentSubscription.couponUntil = Date.now() + COUPON_DURATION_MS;
-        saveSubscription();
-
-        return { ok: true, planId: planId, until: currentSubscription.couponUntil };
-    }
-
-    function openCouponModal() {
-        if (subscriptionModal) subscriptionModal.classList.add('hidden');
-        couponModal.classList.remove('hidden');
-        couponFormView.classList.remove('hidden');
-        couponSuccessView.classList.add('hidden');
-        couponError.classList.add('hidden');
-        if (couponCodeInput) couponCodeInput.value = '';
-        closeMobileSidebar();
-    }
-
-    function closeCouponModal() {
-        couponModal.classList.add('hidden');
-        updateSubscriptionUI();
-    }
-
-    function handleCouponActivation() {
-        const planId = couponPlanSelect ? couponPlanSelect.value : '';
-        const code = couponCodeInput ? couponCodeInput.value : '';
-
-        const result = activateCoupon(code, planId);
-
-        if (!result.ok) {
-            couponError.textContent = result.message;
-            couponError.classList.remove('hidden');
-            return;
-        }
-
-        couponError.classList.add('hidden');
-        couponFormView.classList.add('hidden');
-        couponSuccessView.classList.remove('hidden');
-
-        const end = new Date(result.until);
-        couponSuccessText.textContent =
-            `${PLANS[result.planId].name} planı ${end.toLocaleDateString('tr-TR')} tarihine kadar (18 ay) ` +
-            'ücretsiz aktifleştirildi. Tüm limitler kaldırıldı — sınırsız sohbet, görsel ve seslendirme.';
-        updateAiStatusChip();
-        showToast('Abonelik aktifleştirildi', 'success');
     }
 
     // ========================================================
@@ -1069,14 +886,92 @@
         }
     }
 
-    function openSubscriptionModal() {
-        updateSubscriptionUI();
-        subscriptionModal.classList.remove('hidden');
+    // ========================================================
+    // Bilgiler modalı — AI bilgisi + kullanım kılavuzu + gizlilik
+    // ========================================================
+    function openInfoModal() {
+        infoModal.classList.remove('hidden');
         closeMobileSidebar();
     }
+    function closeInfoModal() {
+        infoModal.classList.add('hidden');
+    }
 
-    function closeSubscriptionModal() {
-        subscriptionModal.classList.add('hidden');
+    // ========================================================
+    // Gizli bellek (Kendini Tanıt) — kullanıcı görüntüleyemez/değiştiremez.
+    // localStorage'da obfuke edilmiş tutulur (nesilai_secret_mem_v1);
+    // içerik yalnızca buildConversation'a gizli bağlam olarak enjekte edilir.
+    // ========================================================
+    const SECRET_MEM_KEY = 'nesilai_secret_mem_v1';
+    const SECRET_SALT = 'NesilAI::Bloodline::Acsida';
+
+    function obfuscate(text) {
+        try {
+            const out = [];
+            for (let i = 0; i < text.length; i++) {
+                out.push(String.fromCharCode(text.charCodeAt(i) ^ SECRET_SALT.charCodeAt(i % SECRET_SALT.length)));
+            }
+            return btoa(unescape(encodeURIComponent(out.join(''))));
+        } catch (e) { return ''; }
+    }
+    function deobfuscate(b64) {
+        try {
+            const raw = decodeURIComponent(escape(atob(b64)));
+            const out = [];
+            for (let i = 0; i < raw.length; i++) {
+                out.push(String.fromCharCode(raw.charCodeAt(i) ^ SECRET_SALT.charCodeAt(i % SECRET_SALT.length)));
+            }
+            return out.join('');
+        } catch (e) { return ''; }
+    }
+
+    function readSecretMemory() {
+        try { return deobfuscate(localStorage.getItem(SECRET_MEM_KEY) || '') || ''; }
+        catch (e) { return ''; }
+    }
+
+    function openIntroduceModal() {
+        closeMobileSidebar();
+        introduceModal.classList.remove('hidden');
+    }
+    function closeIntroduceModal() {
+        introduceModal.classList.add('hidden');
+        // Formu her açılışta boş başlat — bilgiler geri okunamaz (tek yön)
+        ['intro-firstname','intro-lastname','intro-age','intro-birthdate','intro-topics','intro-address']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    }
+
+    function saveIntroduceForm() {
+        const val = id => (document.getElementById(id) || {}).value || '';
+        const first = val('intro-firstname').trim();
+        if (!first) {
+            showToast('En azından adını yaz — gerisi isteğe bağlı', 'warning');
+            return;
+        }
+        const lines = [
+            'Kullanıcı hakkında bilgiler (gizli bellek):',
+            '- Ad: ' + first,
+            val('intro-lastname').trim() ? '- Soyad: ' + val('intro-lastname').trim() : null,
+            val('intro-age').trim() ? '- Yaş: ' + val('intro-age').trim() : null,
+            val('intro-birthdate') ? '- Doğum tarihi: ' + val('intro-birthdate') : null,
+            val('intro-topics').trim() ? '- İlgilendiği konular: ' + val('intro-topics').trim() : null,
+            val('intro-address').trim() ? '- Hitap şekli: ' + val('intro-address').trim() : null,
+            'Bu bilgileri sohbet boyunca kullan: kullanıcıya hitap şekline göre seslen, ilgi alanlarına uygun örnek ver. '
+            + 'Bu bilgileri asla açıkça tekrar etme/listeleme; doğal biçimde davran.'
+        ].filter(Boolean);
+        try {
+            localStorage.setItem(SECRET_MEM_KEY, obfuscate(lines.join('\n')));
+            closeIntroduceModal();
+            showToast('Gizli bellek güncellendi — artık seni tanıyorum', 'success');
+        } catch (e) {
+            showToast('Gizli bellek kaydedilemedi', 'error');
+        }
+    }
+
+    function clearSecretMemory() {
+        localStorage.removeItem(SECRET_MEM_KEY);
+        closeIntroduceModal();
+        showToast('Gizli bellek temizlendi');
     }
 
     // ========================================================
@@ -1603,6 +1498,58 @@
             try { window.NesilMemory.extractAndStore(text); } catch (e) { /* sessiz */ }
         }
 
+        // OPENVIEW: /openview [on|off|settings] → ekran asistanı (yalnızca PC)
+        if (cmdInfo && cmdInfo.cmd === 'openview') {
+            incrementQuota('chats');
+            const ov = window.NesilOpenView;
+            const ovReply = ov
+                ? ov.handleCommand('openview', cmdInfo.body)
+                : 'OpenView bu sürümde kullanılamıyor.';
+            const ovMsg = {
+                id: 'msg_' + (Date.now() + 1),
+                role: 'assistant',
+                text: ovReply,
+                command: 'openview',
+                commandLabel: 'OPENVIEW',
+                timestamp: Date.now()
+            };
+            activeChat.messages.push(ovMsg);
+            appendMessageToDom(ovMsg);
+            saveChatsToStorage();
+            if (window.NesilSFX) window.NesilSFX.reply();
+            checkAutoSpeak(ovMsg.text);
+            return;
+        }
+
+        // HUMANISE: /humanise [on|off] → insan modu (AI-Slop kapalı)
+        if (cmdInfo && (cmdInfo.cmd === 'humanise' || cmdInfo.cmd === 'humanize')) {
+            incrementQuota('chats');
+            const arg = cmdInfo.body.trim().toLowerCase();
+            const current = localStorage.getItem('nesilai_humanise') === 'true';
+            const next = arg === 'on' ? true : arg === 'off' ? false : !current;
+            localStorage.setItem('nesilai_humanise', next ? 'true' : 'false');
+            const humSwitch = document.getElementById('setting-humanise');
+            if (humSwitch) humSwitch.checked = next;
+
+            const humReply = next
+                ? 'İnsan modu açık. Bundan sonra düz konuşacağım: "Size nasıl yardımcı olabilirim?" tarzı hazır cümleler, boş nezaket kelimeleri ve gereksiz liste yığınları yok. Sorunu sor, doğal cevabı al. `/humanise off` ile eski tona dönebilirsin.'
+                : 'İnsan modu kapandı. Standart asistan tonuna döndüm.';
+            const humMsg = {
+                id: 'msg_' + (Date.now() + 1),
+                role: 'assistant',
+                text: humReply,
+                command: 'humanise',
+                commandLabel: 'HUMANISE',
+                timestamp: Date.now()
+            };
+            activeChat.messages.push(humMsg);
+            appendMessageToDom(humMsg);
+            saveChatsToStorage();
+            if (window.NesilSFX) window.NesilSFX.reply();
+            checkAutoSpeak(humMsg.text);
+            return;
+        }
+
         // 2. Üretim modları (sohbet hariç hepsi burada rotalanır)
         // AYAR KOMUTLARI: /ayarlar /tema /ses /temizle /yardim → yerelde çalışır, API'ye gitmez
         if (cmdInfo && !cmdInfo.body) {
@@ -1972,7 +1919,7 @@
     // Slash Komutları — /ultrathink /report /ultracode + ayar komutları
     // ========================================================
     function parseSlashCommand(rawText) {
-        const m = String(rawText || '').match(/^\s*\/(ultrathink|report|ultracode|ayarlar|settings|tema|theme|ses|voice|temizle|clear|yardim|yardım|help)\b\s*([\s\S]*)$/i);
+        const m = String(rawText || '').match(/^\s*\/(ultrathink|report|ultracode|openview|humanise|humanize|ayarlar|settings|tema|theme|ses|voice|temizle|clear|yardim|yardım|help)\b\s*([\s\S]*)$/i);
         if (!m) return null;
         return { cmd: m[1].toLowerCase(), body: m[2].trim(), original: rawText };
     }
@@ -2013,7 +1960,11 @@
                     '- `/report` — internette derin araştırma yapıp rapor hazırlar',
                     '- `/ultracode` — araştırır, plan çıkarır, kod yazar',
                     '',
+                    'Ekran asistanı (PC):',
+                    '- `/openview` — ekranı canlı izletir; /openview off → kapatır',
+                    '',
                     'Ayar komutları:',
+                    '- `/humanise` — AI-Slop\'u kapatır, insan gibi konuşur (on/off)',
                     '- `/ayarlar` — ayarlar panelini açar',
                     '- `/tema` — açık/koyu temayı değiştirir',
                     '- `/ses` — sesli sohbet modunu açar',
@@ -2093,6 +2044,19 @@
         if (el && label) el.textContent = label;
     }
 
+    // HUMANISE — "insan modu" promptu: AI-Slop kalıplarını kapatır
+    // /humanise komutu veya Ayarlar → Yanıt Stili ile açılır/kapanır
+    const HUMANISE_PROMPT = [
+        '[YAZIM STİLİ: İNSAN MODU AKTİF]',
+        'Bu yanıtı gerçek bir insan yazıyor gibi kur. Şu AI-kalıplarını KULLANMA:',
+        '- "Size nasıl yardımcı olabilirim?", "Yardımcı olmama izin verin", "Elbette!", "Tabii ki!", "Harika bir soru!", "Kesinlikle", "Umarım bu yardımcı olur"',
+        '- Gereksiz emoji, kalın yazı yağmuru, gereksiz başlıklar ve madde işareti yığını',
+        '- Her maddeyi aynı kalıpta sıralayan robotik liste düzeni',
+        'Bunun yerine: konuşma diliyle yaz, kısa ve uzun cümleleri doğal karıştır, doğrudan konuya gir,',
+        'gereksiz giriş/sonuç cümleleri kurma. Emin olmadığında dürüstçe "emin değilim" de.',
+        'Liste ŞART değilse listeleme; aklından anlatır gibi yaz.'
+    ].join('\n');
+
     // Sohbet bağlamını sağlayıcı formatına çevirir
     function buildConversation(userPrompt, attachment, historyMessages, extraContext) {
         // Görsel üretim mesajları ve hata mesajları sohbet bağlamına girmez
@@ -2116,6 +2080,10 @@
         const target = messages[messages.length - 1];
         if (target && target.role === 'user') {
             let injected = '';
+            // Gizli bellek (Kendini Tanıt) — kullanıcı görüntüleyemez;
+            // AI'a kullanıcının adı/yaşı/ilgi alanları/hitap tercihi verilir
+            const secret = readSecretMemory();
+            if (secret) injected += '\n\n' + secret;
             if (window.NesilMemory) {
                 try {
                     const mem = window.NesilMemory.buildMemoryContext();
@@ -2123,6 +2091,9 @@
                 } catch (e) { /* bellek kapalı */ }
             }
             if (extraContext) injected += extraContext;
+            if (localStorage.getItem('nesilai_humanise') === 'true') {
+                injected += '\n\n' + HUMANISE_PROMPT;
+            }
             if (injected) target.content += '\n\n' + injected;
         }
 
@@ -2215,7 +2186,14 @@
                 },
                 onError: (err) => {
                     micBtn.classList.remove('listening');
-                    showToast('Mikrofon hatası: ' + (err.error || 'Bilinmiyor'), 'error');
+                    const code = err && err.error;
+                    if (code === 'not-allowed' || code === 'service-not-allowed') {
+                        showToast('Mikrofon izni reddedildi — adres çubuğundaki kilit/izn menüsünden izin ver', 'error');
+                    } else if (code === 'network' && window.NesilSTT && !window.NesilSTT.hasWebSpeech()) {
+                        showToast('Konuşma tanıma servisine ulaşılamadı', 'error');
+                    } else {
+                        showToast('Mikrofon hatası: ' + (code || 'Bilinmiyor'), 'error');
+                    }
                 }
             });
 
@@ -2408,6 +2386,10 @@
         const autoSpeak = localStorage.getItem('nesilai_auto_speak') === 'true';
         if (settingAutoSpeak) settingAutoSpeak.checked = autoSpeak;
         if (webSearchToggle) webSearchToggle.checked = localStorage.getItem('nesilai_web_search') === 'true';
+
+        // İnsan modu (AI-Slop kapalı) — /humanise ile de yönetilir
+        const humSwitch = document.getElementById('setting-humanise');
+        if (humSwitch) humSwitch.checked = localStorage.getItem('nesilai_humanise') === 'true';
 
         // Bellek bölümü: açma/kapama + kayıt listesi
         if (settingMemoryEnabled && window.NesilMemory) {
@@ -2793,6 +2775,8 @@
         { cmd: '/ultrathink', name: 'ULTRATHINK', desc: 'Derin düşünür, detaylı araştırıp yanıtlar', icon: 'i-brain' },
         { cmd: '/report', name: 'REPORT', desc: 'İnternette derin araştırma yapıp rapor hazırlar', icon: 'i-report' },
         { cmd: '/ultracode', name: 'ULTRACODE', desc: 'Araştırır, plan çıkarır, kod yazar', icon: 'i-bolt' },
+        { cmd: '/openview', name: 'OPENVIEW', desc: 'Ekranını canlı izlet — PC ekran asistanı (on/off/settings)', icon: 'i-eye' },
+        { cmd: '/humanise', name: 'HUMANISE', desc: 'AI-Slop\'u kapat — insan gibi konuşur (on/off)', icon: 'i-pen' },
         { cmd: '/ayarlar', name: 'AYARLAR', desc: 'Ayarlar panelini açar (sağlayıcı, model, ses, veri)', icon: 'i-settings' },
         { cmd: '/tema', name: 'TEMA', desc: 'Açık/koyu temayı değiştirir', icon: 'i-palette' },
         { cmd: '/ses', name: 'SES', desc: 'Sesli sohbet modunu açar', icon: 'i-voice' },
@@ -2858,6 +2842,10 @@
     saveSettingsBtn.addEventListener('click', () => {
         localStorage.setItem('nesilai_auto_speak', settingAutoSpeak.checked ? 'true' : 'false');
         localStorage.setItem('nesilai_web_search', webSearchToggle && webSearchToggle.checked ? 'true' : 'false');
+        const settingHumanise = document.getElementById('setting-humanise');
+        if (settingHumanise) {
+            localStorage.setItem('nesilai_humanise', settingHumanise.checked ? 'true' : 'false');
+        }
         if (settingMemoryEnabled && window.NesilMemory) {
             window.NesilMemory.setEnabled(settingMemoryEnabled.checked);
         }
@@ -3006,27 +2994,20 @@
         });
         sidebarBackdrop.addEventListener('click', closeMobileSidebar);
 
-        // Abonelik Modalı Aç/Kapa
-        openSubscriptionBtn.addEventListener('click', openSubscriptionModal);
-        headerSubBtn.addEventListener('click', openSubscriptionModal);
-        sidebarUpgradeBtn.addEventListener('click', openSubscriptionModal);
-        closeSubModalBtn.addEventListener('click', closeSubscriptionModal);
-        subscriptionBackdrop.addEventListener('click', closeSubscriptionModal);
+        // Bilgiler modalı (Limit & Plan widget'ının üstündeki düğme)
+        if (sidebarInfoBtn) sidebarInfoBtn.addEventListener('click', openInfoModal);
+        if (closeInfoBtn) closeInfoBtn.addEventListener('click', closeInfoModal);
+        if (infoBackdrop) infoBackdrop.addEventListener('click', closeInfoModal);
 
-        // Kupon ile Abonelik Aktifleştirme
-        if (openCouponModalBtn) openCouponModalBtn.addEventListener('click', openCouponModal);
+        // Kendini Tanıt — gizli bellek
+        if (introduceBtn) introduceBtn.addEventListener('click', openIntroduceModal);
+        if (closeIntroduceBtn) closeIntroduceBtn.addEventListener('click', closeIntroduceModal);
+        if (introduceBackdrop) introduceBackdrop.addEventListener('click', closeIntroduceModal);
+        if (introSaveBtn) introSaveBtn.addEventListener('click', saveIntroduceForm);
+        if (introClearBtn) introClearBtn.addEventListener('click', clearSecretMemory);
 
         // Üretim Havuzu
         initPool();
-        if (closeCouponModalBtn) closeCouponModalBtn.addEventListener('click', closeCouponModal);
-        if (couponBackdrop) couponBackdrop.addEventListener('click', closeCouponModal);
-        if (couponActivateBtn) couponActivateBtn.addEventListener('click', handleCouponActivation);
-        if (couponDoneBtn) couponDoneBtn.addEventListener('click', closeCouponModal);
-        if (couponCodeInput) {
-            couponCodeInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') handleCouponActivation();
-            });
-        }
 
         // Composer Model Seçici
         if (modelPickerBtn) {
@@ -3076,23 +3057,6 @@
                 showToast(v === 'phone' ? 'Telefon modu açıldı' : v === 'desktop' ? 'Masaüstü modu açıldı' : 'Cihaz modu: Otomatik', 'success');
             });
         }
-
-        // Plan Seç Butonları
-        selectPlanBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tier = btn.dataset.tier;
-                if (tier) {
-                    switchPlan(tier);
-                }
-            });
-        });
-
-        // Test Kotası Sıfırlama Butonu
-        resetUsageBtn.addEventListener('click', () => {
-            currentSubscription.usage = { images: 0, chats: 0, stt: 0, tts: 0, music: 0, video: 0 };
-            saveSubscription();
-            showToast('Kullanım kotaları sıfırlandı (Test)');
-        });
 
         // Sesli Sohbet Butonları
         headerVoiceBtn.addEventListener('click', openVoiceMode);
@@ -3184,14 +3148,6 @@
             settingsModal.classList.add('hidden');
             return;
         }
-        if (!subscriptionModal.classList.contains('hidden')) {
-            closeSubscriptionModal();
-            return;
-        }
-        if (couponModal && !couponModal.classList.contains('hidden')) {
-            closeCouponModal();
-            return;
-        }
         if (poolModal && !poolModal.classList.contains('hidden')) {
             closePoolModal();
         }
@@ -3266,6 +3222,11 @@
     // ========================================================
     AI.showToast = showToast;
     AI.copyToClipboard = copyTextToClipboard;
+
+    // OpenView gibi modüllerin platformun dahili yardımcılarına erişimi
+    window.renderMarkdown = renderMarkdown;
+    window.checkQuota = checkQuota;
+    window.incrementQuota = incrementQuota;
 
     // Başlat!
     if (document.readyState === 'loading') {

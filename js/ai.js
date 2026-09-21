@@ -335,6 +335,50 @@
         }
     }
 
+    // 429 gövdesinden bekleme süresini çıkar: { retry_after: 10 } ya da
+    // "Retry after 10 seconds" biçimleri (llm7 anonim katman bunları üretir).
+    function parseRetryAfterMs(status, bodyText) {
+        if (status !== 429) return 0;
+        let seconds = 0;
+        try {
+            const j = JSON.parse(bodyText);
+            if (j && typeof j.retry_after === 'number') seconds = j.retry_after;
+            else if (j && j.error && typeof j.error.retry_after === 'number') seconds = j.error.retry_after;
+        } catch (e) { /* metinden ayrıştırılır */ }
+        if (!seconds) {
+            const m = /retry\s*after\s*(\d+(?:\.\d+)?)/i.exec(bodyText || '');
+            if (m) seconds = Number(m[1]);
+        }
+        seconds = Math.min(Math.max(seconds || 3, 1), 10); // 1–10 sn ile sınırla
+        return Math.round(seconds * 1000) + 250; // küçük tampon
+    }
+
+    // 429 → sunucunun söylediği süre kadar bekleyip yeniden dene.
+    // Anonim ücretsiz katmanlarda (llm7) "Too many concurrent requests"
+    // saniyeler içinde kendini düzeltir; kullanıcıya hata göstermeden önce
+    // 2 kez sabırla davranmak çoğu hatayı tamamen ortadan kaldırır.
+    const RETRY_429_MAX = 2;
+    async function fetchWith429Retry(url, init, provider, guard) {
+        let attempt = 0;
+        while (true) {
+            let response;
+            try {
+                response = await fetch(url, init);
+            } catch (error) {
+                throw normalizeFetchError(error, provider);
+            }
+            if (response.status === 429 && attempt < RETRY_429_MAX && !guard.signal.aborted) {
+                const bodyText = await readErrorBody(response);
+                const waitMs = parseRetryAfterMs(429, bodyText);
+                await new Promise(resolve => setTimeout(resolve, waitMs));
+                if (guard.signal.aborted) throw new DOMException('İşlem iptal edildi', 'AbortError');
+                attempt++;
+                continue;
+            }
+            return response;
+        }
+    }
+
     // Bazı sağlayıcılar hata durumunda HTTP 200 ile "hata metni" döndürür
     // (örn. Pollinations ücretsiz havuzu tükendiğinde). Bunu cevap sanmayalım.
     const EMBEDDED_ERROR_MARKERS = [
@@ -564,7 +608,26 @@
         if (provider.kind === 'gemini') {
             return chatGemini(provider, messages, system, temperature, opts);
         }
-        return chatOpenAiCompatible(provider, messages, system, temperature, opts);
+        try {
+            return await chatOpenAiCompatible(provider, messages, system, temperature, opts);
+        } catch (err) {
+            // Anonim llm7 tıkandıysa (429/quota/network) ve kullanıcı anahtarlı bir
+            // sağlayıcıya geçmemişse → bağımsız anahtarsız yedek: Pollinations metin.
+            // Böylece tek ücretsiz sağlayıcının geçici kilidi tüm sohbeti durdurmaz.
+            const canFallback = opts.fallback !== false &&
+                provider.id === 'llm7' &&
+                !getApiKey('llm7') &&
+                (opts.providerId || settings.provider) === 'llm7' &&
+                err && (err.status === 429 || err.kind === 'quota' || err.kind === 'network');
+            if (!canFallback) throw err;
+            try {
+                const result = await chatOpenAiCompatible(PROVIDERS.pollinations, messages, system, temperature, opts);
+                result.fallbackFrom = provider.id;
+                return result;
+            } catch (e2) {
+                throw err; // asıl (daha bilgilendirici) hatayı göster
+            }
+        }
     }
 
     async function chatOpenAiCompatible(provider, messages, system, temperature, opts) {
@@ -600,14 +663,12 @@
         let response;
 
         try {
-            response = await fetch(url, {
+            response = await fetchWith429Retry(url, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(body),
                 signal: guard.signal
-            });
-        } catch (error) {
-            throw normalizeFetchError(error, provider);
+            }, provider, guard);
         } finally {
             if (!wantStream) guard.cleanup();
         }
@@ -693,14 +754,12 @@
         let response;
 
         try {
-            response = await fetch(url, {
+            response = await fetchWith429Retry(url, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(body),
                 signal: guard.signal
-            });
-        } catch (error) {
-            throw normalizeFetchError(error, provider);
+            }, provider, guard);
         } finally {
             if (!wantStream) guard.cleanup();
         }
