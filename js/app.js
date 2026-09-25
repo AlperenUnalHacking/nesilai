@@ -114,6 +114,13 @@
     const poolTabs = document.querySelectorAll('.pool-tab');
     const poolPanes = document.querySelectorAll('.pool-pane');
     const poolImagePrompt = document.getElementById('pool-image-prompt');
+    // Müzik & Ses atölyesi
+    const sndFxGrid = document.getElementById('snd-fx-grid');
+    const sndMusicPrompt = document.getElementById('snd-music-prompt');
+    const sndMusicModel = document.getElementById('snd-music-model');
+    const sndMusicBtn = document.getElementById('snd-music-btn');
+    const sndMusicStatus = document.getElementById('snd-music-status');
+    const sndResults = document.getElementById('snd-results');
     const poolImageSize = document.getElementById('pool-image-size');
     const poolImageCount = document.getElementById('pool-image-count');
     const poolImageBtn = document.getElementById('pool-image-btn');
@@ -150,10 +157,12 @@
     const modePickerBtn = document.getElementById('mode-picker-btn');
     const modePickerLabel = document.getElementById('mode-picker-label');
 
-    // Üretim modu: 'chat' | 'image' | 'music' | 'video' — kalıcı tercih
+    // Üretim modu: 'chat' | 'image' | 'music' — kalıcı tercih
+    // (video kaldırıldı: ücretsiz video sağlayıcıları anahtar istiyor; geri gelirse media.js hazır)
     let currentGenMode = (function () {
         const saved = localStorage.getItem('nesilai_gen_mode');
-        return ['chat', 'image', 'music', 'video'].includes(saved) ? saved : 'chat';
+        if (saved === 'video') return 'chat';   // eski kayıt güvenli değere çekilir
+        return ['chat', 'image', 'music'].includes(saved) ? saved : 'chat';
     })();
 
     function setGenMode(mode) {
@@ -161,7 +170,7 @@
         localStorage.setItem('nesilai_gen_mode', mode);
         updateModePickerUI();
         hideModeMenu();
-        const names = { chat: 'Sohbet', image: 'Görsel', music: 'Müzik/Ses', video: 'Video' };
+        const names = { chat: 'Sohbet', image: 'Görsel', music: 'Müzik/Ses' };
         showToast('Mod: ' + names[mode] + ' — yazdığın her şey ' + names[mode] + ' olarak üretilcek', 'success');
     }
 
@@ -170,8 +179,7 @@
         const map = {
             chat:  { icon: '#i-chat',  label: 'Sohbet' },
             image: { icon: '#i-image', label: 'Görsel' },
-            music: { icon: '#i-music', label: 'Müzik/Ses' },
-            video: { icon: '#i-video', label: 'Video' }
+            music: { icon: '#i-music', label: 'Müzik/Ses' }
         };
         const m = map[currentGenMode] || map.chat;
         modePickerLabel.textContent = m.label;
@@ -189,8 +197,7 @@
         const modes = [
             { id: 'chat',  icon: '#i-chat',  name: 'Sohbet',      desc: 'Normal yapay zeka sohbeti' },
             { id: 'image', icon: '#i-image', name: 'Görsel üret', desc: 'Yazdığın tarif görsel olur' },
-            { id: 'music', icon: '#i-music', name: 'Müzik / Ses', desc: 'Şarkı, enstrümantal veya seslendirme' },
-            { id: 'video', icon: '#i-video', name: 'Video üret',  desc: 'Kısa video klip (yavaş olabilir)' }
+            { id: 'music', icon: '#i-music', name: 'Müzik / Ses', desc: 'Şarkı, enstrümantal veya seslendirme' }
         ];
         modes.forEach(m => {
             const item = document.createElement('button');
@@ -348,9 +355,13 @@
     }
 
     function getPlan() {
-        // Uygulamalarda (Electron) limitler SINIRSIZ; web'de ücretsiz plan (100'er).
+        // Uygulamalarda (Electron masaüstü ve Android/iOS APK) limitler SINIRSIZ;
+        // yalnızca web'de ücretsiz plan (100'er/gün) geçerli.
         const isDesktopApp = !!(window.nesilaiDesktop && window.nesilaiDesktop.isDesktop);
-        if (isDesktopApp) return PLANS.unlimited;
+        // Capacitor yerel kabuk: APK içinde WebView köprüsü enjekte eder;
+        // düz web'de window.Capacitor hiç yoktur → web ücretsiz planda kalır.
+        const isNativeApp = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+        if (isDesktopApp || isNativeApp) return PLANS.unlimited;
         return PLANS[currentSubscription.plan] || PLANS.free;
     }
 
@@ -406,6 +417,122 @@
         paintMeter(miniTxtChats, miniBarChats, usage.chats, plan.limits.chats);
     }
 
+    // --- Müzik & Ses atölyesi ---
+    let sndStudioReady = false;
+    function initSoundStudio() {
+        if (sndStudioReady || !window.NesilMedia) return;
+        sndStudioReady = true;
+
+        // FX ızgarası: tek tıkla üret + çal
+        if (sndFxGrid && !sndFxGrid.dataset.ready) {
+            sndFxGrid.dataset.ready = '1';
+            sndFxGrid.innerHTML = window.NesilMedia.FX_LIBRARY.map(fx =>
+                '<button type="button" class="snd-fx-chip" data-fx-id="' + fx.id + '" title="' + fx.label + ' efektini üret ve çal">' +
+                '<span class="snd-fx-emoji">' + fx.emoji + '</span><span>' + fx.label + '</span></button>'
+            ).join('');
+            sndFxGrid.addEventListener('click', (ev) => {
+                const chip = ev.target.closest('[data-fx-id]');
+                if (!chip) return;
+                produceSfx(chip.dataset.fxId);
+            });
+        }
+
+        // müzik motoru seçenekleri
+        if (sndMusicModel && sndMusicModel.options.length <= 1) {
+            window.NesilMedia.AUDIO_MODELS
+                .filter(m => m.kind === 'Müzik' || m.id === 'auto')
+                .forEach(m => {
+                    const o = document.createElement('option');
+                    o.value = m.id;
+                    o.textContent = m.label;
+                    sndMusicModel.appendChild(o);
+                });
+        }
+
+        if (sndMusicBtn && !sndMusicBtn.dataset.ready) {
+            sndMusicBtn.dataset.ready = '1';
+            sndMusicBtn.addEventListener('click', async () => {
+                const prompt = (sndMusicPrompt.value || '').trim();
+                if (!prompt) { sndMusicStatus.textContent = 'Önce ne hissettiğini yaz.'; return; }
+                // istek aslında bir efekt mi? ("bozuk para sesi" → FX)
+                const fxHit = window.NesilMedia.matchFx && window.NesilMedia.matchFx(prompt);
+                if (fxHit) {
+                    sndMusicStatus.textContent = 'Bu bir ses efekti gibi duruyor — üretiyorum…';
+                    produceSfx(fxHit.id, prompt);
+                    return;
+                }
+                if (!checkQuota('music')) return;
+                incrementQuota('music');
+                sndMusicBtn.disabled = true;
+                sndMusicStatus.textContent = 'Müzik üretiliyor… (bulut modelleri deneniyor, tıkanırsa cihazda sentezlenir)';
+                try {
+                    const url = await window.NesilMedia.generateMusic(prompt, sndMusicModel.value || 'auto', null);
+                    sndMusicStatus.textContent = 'Hazır!';
+                    addSndCard(url, '<svg class="icon" aria-hidden="true"><use href="#i-music"/></svg> ' + prompt.slice(0, 60), prompt, 'Bulut/cihaz müziği');
+                    if (window.NesilStore) {
+                        window.NesilStore.addPoolItem('music', { url, text: prompt, meta: 'Müzik' })
+                            .then(() => renderPoolGallery()).catch(() => {});
+                    }
+                } catch (e) {
+                    sndMusicStatus.textContent = 'Üretilemedi: ' + (e && e.message ? e.message : 'bilinmeyen hata');
+                } finally {
+                    sndMusicBtn.disabled = false;
+                }
+            });
+        }
+    }
+
+    function produceSfx(fxId, customPrompt) {
+        const fx = window.NesilMedia.FX_LIBRARY.find(f => f.id === fxId);
+        if (!fx) return;
+        if (!checkQuota('music')) return;
+        incrementQuota('music');
+        const prompt = customPrompt || (fx.label + ' sesi');
+        const res = window.NesilMedia.generateSfxUrl(prompt);
+        if (!res) return;
+        addSndCard(res.url, res.emoji + ' ' + res.label, prompt, 'SFX · cihazında üretildi');
+        sndMusicStatus.textContent = res.label + ' hazır — çalıyor.';
+        if (window.NesilStore) {
+            window.NesilStore.addPoolItem('music', { url: res.url, text: prompt, meta: 'SFX · ' + res.label })
+                .then(() => renderPoolGallery()).catch(() => {});
+        }
+    }    function addSndCard(url, title, prompt, meta) {
+            const empty = sndResults.querySelector('.pool-status');
+            if (empty) empty.remove();
+            const card = document.createElement('div');
+            card.className = 'snd-card';
+            const head = document.createElement('div');
+            head.className = 'snd-card-head';
+            // başlık kendi ürettiğimiz SVG ikon içerebilir; kalan metin kaçırılır
+            const safeTitle = title.indexOf('<svg') === 0
+                ? title.slice(0, title.indexOf('</svg>') + 6) + escapeHtml(title.slice(title.indexOf('</svg>') + 6))
+                : escapeHtml(title);
+            head.innerHTML = '<strong>' + safeTitle + '</strong><span>' + escapeHtml(meta || '') + '</span>';
+            card.appendChild(head);
+        const audio = document.createElement('audio');
+        audio.controls = true;
+        audio.preload = 'metadata';
+        audio.src = url;
+        audio.autoplay = true;
+        card.appendChild(audio);
+        const foot = document.createElement('div');
+        foot.className = 'snd-card-foot';
+        const dl = document.createElement('a');
+        dl.className = 'btn btn-mini btn-outline';
+        dl.href = url;
+        dl.download = 'nesilai-' + Date.now() + '.wav';
+        dl.textContent = 'İndir';
+        foot.appendChild(dl);
+        const re = document.createElement('button');
+        re.className = 'btn btn-mini btn-outline';
+        re.textContent = 'Tekrar çal';
+        re.addEventListener('click', () => { audio.currentTime = 0; audio.play(); });
+        foot.appendChild(re);
+        card.appendChild(foot);
+        sndResults.prepend(card);
+    }
+
+
     // ========================================================
     // Üretim Havuzu — sohbetten bağımsız üretim atölyesi
     //   Görsel üretimi, yazıdan sese, sesten yazıya, görselden metin.
@@ -415,6 +542,7 @@
         poolModal.classList.remove('hidden');
         closeMobileSidebar();
         populatePoolVoices();
+        initSoundStudio();
     }
 
     function closePoolModal() {
@@ -438,6 +566,7 @@
             p.classList.toggle('active', active);
             p.hidden = !active;
         });
+        if (name === 'music') initSoundStudio();
     }
 
     function populatePoolVoices() {
@@ -565,6 +694,10 @@
                         img.alt = it.text || '';
                         img.loading = 'lazy';
                         card.appendChild(img);
+                        // Tıkla-büyüt: havuz görselleri de tam ekran lightbox'ta açılır
+                        if (window.NesilLightboxBind) {
+                            try { window.NesilLightboxBind(img, it.text || 'Havuz görseli'); } catch (e) { /* isteğe bağlı */ }
+                        }
                     } else if ((it.kind === 'tts' || it.kind === 'music' || it.kind === 'video') && it.url) {
                         const av = document.createElement(it.kind === 'video' ? 'video' : 'audio');
                         av.controls = true;
@@ -1153,6 +1286,110 @@
         return '<svg class="icon' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#' + name + '"/></svg>';
     }
 
+    // Diğer modüllerin (textToPhoto vb.) görsellerini lightbox'a bağlaması için köprü
+    window.NesilLightboxBind = bindLightboxToImage;
+
+    // ========================================================
+    // Lightbox — gönderilen & alınan tüm görseller için tam ekran
+    // görüntüleyici: tıkla büyüt, Esc/tık/kapat düğmesiyle çık,
+    // ok tuşlarıyla sohbetteki görseller arasında gez.
+    // ========================================================
+    let lightboxEl = null;
+    let lightboxItems = [];   // {src, alt} listesi (görünür sırayla)
+    let lightboxIndex = -1;
+
+    function collectGalleryImages() {
+        const chatImgs = [...chatMessages.querySelectorAll('.user-attachment-thumb, .generated-image-card img')]
+            .filter(i => i.src && i.offsetWidth > 0);
+        // Üretim havuzu galerisi açıksa görselleri de gezilecek listeye kat
+        const poolImgs = [...document.querySelectorAll('#pool-gallery-grid .pool-gallery-card img')]
+            .filter(i => i.src && i.offsetWidth > 0);
+        return [...chatImgs, ...poolImgs].map(i => ({ src: i.src, alt: i.alt || '' }));
+    }
+
+    function ensureLightbox() {
+        if (lightboxEl && document.body.contains(lightboxEl)) return;
+        lightboxEl = document.createElement('div');
+        lightboxEl.id = 'nesil-lightbox';
+        lightboxEl.className = 'lightbox hidden';
+        lightboxEl.innerHTML = `
+            <div class="lightbox-backdrop"></div>
+            <img class="lightbox-img" alt="" draggable="false">
+            <button type="button" class="lightbox-btn lightbox-close" title="Kapat (Esc)">${icon('i-close')}</button>
+            <button type="button" class="lightbox-btn lightbox-prev" title="Önceki (←)">${icon('i-caret')}</button>
+            <button type="button" class="lightbox-btn lightbox-next" title="Sonraki (→)">${icon('i-caret')}</button>
+            <a class="lightbox-btn lightbox-download" title="İndir" download="nesilai-gorsel.jpg">${icon('i-download')}</a>
+            <div class="lightbox-caption"></div>
+        `;
+        document.body.appendChild(lightboxEl);
+        lightboxEl.querySelector('.lightbox-backdrop').addEventListener('click', closeLightbox);
+        lightboxEl.querySelector('.lightbox-close').addEventListener('click', closeLightbox);
+        lightboxEl.querySelector('.lightbox-prev').addEventListener('click', () => stepLightbox(-1));
+        lightboxEl.querySelector('.lightbox-next').addEventListener('click', () => stepLightbox(1));
+        const lbImg = lightboxEl.querySelector('.lightbox-img');
+        lbImg.addEventListener('click', e => e.stopPropagation());
+        // Çift tık: %100 ↔ %200 yakınlaştırma (tık backdrop'a gitmesin)
+        lbImg.addEventListener('dblclick', e => {
+            e.stopPropagation();
+            lbImg.classList.toggle('lightbox-zoomed');
+        });
+        document.addEventListener('keydown', lightboxKeyHandler);
+    }
+
+    function lightboxKeyHandler(e) {
+        if (!lightboxEl || lightboxEl.classList.contains('hidden')) return;
+        if (e.key === 'Escape') closeLightbox();
+        else if (e.key === 'ArrowLeft') stepLightbox(-1);
+        else if (e.key === 'ArrowRight') stepLightbox(1);
+    }
+
+    function stepLightbox(dir) {
+        if (!lightboxItems.length) return;
+        lightboxIndex = (lightboxIndex + dir + lightboxItems.length) % lightboxItems.length;
+        showLightboxAt(lightboxIndex);
+    }
+
+    function showLightboxAt(idx) {
+        const item = lightboxItems[idx];
+        if (!item) return;
+        const img = lightboxEl.querySelector('.lightbox-img');
+        img.classList.remove('lightbox-zoomed');   // görsel değişince yakınlaştırmayı sıfırla
+        img.src = item.src;
+        lightboxEl.querySelector('.lightbox-caption').textContent =
+            item.alt ? (item.alt.length > 90 ? item.alt.slice(0, 90) + '…' : item.alt) : '';
+        const multi = lightboxItems.length > 1;
+        lightboxEl.querySelector('.lightbox-prev').style.display = multi ? '' : 'none';
+        lightboxEl.querySelector('.lightbox-next').style.display = multi ? '' : 'none';
+        lightboxEl.querySelector('.lightbox-download').href = item.src;
+    }
+
+    function openLightbox(src, alt) {
+        ensureLightbox();
+        lightboxItems = collectGalleryImages();
+        lightboxIndex = Math.max(0, lightboxItems.findIndex(i => i.src === src));
+        // Tıklanan görselin kendi alt metni varsa listedekini ezer
+        // (collectGalleryImages img.alt'ı taşır; bindLightboxToImage'a verilen
+        // zengin alt — mesaj metni vb. — burada geri kazanılmış olur)
+        if (alt && lightboxItems[lightboxIndex]) lightboxItems[lightboxIndex].alt = alt;
+        showLightboxAt(lightboxIndex);
+        lightboxEl.classList.remove('hidden');
+        requestAnimationFrame(() => lightboxEl.classList.add('open'));
+    }
+
+    function closeLightbox() {
+        if (!lightboxEl) return;
+        lightboxEl.classList.remove('open');
+        setTimeout(() => lightboxEl && lightboxEl.classList.add('hidden'), 180);
+    }
+
+    // Sohbetteki tüm görsellere (kart + kullanıcı eki) büyüteç davranışı
+    function bindLightboxToImage(img, alt) {
+        if (!img || img.dataset.lightboxBound) return;
+        img.dataset.lightboxBound = '1';
+        img.style.cursor = 'zoom-in';
+        img.addEventListener('click', () => openLightbox(img.src, alt || img.alt));
+    }
+
     // ========================================================
     // Mesaj Ekleme & Görünüm (DOM Rendering)
     // ========================================================
@@ -1175,6 +1412,7 @@
                 img.className = 'user-attachment-thumb';
                 img.alt = 'Yüklenen görsel';
                 bubble.appendChild(img);
+                bindLightboxToImage(img, msg.text || 'Yüklenen görsel');
             }
 
             const textP = document.createElement('p');
@@ -1452,8 +1690,8 @@
         // KOTA KONTROLÜ
         if (isImage) {
             if (!checkQuota('images')) return;
-        } else if (!cmdInfo && (currentGenMode === 'music' || currentGenMode === 'video')) {
-            if (!checkQuota(currentGenMode === 'music' ? 'music' : 'video')) return;
+        } else if (!cmdInfo && currentGenMode === 'music') {
+            if (!checkQuota('music')) return;
         } else {
             if (!checkQuota('chats')) return;
         }
@@ -1518,6 +1756,29 @@
             saveChatsToStorage();
             if (window.NesilSFX) window.NesilSFX.reply();
             checkAutoSpeak(ovMsg.text);
+            return;
+        }
+
+        // NESILCODE: /nesilcode [on|off] → kodlama ajanı çalışma alanı
+        if (cmdInfo && cmdInfo.cmd === 'nesilcode') {
+            incrementQuota('chats');
+            const nc = window.NesilCode;
+            const ncReply = nc
+                ? nc.handleCommand(cmdInfo.body)
+                : 'NesilCode bu sürümde kullanılamıyor.';
+            const ncMsg = {
+                id: 'msg_' + (Date.now() + 2),
+                role: 'assistant',
+                text: ncReply,
+                command: 'nesilcode',
+                commandLabel: 'NESILCODE',
+                timestamp: Date.now()
+            };
+            activeChat.messages.push(ncMsg);
+            appendMessageToDom(ncMsg);
+            saveChatsToStorage();
+            if (window.NesilSFX) window.NesilSFX.reply();
+            checkAutoSpeak(ncMsg.text);
             return;
         }
 
@@ -1608,7 +1869,21 @@
             if (window.NesilT2P) {
                 if (typeof window.NesilT2P.generateImageWithFallback === 'function') {
                     // Sağlayıcı zinciri: Pollinations → Flux → Turbo; biri düşerse sıradaki
-                    setThinkingLabel('Görsel oluşturuluyor');
+                    // "Görsel oluşturuluyor" kutusu: çeviri satırı DOM'dan kalktıktan sonra
+                    // kendi mesaj sırası olarak eklenir (eski setThinkingLabel hedefi yoktu → kutu hiç açılmıyordu)
+                    const genRow = document.createElement('div');
+                    genRow.className = 'message-row assistant thinking';
+                    genRow.innerHTML = `
+                        <div class="assistant-avatar"><img src="assets/logo.png?v=2" alt="" draggable="false"></div>
+                        <div class="message-content-wrapper">
+                            <div class="thinking-bubble">
+                                <span class="typing-dots"><i></i><i></i><i></i></span>
+                                <span class="thinking-label">Görsel oluşturuluyor</span>
+                            </div>
+                        </div>
+                    `;
+                    chatMessages.appendChild(genRow);
+                    scrollToBottom();
                     try {
                         const gen = await window.NesilT2P.generateImageWithFallback(masterP, 1024, 768);
                         imageUrl = gen.url;
@@ -1617,6 +1892,7 @@
                         // Tüm sağlayıcılar düşerse kart yine de üretilsin (tarayıcı yeniden dener)
                         imageUrl = window.NesilT2P.generateImageUrl(masterP);
                     }
+                    genRow.remove();
                 } else {
                     imageUrl = window.NesilT2P.generateImageUrl(masterP);
                 }
@@ -1649,7 +1925,14 @@
             return;
         }
 
-        if ((currentGenMode === 'music' || currentGenMode === 'video') && window.NesilMedia) {
+        if (currentGenMode === 'music' && window.NesilMedia) {
+            // SES EFEKTİ ayrımı: "...sesi üret" gibi istekler buluta gitmez;
+            // cihazda anında SFX üretilir. Müzik istekleri normal yoldan gider.
+            const sfx = (window.NesilMedia.generateSfxUrl && !cmdInfo) ? window.NesilMedia.generateSfxUrl(text) : null;
+            if (sfx) {
+                generateSfxMessage(sfx, text);
+                return;
+            }
             generateMediaMessage(currentGenMode, text);
             return;
         }
@@ -1721,12 +2004,38 @@
         let renderedText = null;
         let renderQueued = false;
         let started = false;
+        let deltaCount = 0;          // sağlayıcı gerçekten akıttı mı?
+        let typeTimer = null;        // tek parça yanıt için yazma efekti
 
         const paint = () => {
             renderQueued = false;
             if (!bubble || aiMsg.text === renderedText) return;
             renderedText = aiMsg.text;
             bubble.innerHTML = renderMarkdown(aiMsg.text);
+        };
+
+        // Tek parça gelen yanıtlar için gerçek zamanlı yazma hissi:
+        // metni parçalara bölüp balonu canlı canlı doldurur. Gerçek akışta
+        // (deltaCount > 1) hiçbir etkisi yoktur — akış zaten akıcıdır.
+        // Hız uyarlanabilir: toplam süre ~0.5-2.5 sn bandında kalır.
+        const startTypingEffect = (fullText) => {
+            if (typeTimer) return;
+            const INTERVAL = 14;
+            const STEP = Math.max(1, Math.ceil(fullText.length / 150));
+            let pos = 0;
+            typeTimer = setInterval(() => {
+                pos = Math.min(fullText.length, pos + STEP);
+                aiMsg.text = fullText.slice(0, pos);
+                if (!renderQueued) {
+                    renderQueued = true;
+                    requestAnimationFrame(paint);
+                }
+                scrollToBottom();
+                if (pos >= fullText.length) {
+                    clearInterval(typeTimer);
+                    typeTimer = null;
+                }
+            }, INTERVAL);
         };
 
         const startAssistantMessage = () => {
@@ -1741,6 +2050,7 @@
         // Sunucudan gelen her parça — kaydırma da kare başına bir kez (akışkanlık)
         let scrollQueued = false;
         const onDelta = (chunk, fullText) => {
+            deltaCount++;
             aiMsg.text = fullText;
             startAssistantMessage();
             if (!renderQueued) {
@@ -1798,6 +2108,19 @@
 
             // Akış desteklenmediyse cevap tek parça gelmiş olabilir
             startAssistantMessage();
+            if (deltaCount <= 1 && aiMsg.text && !aiMsg.isError) {
+                // Sağlayıcı tek seferde döndü → yazma efektiyle canlandır
+                paint();
+                const full = aiMsg.text;
+                aiMsg.text = '';
+                renderedText = '';
+                startTypingEffect(full);
+                const T0e = Date.now();
+                while (typeTimer && Date.now() - T0e < 10000) {
+                    await new Promise(res => setTimeout(res, 60));
+                }
+                aiMsg.text = full;   // efekt yarıda kaldıysa bile tam metin garantisi
+            }
             paint();
 
             aiMsg.streaming = false;
@@ -1919,7 +2242,7 @@
     // Slash Komutları — /ultrathink /report /ultracode + ayar komutları
     // ========================================================
     function parseSlashCommand(rawText) {
-        const m = String(rawText || '').match(/^\s*\/(ultrathink|report|ultracode|openview|humanise|humanize|ayarlar|settings|tema|theme|ses|voice|temizle|clear|yardim|yardım|help)\b\s*([\s\S]*)$/i);
+        const m = String(rawText || '').match(/^\s*\/(ultrathink|report|ultracode|openview|nesilcode|humanise|humanize|ayarlar|settings|tema|theme|ses|voice|temizle|clear|yardim|yardım|help)\b\s*([\s\S]*)$/i);
         if (!m) return null;
         return { cmd: m[1].toLowerCase(), body: m[2].trim(), original: rawText };
     }
@@ -1960,6 +2283,9 @@
                     '- `/report` — internette derin araştırma yapıp rapor hazırlar',
                     '- `/ultracode` — araştırır, plan çıkarır, kod yazar',
                     '',
+                    'Kodlama ajanı:',
+                    '- `/nesilcode` — kodlama çalışma alanını açar/kapatır; dosyaları okur, yazar, oluşturur, siler',
+                    '',
                     'Ekran asistanı (PC):',
                     '- `/openview` — ekranı canlı izletir; /openview off → kapatır',
                     '',
@@ -1991,7 +2317,7 @@
                 const isWhoQuestion = /\b(kim|kimdir|nedir|hakkında|about|who)\b/i.test(t);
                 return hasBettyBeste && (isWhoQuestion || t.split(/\s+/).length <= 4);
             },
-            answer: "**Betty** (Beste), Acsida'nın sevdiği kız, diğer ifadeyle sevgilisidir. 💙"
+            answer: "**Betty** (Beste), Acsida'nın sevdiği kız, diğer ifadeyle sevgilisidir."
         },
         {
             // Seni kim yaptı / Acsida kim / yaratıcın kim
@@ -2000,7 +2326,7 @@
                 /(yaratıcın|geliştiricin|yapıcın|sahibin|üreticin)\s+kim/i.test(t) ||
                 /^\s*acsida\s+(kim|kimdir|ne)/i.test(t) ||
                 /acsida\s+kim(dir)?\s*\?*$/i.test(t),
-            answer: "Ben aslında **Bloodline** üzerindeki yapay zeka asistanıyım; burada Bloodline'dan bağımsız herkese yardım etmeyi amaçlıyorum. Beni **Acsida** yaptı. 🛠️"
+            answer: "Ben aslında **Bloodline** üzerindeki yapay zeka asistanıyım; burada Bloodline'dan bağımsız herkese yardım etmeyi amaçlıyorum. Beni **Acsida** yaptı."
         },
         {
             // Bloodline linki / Bloodline sitesi
@@ -2009,7 +2335,7 @@
                 /link(ini|ini|)?\s*(ver|gönder|at| gönder)\s*bloodline/i.test(t) ||
                 /^\s*bloodline\s*\?*\s*$/i.test(t) ||
                 /(bloodline.{0,20}(link|url|site))|((link|url|site).{0,20}bloodline)/i.test(t),
-            answer: "Bloodline bağlantısı: **https://bloodline.agentui.app/** 🔗"
+            answer: "Bloodline bağlantısı: **https://bloodline.agentui.app/**"
         },
         {
             // Sen kimsin / adın ne — "Ben NesilAI (...)" biçiminde
@@ -2021,7 +2347,7 @@
                 /kendini\s+tanıt/i.test(t) ||
                 /who\s+are\s+you/i.test(t) ||
                 /^\s*(nesilai|nesil\s*ai)\s*\?*\s*$/i.test(t),
-            answer: "**Ben NesilAI** — seninle sohbet etmek, görsel üretmek, sesli yazışmak ve daha birçok konuda yardımcı olmak için buradayım. 🚀"
+            answer: "**Ben NesilAI** — seninle sohbet etmek, görsel üretmek, sesli yazışmak ve daha birçok konuda yardımcı olmak için buradayım."
         }
     ];
 
@@ -2347,15 +2673,14 @@
             };
 
             attachmentThumbnail.src = dataUrl;
-            attachmentFilename.textContent = file.name;
-            attachmentStatus.textContent = '🔍 Metin taranıyor (OCR)...';
+            attachmentFilename.textContent = file.name;                    attachmentStatus.textContent = 'Metin taranıyor (OCR)...';
             attachmentPreviewBar.classList.remove('hidden');
             sendBtn.disabled = false;
 
             if (window.NesilP2T) {
                 try {
                     const text = await window.NesilP2T.extractText(dataUrl, (p) => {
-                        attachmentStatus.textContent = `🔍 Taranıyor... %${p}`;
+                        attachmentStatus.textContent = `Taranıyor... %${p}`;
                     });
                     activeAttachment.extractedText = text;
                     attachmentStatus.innerHTML = text ? icon('i-check') + ' Metin okundu' : icon('i-info') + ' Metin bulunamadı';
@@ -2569,7 +2894,7 @@
             head.className = 'model-section-head';
             const keyOwned = !provider.needsKey || (settings.keys[pid] || '').trim();
             head.innerHTML = `<span>${provider.short}</span>` +
-                (provider.needsKey && !keyOwned ? '<span class="model-key-warn">🔑 anahtar gerekli (Ayarlar)</span>' : '') +
+                (provider.needsKey && !keyOwned ? '<span class="model-key-warn"><svg class="icon" aria-hidden="true"><use href="#i-key"/></svg> anahtar gerekli (Ayarlar)</span>' : '') +
                 (pid === activePid ? '<span class="model-current-tag">aktif</span>' : '');
             section.appendChild(head);
 
@@ -2620,6 +2945,33 @@
             if (modelPickerSearch) modelPickerSearch.focus();
         } else {
             hideModelPicker();
+        }
+    }
+
+    // SFX mesajı: cihazda üretilen ses efektini sohbete media kartı olarak basar
+    function generateSfxMessage(sfx, prompt) {
+        incrementQuota('music');
+        const aiMsg = {
+            id: 'msg_' + (Date.now() + 2),
+            role: 'assistant',
+            text: sfx.label + ' sesi — cihazında üretildi (anahtarsız, anında):',
+            isMediaGen: true,
+            mediaKind: 'music',   // galeride müzik/ses grubunda saklanır
+            mediaModel: 'sfx-' + sfx.id,
+            mediaModelLabel: 'NesilAI SFX · ' + sfx.label,
+            mediaPrompt: prompt,
+            mediaUrl: sfx.url,
+            mediaError: null,
+            timestamp: Date.now()
+        };
+        getCurrentChat().messages.push(aiMsg);
+        appendMessageToDom(aiMsg);
+        saveChatsToStorage();
+        scrollToBottom();
+        // kalıcı depo
+        if (window.NesilStore) {
+            window.NesilStore.addPoolItem('music', { url: sfx.url, text: prompt, meta: 'SFX · ' + sfx.label })
+                .then(() => renderPoolGallery()).catch(() => {});
         }
     }
 
@@ -2775,6 +3127,7 @@
         { cmd: '/ultrathink', name: 'ULTRATHINK', desc: 'Derin düşünür, detaylı araştırıp yanıtlar', icon: 'i-brain' },
         { cmd: '/report', name: 'REPORT', desc: 'İnternette derin araştırma yapıp rapor hazırlar', icon: 'i-report' },
         { cmd: '/ultracode', name: 'ULTRACODE', desc: 'Araştırır, plan çıkarır, kod yazar', icon: 'i-bolt' },
+        { cmd: '/nesilcode', name: 'NESILCODE', desc: 'Kodlama ajanı — dosyaları okur, yazar, oluşturur, siler (on/off)', icon: 'i-code' },
         { cmd: '/openview', name: 'OPENVIEW', desc: 'Ekranını canlı izlet — PC ekran asistanı (on/off/settings)', icon: 'i-eye' },
         { cmd: '/humanise', name: 'HUMANISE', desc: 'AI-Slop\'u kapat — insan gibi konuşur (on/off)', icon: 'i-pen' },
         { cmd: '/ayarlar', name: 'AYARLAR', desc: 'Ayarlar panelini açar (sağlayıcı, model, ses, veri)', icon: 'i-settings' },
@@ -3107,9 +3460,13 @@
         // Tema değiştir
         if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
 
-        // Escape ile en üstteki pencereyi kapat
+        // Escape ile en üstteki pencereyi kapat (NesilCode ve lightbox açıkken karışmasın)
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') closeTopModal();
+            if (event.key === 'Escape') {
+                if (window.NesilCode && window.NesilCode.isOpen()) return;
+                if (lightboxEl && !lightboxEl.classList.contains('hidden')) return; // lightbox kendi kapatır
+                closeTopModal();
+            }
         });
 
         // Sesli sohbette mikrofonu geçici olarak kapat

@@ -1028,7 +1028,7 @@
             renderAnswer();
             updatePipButton();
             setTimeout(function () { if (inputEl) inputEl.focus(); }, 80);
-            ovToast('OpenView artık ekranda daima üstte 📌');
+            ovToast('OpenView artık ekranda daima üstte');
         } catch (e) {
             ovToast('PiP açılamadı: ' + ((e && e.message) || 'bilinmeyen hata'), 'error');
         }
@@ -1253,7 +1253,7 @@
 
         if (arg === 'off') {
             if (isOpenView()) closeView();
-            return 'OpenView kapatıldı. 🔒 Tekrar açmak için `/openview` yaz.';
+            return 'OpenView kapatıldı. Tekrar açmak için `/openview` yaz.';
         }
         if (arg === 'settings') {
             if (!isOpenView()) openView();
@@ -1266,10 +1266,10 @@
                 return 'OpenView kapatıldı. Tekrar açmak için `/openview` yaz.';
             }
             openView();
-            return 'OpenView açık — ekranın canlı olarak izleniyor. 🖥️\n\n' +
+            return 'OpenView açık — ekranın canlı olarak izleniyor.\n\n' +
                 '- Bir şey sormak için alttaki kutuya yaz\n' +
                 '- **Ekrandakini Sor** ile tüm ekranı ya da seçeceğin bir bölgeyi analiz ettir\n' +
-                '- Kapatmak için sağ üstteki ✕ ya da `/openview`';
+                '- Kapatmak için sağ üstteki kapat düğmesine ya da `/openview` yaz';
         }
         return 'Bilinmeyen OpenView komutu. Kullanım: `/openview`, `/openview on`, `/openview off`, `/openview settings`.';
     }

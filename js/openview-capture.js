@@ -21,7 +21,7 @@
     const hasCaptureApi = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
     const isDesktopPlatform = hasCaptureApi && !isMobileLike;
 
-    const PC_ONLY_MESSAGE = '🚫 **OpenView yalnızca PC sürümünde kullanılabilir.** ' +
+    const PC_ONLY_MESSAGE = '**OpenView yalnızca PC sürümünde kullanılabilir.** ' +
         'Mobil ve tablet sürümlerde bu özellik bulunmaz. Bilgisayar uygulamasında ' +
         'ya da masaüstü tarayıcıda `/openview` yazarak kullanabilirsin.';
 

@@ -271,6 +271,10 @@
         img.onload = () => {
             skeleton.remove();
             img.style.display = 'block';
+            // Tam ekran görüntüleyici (lightbox) — sohbet galerisinde gezinme destekli
+            if (window.NesilLightboxBind) {
+                try { window.NesilLightboxBind(img, promptText); } catch (e) { /* isteğe bağlı */ }
+            }
 
             // Alt indirme çubuğu
             const footer = document.createElement('div');
