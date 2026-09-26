@@ -734,9 +734,15 @@
         if (status === 401 || status === 403) {
             kind = 'auth';
             message = `${provider.short} anahtarını reddetti (${status}). Anahtarın doğru ve yetkili olduğundan emin ol.`;
-        } else if (status === 429) {
+        } else        if (status === 429) {
             kind = 'quota';
-            message = `${provider.short} şu an istek limitini aştı (429). Biraz bekleyip tekrar dene ya da Ayarlar'dan başka bir sağlayıcıya geç.`;
+            if (provider.id === 'llm7' && !getApiKey(provider.id)) {
+                message = `${provider.short} şu anahtarsız katman yoğunluğu nedeniyle limiti aştı (429). ` +
+                    'Ayarlar → Yapay Zeka → "Ücretsiz hız anahtarı" ile bedava token alırsan limitin kişiselleşir ve bu hata biter. ' +
+                    'Ya da biraz bekleyip tekrar dene.';
+            } else {
+                message = `${provider.short} şu an istek limitini aştı (429). Biraz bekleyip tekrar dene ya da Ayarlar'dan başka bir sağlayıcıya geç.`;
+            }
         } else if (status === 404) {
             message = `${provider.short} bu modeli bulamadı (404): "${getModel(provider.id)}". Ayarlar'dan model adını kontrol et.`;
         } else if (status >= 500) {
@@ -820,9 +826,9 @@
     }
 
     // 429 → sunucunun söylediği süre kadar bekleyip yeniden dene.
-    // Anonim ücretsiz katmanlarda (llm7) "Too many concurrent requests"
-    // saniyeler içinde kendini düzeltir; kullanıcıya hata göstermeden önce
-    // 2 kez sabırla davranmak çoğu hatayı tamamen ortadan kaldırır.
+    // Anonim llm7 katmanında retry_after genellikle 10 sn'dir: 2 deneme
+    // (~21 sn) sonra yedeğe geçmek, uzun donma hissi vermeden sohbeti
+    // sürdürür. Yedek motorun da kendi yeniden denemeleri vardır.
     const RETRY_429_MAX = 2;
     async function fetchWith429Retry(url, init, provider, guard) {
         let attempt = 0;
