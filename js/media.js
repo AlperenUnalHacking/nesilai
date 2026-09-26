@@ -423,7 +423,22 @@
         { id: 'water',     names: ['su damla', 'damlalık', 'damlalik', 'water drip', 'musluk damla'],               label: 'Su damlaları',    emoji: '<svg class="icon" aria-hidden="true"><use href="#i-water"/></svg>' },
         { id: 'applause',  names: ['alkış', 'alkis', 'applause', 'clap', 'tebrik sesi'],                            label: 'Alkışlar',        emoji: '<svg class="icon" aria-hidden="true"><use href="#i-party"/></svg>' },
         { id: 'laugh',     names: ['kahkaha', 'gülme sesi', 'gulme sesi', 'laugh'],                                 label: 'Kahkaha',         emoji: '<svg class="icon" aria-hidden="true"><use href="#i-party"/></svg>' },
-        { id: 'crowd',     names: ['kalabalık', 'kalabalik', 'crowd', 'tribün', 'tribun', 'stadyum'],               label: 'Kalabalık coşkusu', emoji: '<svg class="icon" aria-hidden="true"><use href="#i-crowd"/></svg>' }
+        { id: 'crowd',     names: ['kalabalık', 'kalabalik', 'crowd', 'tribün', 'tribun', 'stadyum'],               label: 'Kalabalık coşkusu', emoji: '<svg class="icon" aria-hidden="true"><use href="#i-crowd"/></svg>' },
+        { id: 'helicopter', names: ['helikopter', 'helicopter', 'pervane sesi'],                       label: 'Helikopter',        emoji: '<svg class="icon" aria-hidden="true"><use href="#i-wind"/></svg>' },
+        { id: 'train',     names: ['tren', 'train', 'ray sesi', 'istasyon'],                          label: 'Tren geçişi',       emoji: '<svg class="icon" aria-hidden="true"><use href="#i-zap"/></svg>' },
+        { id: 'sheep',     names: ['koyun', 'kuzu', 'meleme', 'sheep'],                               label: 'Koyun melemesi',    emoji: '<svg class="icon" aria-hidden="true"><use href="#i-sfx"/></svg>' },
+        { id: 'alarm',     names: ['alarm saat', 'çalar saat', 'calar saat', 'alarm'],                label: 'Alarm saati',       emoji: '<svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>' },
+        { id: 'siren',     names: ['siren', 'polis siren', 'ambulans sesi', 'itfaiye'],               label: 'Acil sireni',       emoji: '<svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>' },
+        { id: 'church',    names: ['kilise çanı', 'kilise cani', 'çan sesi', 'church bell'],          label: 'Kilise çanı',       emoji: '<svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>' },
+        { id: 'clang',     names: ['metal çın', 'metal cin', 'gong', 'örs', 'ors', 'şıng'],           label: 'Metal çınlaması',   emoji: '<svg class="icon" aria-hidden="true"><use href="#i-glass"/></svg>' },
+        { id: 'bubble',    names: ['baloncuk', 'bubble', 'su altı', 'su alti', 'akvaryum'],           label: 'Su baloncukları',   emoji: '<svg class="icon" aria-hidden="true"><use href="#i-water"/></svg>' },
+        { id: 'pop',       names: ['pop sesi', 'mantar sesi', 'şarap aç', 'sarap ac', 'kapağı aç'],   label: 'Şişe kapağı (pop)', emoji: '<svg class="icon" aria-hidden="true"><use href="#i-notify"/></svg>' },
+        { id: 'zip',       names: ['zıpla', 'zipla', 'zip sesi', 'jump sesi', 'zıplama'],             label: 'Zıplama (zip)',     emoji: '<svg class="icon" aria-hidden="true"><use href="#i-zap"/></svg>' },
+        { id: 'powerdown', names: ['kapanma sesi', 'kapanis sesi', 'power down', 'bilgisayar kapan'], label: 'Kapanma sesi',      emoji: '<svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg>' },
+        { id: 'static',    names: ['cızırtı', 'cizirti', 'radyo cız', 'parazit sesi', 'static noise'], label: 'Radyo cızırtısı',  emoji: '<svg class="icon" aria-hidden="true"><use href="#i-sfx"/></svg>' },
+        { id: 'glitch',    names: ['glitch', 'bozuk sinyal', 'dijital hata', 'bozuk ekran sesi'],     label: 'Dijital hata',      emoji: '<svg class="icon" aria-hidden="true"><use href="#i-cpu"/></svg>' },
+        { id: 'startup',   names: ['açılış sesi', 'acilis sesi', 'boot sesi', 'hoş geldin sesi'],     label: 'Açılış jingle',     emoji: '<svg class="icon" aria-hidden="true"><use href="#i-party"/></svg>' },
+        { id: 'shutter',   names: ['deklanşör', 'deklansor', 'kamera sesi', 'fotoğraf çekim', 'shutter'], label: 'Kamera deklanşörü', emoji: '<svg class="icon" aria-hidden="true"><use href="#i-photo"/></svg>' }
     ];
 
     /** Serbest metinden FX şablonunu bulur; en uzun anahtar kazanır */
@@ -733,6 +748,165 @@
                     for (let i = 0; i < 0.02 * sr; i++) { const t = i / sr; add(t0 + t, noise() * Math.exp(-t * 300) * 0.25, (rnd() - 0.5) * 1.8); }
                 }
                 return 3.3;
+            }
+            case 'helicopter': {
+                for (let i = 0; i < 3.5 * sr; i++) {
+                    const t = i / sr;
+                    const chop = Math.max(0, Math.sin(2 * Math.PI * 11 * t));
+                    add(t, (noise() * 0.4 + Math.sin(2 * Math.PI * 55 * t) * 0.3) * chop * chop * 0.3 * Math.min(1, t * 3), Math.sin(t * 0.5) * 0.3);
+                }
+                return 3.8;
+            }
+            case 'train': {
+                for (let i = 0; i < 3.8 * sr; i++) {
+                    const t = i / sr;
+                    const prog = t / 3.8;
+                    const env = Math.sin(Math.PI * Math.min(1, prog * 1.15)) * Math.min(1, t * 6);
+                    const chuff = Math.pow(Math.max(0, Math.sin(2 * Math.PI * (2.2 + prog * 1.5) * t)), 6);
+                    const f = 70 + prog * 50;
+                    add(t, (noise() * chuff * 0.5 + Math.sin(2 * Math.PI * f * t) * 0.35 + noise() * 0.06) * env * 0.6, (prog - 0.5) * 1.2);
+                }
+                return 4.1;
+            }
+            case 'sheep': {
+                for (let b = 0; b < 4; b++) {
+                    const t0 = 0.2 + b * 0.95 + rnd() * 0.2;
+                    const f0 = 420 + rnd() * 90;
+                    for (let i = 0; i < 0.55 * sr; i++) {
+                        const t = i / sr;
+                        const wob = 1 + Math.sin(2 * Math.PI * 13 * t) * 0.25;
+                        const env = Math.sin(Math.PI * Math.min(1, t / 0.55));
+                        add(t0 + t, Math.sin(2 * Math.PI * f0 * wob * t) * 0.32 * env, (rnd() - 0.5) * 0.8);
+                    }
+                }
+                return 4.2;
+            }
+            case 'alarm': {
+                for (let r = 0; r < 5; r++) {
+                    const t0 = r * 0.8;
+                    for (let i = 0; i < 0.5 * sr; i++) {
+                        const t = i / sr;
+                        const f = 1500 + Math.sin(2 * Math.PI * 9 * t) * 320;
+                        add(t0 + t, Math.sin(2 * Math.PI * f * t) * 0.26 * Math.sin(Math.PI * t / 0.5), 0);
+                    }
+                }
+                return 4.3;
+            }
+            case 'siren': {
+                for (let i = 0; i < 4 * sr; i++) {
+                    const t = i / sr;
+                    const f = 640 + Math.sin(2 * Math.PI * 0.45 * t) * 260;
+                    add(t, Math.sin(2 * Math.PI * f * t) * 0.26 * Math.min(1, t * 3), Math.sin(t * 0.3) * 0.25);
+                }
+                return 4.2;
+            }
+            case 'church': {
+                const bells = [196, 262, 294, 220];
+                for (let b = 0; b < 4; b++) {
+                    const t0 = b * 1.05;
+                    const f0 = bells[b % 4];
+                    const len = b === 3 ? 1.6 : 0.9;
+                    for (let i = 0; i < len * sr; i++) {
+                        const t = i / sr;
+                        const env = Math.exp(-t * (b === 3 ? 2 : 3.4)) * Math.min(1, t * 150);
+                        add(t0 + t, (Math.sin(2 * Math.PI * f0 * t) * 0.5 + Math.sin(2 * Math.PI * f0 * 2.02 * t) * 0.3 + Math.sin(2 * Math.PI * f0 * 2.98 * t) * 0.18) * env * 0.42, (b % 2 ? 0.2 : -0.2));
+                    }
+                }
+                return 4.4;
+            }
+            case 'clang': {
+                for (let i = 0; i < 0.012 * sr; i++) { const t = i / sr; add(0.02 + t, noise() * Math.exp(-t * 200) * 0.5, 0); }
+                const parts = [[320, 1], [517, 0.6], [842, 0.45], [1290, 0.3]];
+                for (const [f, g] of parts) {
+                    for (let i = 0; i < 2.2 * sr; i++) {
+                        const t = i / sr;
+                        add(0.02 + t, Math.sin(2 * Math.PI * f * t) * Math.exp(-t * (1.6 + f / 900)) * g * 0.35, (f % 2 ? 0.15 : -0.15));
+                    }
+                }
+                return 2.4;
+            }
+            case 'bubble': {
+                for (let b = 0; b < 26; b++) {
+                    const t0 = rnd() * 3.2;
+                    const f0 = 300 + rnd() * 700;
+                    const rise = 1.6 + rnd() * 1.8;
+                    for (let i = 0; i < 0.09 * sr; i++) {
+                        const t = i / sr;
+                        const f = f0 * (1 + t * rise);
+                        add(t0 + t, Math.sin(2 * Math.PI * f * t) * Math.sin(Math.PI * Math.min(1, t / 0.09)) * 0.24, (rnd() - 0.5) * 1.1);
+                    }
+                }
+                return 3.5;
+            }
+            case 'pop': {
+                for (let i = 0; i < 0.014 * sr; i++) { const t = i / sr; add(0.02 + t, noise() * Math.exp(-t * 300) * 0.6, 0); }
+                for (let i = 0; i < 0.08 * sr; i++) {
+                    const t = i / sr;
+                    const f = 620 * Math.exp(-t * 26) + 130;
+                    add(0.02 + t, Math.sin(2 * Math.PI * f * t) * Math.exp(-t * 36) * 0.5, 0);
+                }
+                return 0.5;
+            }
+            case 'zip': {
+                for (let i = 0; i < 0.3 * sr; i++) {
+                    const t = i / sr;
+                    const f = 260 + 900 * Math.sin(Math.PI * Math.min(1, t / 0.3));
+                    add(0.02 + t, (Math.sin(2 * Math.PI * f * t) * 0.35 + noise() * 0.06) * Math.min(1, t * 80) * Math.exp(-t * 6), 0);
+                }
+                for (let i = 0; i < 0.05 * sr; i++) { const t = i / sr; add(0.34 + t, noise() * Math.exp(-t * 120) * 0.3, 0); }
+                return 0.6;
+            }
+            case 'powerdown': {
+                for (let i = 0; i < 1.6 * sr; i++) {
+                    const t = i / sr;
+                    const f = 520 * Math.exp(-t * 1.9) + 40;
+                    const env = Math.min(1, t * 30) * Math.exp(-Math.max(0, t - 1.0) * 5);
+                    add(t, (Math.sin(2 * Math.PI * f * t) * 0.4 + Math.sin(2 * Math.PI * f * 0.5 * t) * 0.2) * env, 0);
+                }
+                return 1.8;
+            }
+            case 'static': {
+                for (let i = 0; i < 2.2 * sr; i++) {
+                    const t = i / sr;
+                    const crackle = Math.sin(2 * Math.PI * 3.2 * t) > 0.6 ? 0.12 : 0.05;
+                    add(t, noise() * (0.07 + crackle) * Math.min(1, t * 8) * Math.exp(-Math.max(0, t - 1.9) * 6), 0);
+                }
+                return 2.3;
+            }
+            case 'glitch': {
+                for (let g = 0; g < 16; g++) {
+                    const t0 = g * 0.09 + rnd() * 0.02;
+                    const len = 0.02 + rnd() * 0.05;
+                    const f = (rnd() < 0.5 ? 180 : 1400) * (1 + Math.floor(rnd() * 4));
+                    for (let i = 0; i < len * sr; i++) {
+                        const t = i / sr;
+                        const sq = Math.sin(2 * Math.PI * f * t) > 0 ? 1 : -1;
+                        add(t0 + t, (sq * 0.2 + noise() * 0.14) * Math.min(1, t * 300), (rnd() - 0.5) * 1.2);
+                    }
+                }
+                return 1.7;
+            }
+            case 'startup': {
+                const notes = [[0, 392], [0.13, 523], [0.26, 659], [0.4, 784]];
+                notes.forEach(([t0, f], k) => {
+                    const len = k === notes.length - 1 ? 0.7 : 0.16;
+                    for (let i = 0; i < len * sr; i++) {
+                        const t = i / sr;
+                        const env = Math.min(1, t * 200) * Math.exp(-t * (k === notes.length - 1 ? 3.5 : 6));
+                        add(t0 + t, (Math.sin(2 * Math.PI * f * t) + Math.sin(2 * Math.PI * f * 2 * t) * 0.3) * env * 0.3, 0);
+                    }
+                });
+                return 1.5;
+            }
+            case 'shutter': {
+                const clicks = [[0, 0.02, 0.5], [0.07, 0.03, 0.35]];
+                for (const [t0, len, g] of clicks) {
+                    for (let i = 0; i < len * sr; i++) {
+                        const t = i / sr;
+                        add(t0 + t, (noise() * 0.7 + Math.sin(2 * Math.PI * 2200 * t) * 0.2) * Math.exp(-t * 180) * g, 0);
+                    }
+                }
+                return 0.4;
             }
             default: {
                 for (let i = 0; i < 0.4 * sr; i++) {

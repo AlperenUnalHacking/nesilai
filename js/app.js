@@ -482,6 +482,80 @@
         }
     }
 
+    // --- Dalga formu görselleştirme --------------------------------------
+    // WAV objURL'ini çözümler (RIFF/16-bit PCM), kanal başına tepe değerlerini
+    // çıkarıp canvas'a çizer; çalarken ilerleme renklanir, tıklayınca atlanır.
+    async function attachWaveform(canvas, url, audio) {
+        try {
+            const ab = await (await fetch(url)).arrayBuffer();
+            const dv = new DataView(ab);
+            let off = 12;
+            let fmt = null, data = null;
+            while (off + 8 <= dv.byteLength) {
+                const id = String.fromCharCode(dv.getUint8(off), dv.getUint8(off + 1), dv.getUint8(off + 2), dv.getUint8(off + 3));
+                const sz = dv.getUint32(off + 4, true);
+                if (id === 'fmt ') fmt = { ch: dv.getUint16(off + 10, true), bits: dv.getUint16(off + 22, true) };
+                else if (id === 'data') { data = { off: off + 8, sz: Math.min(sz, dv.byteLength - off - 8) }; break; }
+                off += 8 + sz + (sz % 2);
+            }
+            if (!fmt || !data || fmt.bits !== 16 || !fmt.ch) return;
+            const bytesPerFrame = fmt.ch * 2;
+            const frames = Math.floor(data.sz / bytesPerFrame);
+            if (frames < 16) return;
+            const peaks = Math.max(48, Math.min(160, Math.floor((canvas.clientWidth || 300) / 4)));
+            const per = Math.max(1, Math.floor(frames / peaks));
+            const bars = new Float32Array(peaks);
+            for (let p = 0; p < peaks; p++) {
+                let max = 0;
+                const s0 = data.off + p * per * bytesPerFrame;
+                const s1 = Math.min(data.off + data.sz, s0 + per * bytesPerFrame);
+                for (let o = s0; o < s1; o += bytesPerFrame) {
+                    const v = Math.abs(dv.getInt16(o, true)) / 32768;
+                    if (v > max) max = v;
+                }
+                bars[p] = max;
+            }
+            canvas.dataset.wave = '1';
+            canvas._peaks = bars;
+            const draw = () => drawWaveform(canvas, bars, audio.currentTime, audio.duration || 0);
+            draw();
+            audio.addEventListener('timeupdate', draw);
+            audio.addEventListener('play', () => { canvas.classList.add('playing'); draw(); });
+            audio.addEventListener('pause', () => { canvas.classList.remove('playing'); draw(); });
+            audio.addEventListener('ended', () => { canvas.classList.remove('playing'); draw(); });
+            canvas.addEventListener('click', (ev) => {
+                const r = canvas.getBoundingClientRect();
+                const frac = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width));
+                if (audio.duration && isFinite(audio.duration)) {
+                    audio.currentTime = frac * audio.duration;
+                    if (audio.paused) audio.play().catch(() => {});
+                }
+            });
+        } catch (e) { /* dalga formu kritik değil — sessizce atla */ }
+    }
+
+    function drawWaveform(canvas, bars, cur, dur) {
+        const w = canvas.clientWidth || 300, h = canvas.clientHeight || 44;
+        if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.clearRect(0, 0, w, h);
+        const playedFrac = dur > 0 ? Math.min(1, cur / dur) : 0;
+        const n = bars.length, bw = w / n;
+        for (let i = 0; i < n; i++) {
+            const amp = Math.max(0.02, bars[i]);
+            const bh = Math.max(2, amp * (h - 8));
+            const x = i * bw + bw * 0.18;
+            const bwid = Math.max(1, bw * 0.64);
+            const y = (h - bh) / 2;
+            ctx.fillStyle = (i / n) <= playedFrac ? 'rgba(122, 108, 255, 0.95)' : 'rgba(148, 163, 184, 0.35)';
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(x, y, bwid, bh, Math.min(1.5, bwid / 2));
+            else ctx.rect(x, y, bwid, bh);
+            ctx.fill();
+        }
+    }
+
     function produceSfx(fxId, customPrompt) {
         const fx = window.NesilMedia.FX_LIBRARY.find(f => f.id === fxId);
         if (!fx) return;
@@ -515,6 +589,12 @@
         audio.src = url;
         audio.autoplay = true;
         card.appendChild(audio);
+        // Dalga formu: prosedürel WAV görselleştirme (tıkla → ilgili ana atla)
+        const wave = document.createElement('canvas');
+        wave.className = 'snd-wave';
+        wave.setAttribute('aria-hidden', 'true');
+        card.appendChild(wave);
+        attachWaveform(wave, url, audio);
         const foot = document.createElement('div');
         foot.className = 'snd-card-foot';
         const dl = document.createElement('a');

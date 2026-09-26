@@ -49,7 +49,8 @@
         stop:   '<svg class="icon" aria-hidden="true"><use href="#i-stop"/></svg>',
         plus:   '<svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>',
         eye:    '<svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg>',
-        pen:    '<svg class="icon" aria-hidden="true"><use href="#i-pen"/></svg>'
+        pen:    '<svg class="icon" aria-hidden="true"><use href="#i-pen"/></svg>',
+        save:   '<svg class="icon" aria-hidden="true"><use href="#i-save"/></svg>'
     };
 
     function fileIcon(name) {
@@ -283,6 +284,7 @@
         tree: {},          // path -> entries (yüklenmiş klasörler)
         expanded: { '': true },
         selected: null,
+        editing: null,     // açık editör: { path, content, dirty, saving }
         busy: false,
         mode: 'idle',      // idle | ultra
         messages: [],
@@ -683,6 +685,8 @@
                         '<span class="nc-sub">NesilAI kodlama ajanı</span>' +
                     '</div>' +
                     '<div class="nc-header-actions">' +
+                        '<button type="button" id="nc-toggle-editor" class="nc-btn nc-btn-ghost" title="Dosyayı elle düzenle" disabled>' +
+                            '<svg class="icon" aria-hidden="true"><use href="#i-edit"/></svg><span>Editör</span></button>' +
                         '<button type="button" id="nc-pick-dir" class="nc-btn nc-btn-ghost" title="Proje klasörü seç">' +
                             '<svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span>Klasör</span></button>' +
                         '<button type="button" id="nc-close" class="nc-btn nc-btn-ghost" title="Kapat (Esc)">' +
@@ -716,6 +720,19 @@
                         '</div>' +
                     '</aside>' +
                     '<section class="nc-chat">' +
+                        '<div id="nc-editor" class="nc-editor hidden">' +
+                            '<div class="nc-editor-head">' +
+                                '<span class="nc-editor-ic">' + ICONS.code + '</span>' +
+                                '<strong id="nc-editor-path">dosya</strong>' +
+                                '<span id="nc-editor-dirty" class="nc-editor-dirty">kayıtsız</span>' +
+                                '<span id="nc-editor-meta" class="nc-editor-meta"></span>' +
+                                '<span class="nc-editor-gap"></span>' +
+                                '<button type="button" id="nc-editor-save" class="nc-btn nc-btn-save" title="Kaydet">' + ICONS.save + '<span>Kaydet</span></button>' +
+                                '<button type="button" id="nc-editor-close" class="nc-btn nc-btn-ghost" title="Editörü kapat (Esc)">' +
+                                    '<svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>' +
+                            '</div>' +
+                            '<textarea id="nc-editor-text" class="nc-editor-text" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>' +
+                        '</div>' +
                         '<div id="nc-messages" class="nc-messages">' +
                             '<div class="nc-welcome">' +
                                 '<p><strong>NesilCode</strong> açık — proje dosyalarını okuyabilir, yazabilir, oluşturabilir ve silebilir.</p>' +
@@ -751,7 +768,15 @@
             search: $('#nc-search', root),
             searchBox: $('#nc-search-box', root),
             permPanel: $('#nc-perm-panel', root),
-            permList: $('#nc-perm-list', root)
+            permList: $('#nc-perm-list', root),
+            editor: $('#nc-editor', root),
+            editorPath: $('#nc-editor-path', root),
+            editorDirty: $('#nc-editor-dirty', root),
+            editorMeta: $('#nc-editor-meta', root),
+            editorText: $('#nc-editor-text', root),
+            editorSave: $('#nc-editor-save', root),
+            editorClose: $('#nc-editor-close', root),
+            editorBtn: $('#nc-toggle-editor', root)
         };
         bindEvents();
         refreshTree();
@@ -770,6 +795,7 @@
         el.root.classList.remove('hidden');
         S.open = true;
         refreshTree();
+        updateEditorHead();
         setTimeout(function () { if (el && el.input) el.input.focus(); }, 60);
     }
 
@@ -882,11 +908,11 @@
                 } else {
                     loadChildren(p);
                 }
-            } else {
-                S.selected = p;
-                renderTree();
-            }
-        };
+        } else {
+            S.selected = p;
+            openEditor(p);
+        }
+    };
     }
 
     function deleteEntry(p, fsRef) {
@@ -903,7 +929,7 @@
                 delete S.expanded[parent];
                 delete S.tree[p];
                 delete S.expanded[p];
-                if (S.selected === p) S.selected = null;
+                if (S.selected === p) { S.selected = null; closeEditor(true); }
                 refreshTree();
             }).catch(function (err) {
                 log('warn', 'Silinemedi: ' + (err && err.message ? err.message : err));
@@ -938,6 +964,103 @@
             refreshTree();
         }).catch(function (err) {
             addSystemMessage(ICONS.alert + ' Oluşturulamadı: ' + esc(err && err.message ? err.message : err));
+        });
+    }
+
+    // ========================================================
+    // Kod Editörü — gezginden dosyaya tıkla, elle düzenle, kaydet
+    // (ajanın yanında ikinci bir yol: Ctrl+S ile hızlı kayıt)
+    // ========================================================
+    function updateEditorHead() {
+        if (!el || !el.editor) return;
+        var open = !!S.editing;
+        el.editor.classList.toggle('hidden', !open);
+        el.editor.classList.toggle('dirty', !!(S.editing && S.editing.dirty));
+        if (el.editorBtn) {
+            el.editorBtn.disabled = !S.selected;
+            el.editorBtn.classList.toggle('active', open);
+            var lbl = el.editorBtn.querySelector('span');
+            if (lbl) lbl.textContent = open ? 'Sohbete dön' : 'Editör';
+        }
+        if (S.editing) {
+            el.editorPath.textContent = baseName(S.editing.path);
+            el.editorPath.title = S.editing.path;
+            el.editorDirty.textContent = S.editing.saving ? 'kaydediliyor…' : (S.editing.dirty ? 'kayıtsız' : 'kayıtlı');
+            el.editorMeta.textContent = fmtSize(S.editing.content.length);
+            if (el.editorSave) el.editorSave.disabled = !S.editing.dirty || S.editing.saving;
+        }
+    }
+
+    function openEditorFile(p) {
+        if (!p) return;
+        var gate = checkPerm({ op: 'read' });
+        if (!gate.ok) {
+            addSystemMessage(ICONS.alert + ' Editör için Okuma izni gerekli — İzinler panelinden açabilirsin.');
+            return;
+        }
+        if (S.editing && S.editing.dirty && S.editing.path !== p) {
+            if (!window.confirm('Kaydedilmemiş değişiklikler var: ' + S.editing.path + '\nTerk edilsin mi?')) return;
+        }
+        var fs = getFs();
+        initFs().then(function () { return fs.readFile(p); }).then(function (content) {
+            S.editing = { path: p, content: String(content == null ? '' : content), dirty: false, saving: false };
+            if (el.editorText) {
+                el.editorText.value = S.editing.content;
+                el.editorText.scrollTop = 0;
+            }
+            updateEditorHead();
+            log('read', p);
+        }).catch(function (err) {
+            addSystemMessage(ICONS.alert + ' Açılamadı: ' + esc(err && err.message ? err.message : err));
+        });
+    }
+
+    function openEditor() {
+        if (!S.selected) return;
+        if (S.editing && S.editing.path === S.selected && !el.editor.classList.contains('hidden')) {
+            el.editor.classList.add('hidden');   // açık dosyaya ikinci tık → sohbete dön
+            updateEditorHead();
+            return;
+        }
+        if (!S.editing || S.editing.path !== S.selected) {
+            openEditorFile(S.selected);
+        }
+        el.editor.classList.remove('hidden');
+        updateEditorHead();
+        setTimeout(function () { if (el.editorText) el.editorText.focus(); }, 60);
+    }
+
+    function closeEditor(silent) {
+        if (!S.editing) { updateEditorHead(); return; }
+        if (!silent && S.editing.dirty && !window.confirm('Kaydedilmemiş değişiklikler var: ' + S.editing.path + '\nKapatılsın mı?')) return;
+        S.editing = null;
+        updateEditorHead();
+    }
+
+    function saveEditor() {
+        if (!S.editing || S.editing.saving) return;
+        var gate = checkPerm({ op: 'write' });
+        if (!gate.ok) {
+            addSystemMessage(ICONS.alert + ' Kaydetmek için Yazma izni gerekli — İzinler panelinden açabilirsin.');
+            return;
+        }
+        var fs = getFs();
+        var content = el.editorText.value;
+        S.editing.saving = true;
+        updateEditorHead();
+        fs.writeFile(S.editing.path, content).then(function () {
+            if (!S.editing) return;
+            S.editing.content = content;
+            S.editing.dirty = false;
+            S.editing.saving = false;
+            log('write', S.editing.path);
+            addSystemMessage(ICONS.check + ' Kaydedildi: ' + esc(S.editing.path) + ' (' + fmtSize(content.length) + ')');
+            updateEditorHead();
+            scheduleTreeRefresh();
+        }).catch(function (err) {
+            if (S.editing) S.editing.saving = false;
+            addSystemMessage(ICONS.alert + ' Kaydedilemedi: ' + esc(err && err.message ? err.message : err));
+            updateEditorHead();
         });
     }
 
@@ -1077,6 +1200,32 @@
         $('#nc-new-file', el.root).addEventListener('click', newFileFlow);
         if (el.stopBtn) el.stopBtn.addEventListener('click', requestStop);
 
+        if (el.editorBtn) el.editorBtn.addEventListener('click', openEditor);
+        if (el.editorSave) el.editorSave.addEventListener('click', saveEditor);
+        if (el.editorClose) el.editorClose.addEventListener('click', function () { closeEditor(false); });
+        if (el.editorText) {
+            el.editorText.addEventListener('input', function () {
+                if (!S.editing) return;
+                S.editing.dirty = el.editorText.value !== S.editing.content;
+                updateEditorHead();
+            });
+            el.editorText.addEventListener('keydown', function (ev) {
+                if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 's') {
+                    ev.preventDefault();
+                    saveEditor();
+                    return;
+                }
+                if (ev.key === 'Tab') {
+                    ev.preventDefault();
+                    var ta = el.editorText;
+                    var st = ta.selectionStart, en = ta.selectionEnd;
+                    ta.value = ta.value.slice(0, st) + '    ' + ta.value.slice(en);
+                    ta.selectionStart = ta.selectionEnd = st + 4;
+                    if (S.editing) { S.editing.dirty = true; updateEditorHead(); }
+                }
+            });
+        }
+
         el.search.addEventListener('input', function () {
             S.filter = el.search.value.trim().toLowerCase();
             el.searchBox.classList.toggle('has-q', !!S.filter);
@@ -1131,6 +1280,11 @@
     function ncKeyHandler(ev) {
         if (ev.key !== 'Escape') return;
         if (!S.open) return;
+        if (S.editing && !el.editor.classList.contains('hidden')) {
+            if (S.busy) { requestStop(); return; }
+            closeEditor(false);                      // önce editörü kapat (kayıtsız varsa sorar)
+            return;
+        }
         if (S.busy) { requestStop(); return; }   // önce ajanı durdur
         closeView();
     }
@@ -1185,7 +1339,10 @@
             extractAction: extractAction,
             applyPatch: applyPatch,
             repairJsonCandidate: repairJsonCandidate,
-            state: S
+            state: S,
+            openEditorFile: openEditorFile,
+            saveEditor: saveEditor,
+            closeEditor: closeEditor
         }
     };
 })();
