@@ -1324,6 +1324,14 @@
         if (interruptedFixed) saveChatsToStorage();
 
         activeChat.messages.forEach(msg => {
+            // blob: URL'ler oturum-kapsamlıdır — reload sonrası HEPSI ölüdür.
+            // Ölü kaynağı fetch etmeden önce placeholder göster (konsol
+            // ERR_FILE_NOT_FOUND + bozuk oynatıcı flaşının önüne geçer).
+            if (msg.role === 'assistant' &&
+                ((msg.isMediaGen && msg.mediaUrl && msg.mediaUrl.startsWith('blob:')) ||
+                 (msg.isImageGen && msg.imageUrl && msg.imageUrl.startsWith('blob:')))) {
+                msg._restoring = true;
+            }
             appendMessageToDom(msg, false);
         });
 
@@ -1338,11 +1346,16 @@
                      (msg.isImageGen && msg.imageUrl && msg.imageUrl.startsWith('blob:')));
                 if (!needsRestore) return;
                 window.NesilStore.loadMessageMedia(msg.id).then(rec => {
+                    msg._restoring = false;
                     if (!rec) {
                         // Blob kaydı yoksa (eski oturum) http URL'leri zaten çalışır;
                         // blob ise dürüst not düş.
                         if (msg.isMediaGen && msg.mediaUrl && msg.mediaUrl.startsWith('blob:')) {
                             msg.mediaError = 'Bu üretim kalıcı depoya yazılamamıştı (eski oturum). Lütfen yeniden üret.';
+                            rerenderMediaMessage(msg);
+                        } else if (msg.isImageGen && msg.imageUrl && msg.imageUrl.startsWith('blob:')) {
+                            msg.imageUrl = '';
+                            msg.imageError = 'Bu görsel kalıcı depoya yazılamamıştı (eski oturum). Lütfen yeniden üret.';
                             rerenderMediaMessage(msg);
                         }
                         return;
@@ -1353,7 +1366,7 @@
                         msg.imageUrl = rec.url;
                     }
                     rerenderMediaMessage(msg);
-                }).catch(() => {});
+                }).catch(() => { msg._restoring = false; });
             });
         }
     }
@@ -1521,12 +1534,23 @@
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';                if (msg.isMediaGen) {
                     renderMediaIntoBubble(bubble, msg);
-                } else if (msg.isImageGen && msg.imageUrl) {
+                } else if (msg.isImageGen) {
                 const descP = document.createElement('p');
                 descP.textContent = msg.text || 'İşte oluşturulan görsel:';
                 bubble.appendChild(descP);
 
-                if (window.NesilT2P) {
+                if (msg.imageError) {
+                    const err = document.createElement('div');
+                    err.className = 'media-error-note';
+                    err.textContent = msg.imageError;
+                    bubble.appendChild(err);
+                } else if (msg._restoring) {
+                    const rest = document.createElement('div');
+                    rest.className = 'thinking-bubble';
+                    rest.innerHTML = '<span class="typing-dots"><i></i><i></i><i></i></span>' +
+                        '<span class="thinking-label">Görsel geri yükleniyor…</span>';
+                    bubble.appendChild(rest);
+                } else if (msg.imageUrl && window.NesilT2P) {
                     window.NesilT2P.appendImageCard(bubble, msg.imagePrompt || msg.text, msg.imageUrl);
                 }
             } else {
@@ -2322,7 +2346,7 @@
     // Slash Komutları — /ultrathink /report /ultracode + ayar komutları
     // ========================================================
     function parseSlashCommand(rawText) {
-        const m = String(rawText || '').match(/^\s*\/(ultrathink|report|ultracode|openview|nesilcode|humanise|humanize|ayarlar|settings|tema|theme|ses|voice|temizle|clear|yardim|yardım|help)\b\s*([\s\S]*)$/i);
+        const m = String(rawText || '').match(/^\s*\/(ultrathink|report|ultracode|openview|nesilcode|humanise|humanize|ayarlar|settings|tema|theme|ses|voice|temizle|clear|yardim|yardım|help|komutlar|commands)\b\s*([\s\S]*)$/i);
         if (!m) return null;
         return { cmd: m[1].toLowerCase(), body: m[2].trim(), original: rawText };
     }
@@ -2355,6 +2379,8 @@
             case 'yardim':
             case 'yardım':
             case 'help':
+            case 'komutlar':
+            case 'commands':
                 return [
                     '**NesilAI Komutları**',
                     '',
@@ -3135,6 +3161,16 @@
             return;
         }
 
+        if (msg._restoring) {
+            // Kalıcı depodan canlı URL geri getiriliyor — ölü blob'a dokunma
+            const rest = document.createElement('div');
+            rest.className = 'thinking-bubble';
+            rest.innerHTML = '<span class="typing-dots"><i></i><i></i><i></i></span>' +
+                '<span class="thinking-label">Medya geri yükleniyor…</span>';
+            bubble.appendChild(rest);
+            return;
+        }
+
         if (msg.mediaKind === 'video') {
             const vid = document.createElement('video');
             vid.className = 'media-player';
@@ -3214,7 +3250,8 @@
         { cmd: '/tema', name: 'TEMA', desc: 'Açık/koyu temayı değiştirir', icon: 'i-palette' },
         { cmd: '/ses', name: 'SES', desc: 'Sesli sohbet modunu açar', icon: 'i-voice' },
         { cmd: '/temizle', name: 'TEMİZLE', desc: 'Tüm sohbet geçmişini siler', icon: 'i-trash' },
-        { cmd: '/yardim', name: 'YARDIM', desc: 'Tüm komutları listeler', icon: 'i-info' }
+        { cmd: '/yardim', name: 'YARDIM', desc: 'Tüm komutları listeler', icon: 'i-info' },
+        { cmd: '/komutlar', name: 'KOMUTLAR', desc: 'Tüm komutları listeler (/yardim ile aynı)', icon: 'i-info' }
     ];
 
     function buildSlashMenu(filter) {
