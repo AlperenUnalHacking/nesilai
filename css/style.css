@@ -2481,7 +2481,7 @@ html[data-device="phone"] .history-item { height: 44px; }
 html[data-device="phone"] .suggestions { grid-template-columns: 1fr; margin-top: var(--s-6); }
 html[data-device="phone"] .welcome-hero { padding: var(--s-6) 0 var(--s-4); }
 html[data-device="phone"] .welcome-title { font-size: 21px; }
-html[data-device="phone"] .model-menu { width: min(92vw, 420px); }
+html[data-device="phone"] .model-menu { width: min(92vw, 420px); top: auto; }
 html[data-device="phone"] .model-menu-list .model-option {
     min-height: 48px;
     padding-block: var(--s-3);
@@ -4138,3 +4138,40 @@ html.ov-overlay-host body > *:not(#openview-panel):not(.icon-sprite) { display: 
     box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .nc-editor-text::placeholder { color: var(--text-3); }
+/* ==========================================================
+   15. NesilAI YZ — composer menüleri YUKARI açılır + kaydırılabilir
+   Menüler topbar ÜSTÜNE doğru açılır (bottom → up); min-max yükseklik
+   + iç kaydırma ile uzun liste daima erişilebilir.
+   ========================================================== */
+.composer-topbar .model-menu {
+    max-height: min(440px, calc(100vh - 220px));
+    max-height: min(440px, calc(100dvh - 220px));
+}
+
+.model-menu-list {
+    max-height: min(340px, calc(100vh - 300px));
+    max-height: min(340px, calc(100dvh - 300px));
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.model-menu-list::-webkit-scrollbar { width: 8px; }
+.model-menu-list::-webkit-scrollbar-track { background: transparent; }
+.model-menu-list::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 8px;
+}
+.model-menu-list::-webkit-scrollbar-thumb:hover { background: var(--accent-border); }
+
+.composer-topbar .model-menu,
+.composer-topbar .mode-menu,
+.composer-topbar .slash-menu {
+    animation: menu-drop-in 0.16s var(--ease);
+}
+
+@keyframes menu-drop-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+

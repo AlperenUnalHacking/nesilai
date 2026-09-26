@@ -435,7 +435,7 @@
                     'Preserve every detail of the original meaning exactly.';
                 const userMsg = 'Translate this image prompt to English, preserving all meaning:\n\n' + prompt;
                 const res = await Promise.race([
-                    window.NesilAI.ask(userMsg, { system: sys, temperature: 0.1 }),
+                    window.NesilAI.ask(userMsg, { system: sys, temperature: 0.1, __internal: 'prompt-enhancer' }),
                     new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), TRANSLATE_TIMEOUT_MS))
                 ]);
                 const clean = String(res || '').trim().replace(/^"|"$/g, '');

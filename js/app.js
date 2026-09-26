@@ -170,16 +170,16 @@
         localStorage.setItem('nesilai_gen_mode', mode);
         updateModePickerUI();
         hideModeMenu();
-        const names = { chat: 'Sohbet', image: 'Görsel', music: 'Müzik/Ses' };
-        showToast('Mod: ' + names[mode] + ' — yazdığın her şey ' + names[mode] + ' olarak üretilcek', 'success');
+        const names = { chat: t('Sohbet'), image: t('Görsel'), music: t('Müzik/Ses') };
+        showToast(t('Mod: {m} — yazdığın her şey {m} olarak üretilcek').replace(/\{m\}/g, names[mode]), 'success');
     }
 
     function updateModePickerUI() {
         if (!modePickerLabel) return;
         const map = {
-            chat:  { icon: '#i-chat',  label: 'Sohbet' },
-            image: { icon: '#i-image', label: 'Görsel' },
-            music: { icon: '#i-music', label: 'Müzik/Ses' }
+            chat:  { icon: '#i-chat',  label: t('Sohbet') },
+            image: { icon: '#i-image', label: t('Görsel') },
+            music: { icon: '#i-music', label: t('Müzik/Ses') }
         };
         const m = map[currentGenMode] || map.chat;
         modePickerLabel.textContent = m.label;
@@ -187,7 +187,7 @@
         if (iconUse) iconUse.setAttribute('href', m.icon);
         if (modePickerBtn) {
             modePickerBtn.classList.toggle('mode-active', currentGenMode !== 'chat');
-            modePickerBtn.title = 'Üretim modu: ' + m.label;
+            modePickerBtn.title = t('Üretim modu seç') + ': ' + m.label;
         }
     }
 
@@ -195,9 +195,9 @@
         if (!modeMenuList) return;
         modeMenuList.innerHTML = '';
         const modes = [
-            { id: 'chat',  icon: '#i-chat',  name: 'Sohbet',      desc: 'Normal yapay zeka sohbeti' },
-            { id: 'image', icon: '#i-image', name: 'Görsel üret', desc: 'Yazdığın tarif görsel olur' },
-            { id: 'music', icon: '#i-music', name: 'Müzik / Ses', desc: 'Şarkı, enstrümantal veya seslendirme' }
+            { id: 'chat',  icon: '#i-chat',  name: t('Sohbet'),      desc: t('Normal yapay zeka sohbeti') },
+            { id: 'image', icon: '#i-image', name: t('Görsel üret'), desc: t('Yazdığın tarif görsel olur') },
+            { id: 'music', icon: '#i-music', name: t('Müzik / Ses'), desc: t('Şarkı, enstrümantal veya seslendirme') }
         ];
         modes.forEach(m => {
             const item = document.createElement('button');
@@ -207,7 +207,7 @@
                 '<svg class="icon" aria-hidden="true"><use href="' + m.icon + '"/></svg>' +
                 '<span class="mode-option-texts"><span class="mode-option-name">' + m.name + '</span>' +
                 '<span class="mode-option-desc">' + m.desc + '</span></span>' +
-                (currentGenMode === m.id ? '<span class="model-current-tag">aktif</span>' : '');
+                (currentGenMode === m.id ? '<span class="model-current-tag">' + t('aktif') + '</span>' : '');
             item.addEventListener('click', () => setGenMode(m.id));
             modeMenuList.appendChild(item);
         });
@@ -229,6 +229,7 @@
         if (modeMenu) modeMenu.classList.add('hidden');
     }
     const modelPickerSearch = document.getElementById('model-picker-search');
+    const modelMenuList = document.getElementById('model-menu-list');
 
     // Sesli Sohbet Modalı (Voice Mode)
     const voiceModal = document.getElementById('voice-modal');
@@ -248,6 +249,10 @@
     const settingVoicePitch = document.getElementById('setting-voice-pitch');
     const settingAutoSpeak = document.getElementById('setting-auto-speak');
     const webSearchToggle = document.getElementById('web-search-toggle');
+    const settingLanguageSelect = document.getElementById('setting-language-select');
+    const settingLanguageCustomField = document.getElementById('setting-language-custom-field');
+    const settingLanguageCustom = document.getElementById('setting-language-custom');
+    const settingUiLanguageSelect = document.getElementById('setting-ui-language-select');
     const settingMemoryEnabled = document.getElementById('setting-memory-enabled');
     const memoryListEl = document.getElementById('memory-list');
     const memoryCountNote = document.getElementById('memory-count-note');
@@ -265,6 +270,9 @@
     const aiKeyLink = document.getElementById('ai-key-link');
     const aiBaseUrlField = document.getElementById('ai-baseurl-field');
     const aiBaseUrlInput = document.getElementById('ai-baseurl-input');
+    const aiNesilModelField = document.getElementById('ai-nesil-model-field');
+    const aiNesilModelSelect = document.getElementById('ai-nesil-model-select');
+    const aiNesilModelNote = document.getElementById('ai-nesil-model-note');
     const aiTemperature = document.getElementById('ai-temperature');
     const aiTempVal = document.getElementById('ai-temp-val');
     const aiTestBtn = document.getElementById('ai-test-btn');
@@ -275,6 +283,72 @@
     const welcomeSetupBtn = document.getElementById('welcome-setup-btn');
 
     const AI = window.NesilAI;
+
+    // ========================================================
+    // Arayüz Çevirisi — NesilAI.translateUi üzerinden çalışır.
+    // Dil Seçme hem YZ yanıt dilini hem arayüz dilini değiştirir.
+    // ========================================================
+    function t(text) {
+        return AI && AI.translateUi ? AI.translateUi(text) : text;
+    }
+
+    // Statik HTML dizgilerini geçerli arayüz diline çevir:
+    // METİN DÜĞÜMLERİ, title öznitelikleri ve placeholder'lar sözlükte
+    // birebir eşleşirse çevrilir; "tr"/otomatikte orijinale döner.
+    const __uiOrigText = new WeakMap();   // text node → orijinal içerik
+    const __uiOrigTitle = new WeakMap();  // element → orijinal title
+    const __uiOrigPh = new WeakMap();     // element → orijinal placeholder
+
+    function applyUiTranslations() {
+        if (!AI || !AI.translateUi) return;
+        const lang = AI.getUiLanguage ? AI.getUiLanguage() : 'tr';
+        const isTr = !lang || lang === 'tr';
+
+        // 1) Metin düğümleri (script/style içindekilere dokunma)
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+            acceptNode: function (node) {
+                const p = node.parentElement;
+                if (!p || p.tagName === 'SCRIPT' || p.tagName === 'STYLE') return NodeFilter.FILTER_REJECT;
+                return node.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+        });
+        let node;
+        while ((node = walker.nextNode())) {
+            if (isTr) {
+                if (__uiOrigText.has(node)) node.nodeValue = __uiOrigText.get(node);
+                continue;
+            }
+            if (!__uiOrigText.has(node)) __uiOrigText.set(node, node.nodeValue);
+            const raw = node.nodeValue;
+            const trimmed = raw.trim();
+            const tr = AI.translateUi(trimmed);
+            if (tr && tr !== trimmed) node.nodeValue = raw.replace(trimmed, tr);
+        }
+
+        // 2) title öznitelikleri
+        document.querySelectorAll('[title]').forEach(el => {
+            if (isTr) {
+                if (__uiOrigTitle.has(el)) el.title = __uiOrigTitle.get(el);
+                return;
+            }
+            if (!__uiOrigTitle.has(el)) __uiOrigTitle.set(el, el.title);
+            const tr = AI.translateUi(el.title);
+            if (tr && tr !== el.title) el.title = tr;
+        });
+
+        // 3) placeholder'lar
+        document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(inp => {
+            if (isTr) {
+                if (__uiOrigPh.has(inp)) inp.placeholder = __uiOrigPh.get(inp);
+                return;
+            }
+            if (!__uiOrigPh.has(inp)) __uiOrigPh.set(inp, inp.placeholder);
+            const tr = AI.translateUi(inp.placeholder);
+            if (tr && tr !== inp.placeholder) inp.placeholder = tr;
+        });
+
+        document.documentElement.lang = isTr ? 'tr' : lang;
+    }
 
     // ========================================================
     // Uygulama Durumu (State)
@@ -293,6 +367,9 @@
     function initApp() {
         // Tema: kaydedilmiş tercih yoksa sistem tercihi kullanılır
         applyTheme(localStorage.getItem(THEME_KEY) || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+
+        // Arayüz dili: kayıtlıysa statik dizgileri çevir (Rusça, İspanyolca…)
+        applyUiTranslations();
 
         // Ses ayarlarını başlat
         if (window.NesilTTS) {
@@ -824,7 +901,7 @@
                     window.NesilStore.clearPoolKind(k);
                 });
                 setTimeout(renderPoolGallery, 250);
-                showToast('Galeri temizlendi');
+                showToast(t('Galeri temizlendi'));
             });
         }
 
@@ -906,7 +983,7 @@
 
                 poolImageBtn.disabled = false;
                 poolImageStatus.textContent = `Havuza eklendi: ${count} görsel üretildi.`;
-                showToast('Üretim havuzu: görseller hazır', 'success');
+                showToast(t('Üretim havuzu: görseller hazır'), 'success');
             });
         }
 
@@ -1158,7 +1235,7 @@
         const val = id => (document.getElementById(id) || {}).value || '';
         const first = val('intro-firstname').trim();
         if (!first) {
-            showToast('En azından adını yaz — gerisi isteğe bağlı', 'warning');
+            showToast(t('En azından adını yaz — gerisi isteğe bağlı'), 'warning');
             return;
         }
         const lines = [
@@ -1175,16 +1252,16 @@
         try {
             localStorage.setItem(SECRET_MEM_KEY, obfuscate(lines.join('\n')));
             closeIntroduceModal();
-            showToast('Gizli bellek güncellendi — artık seni tanıyorum', 'success');
+            showToast(t('Gizli bellek güncellendi — artık seni tanıyorum'), 'success');
         } catch (e) {
-            showToast('Gizli bellek kaydedilemedi', 'error');
+            showToast(t('Gizli bellek kaydedilemedi'), 'error');
         }
     }
 
     function clearSecretMemory() {
         localStorage.removeItem(SECRET_MEM_KEY);
         closeIntroduceModal();
-        showToast('Gizli bellek temizlendi');
+        showToast(t('Gizli bellek temizlendi'));
     }
 
     // ========================================================
@@ -1255,7 +1332,7 @@
             renderChatHistory();
             renderActiveChatMessages();
         }
-        showToast('Sohbet silindi');
+        showToast(t('Sohbet silindi'));
     }
 
     function renderChatHistory() {
@@ -1605,7 +1682,7 @@
                                 speakBtn.innerHTML = icon('i-volume') + ' <span>Dinle</span>';
                                 speakBtn.classList.remove('speaking');
                                 if (currentlySpeakingBtn === speakBtn) currentlySpeakingBtn = null;
-                                showToast('Seslendirme başlatılamadı', 'error');
+                                showToast(t('Seslendirme başlatılamadı'), 'error');
                             }
                         );
                     }
@@ -2198,7 +2275,7 @@
                 try {
                     const plan = await AI.ask(
                         'Şu isteği gerçekleştirmek için 3-6 maddelik kısa bir uygulama planı yaz. Sadece madde listesi ver, kod yazma. Kullanıcının dilinde yaz:\n\n' + (cmdInfo.body || text),
-                        { temperature: 0.4, timeoutMs: 45000 }
+                        { temperature: 0.4, timeoutMs: 45000, __internal: 'research-plan' }
                     );
                     if (plan && plan.length > 20) {
                         planBlock = '\n\nUYGULAMA PLANIN (bu plana sadık kalarak kodla):\n' + plan;
@@ -2258,7 +2335,7 @@
                 }
                 if (aiRow) aiRow.classList.remove('streaming');
                 saveChatsToStorage();
-                showToast('Yanıt durduruldu');
+                showToast(t('Yanıt durduruldu'));
                 return;
             }
 
@@ -2589,14 +2666,14 @@
     // ========================================================
     function toggleSpeechToText() {
         if (!window.NesilSTT) {
-            showToast('Konuşma tanıma desteklenmiyor', 'error');
+            showToast(t('Konuşma tanıma desteklenmiyor'), 'error');
             return;
         }
 
         if (window.NesilSTT.isListening()) {
             window.NesilSTT.stop();
             micBtn.classList.remove('listening');
-            showToast('Kayıt durduruldu');
+            showToast(t('Kayıt durduruldu'));
         } else {
             // Kota kontrolü
             if (!checkQuota('stt')) return;
@@ -2605,7 +2682,7 @@
                 onStart: () => {
                     incrementQuota('stt');
                     micBtn.classList.add('listening');
-                    showToast('Sizi dinliyorum, konuşabilirsiniz...');
+                    showToast(t('Sizi dinliyorum, konuşabilirsiniz...'));
                 },
                 onFinal: (text) => {
                     const current = userInput.value;
@@ -2620,17 +2697,17 @@
                     micBtn.classList.remove('listening');
                     const code = err && err.error;
                     if (code === 'not-allowed' || code === 'service-not-allowed') {
-                        showToast('Mikrofon izni reddedildi — adres çubuğundaki kilit/izn menüsünden izin ver', 'error');
+                        showToast(t('Mikrofon izni reddedildi — adres çubuğundaki kilit/izn menüsünden izin ver'), 'error');
                     } else if (code === 'network' && window.NesilSTT && !window.NesilSTT.hasWebSpeech()) {
-                        showToast('Konuşma tanıma servisine ulaşılamadı', 'error');
+                        showToast(t('Konuşma tanıma servisine ulaşılamadı'), 'error');
                     } else {
-                        showToast('Mikrofon hatası: ' + (code || 'Bilinmiyor'), 'error');
+                        showToast(t('Mikrofon hatası: ') + (code || 'Bilinmiyor'), 'error');
                     }
                 }
             });
 
             if (!started) {
-                showToast('Mikrofon açılamadı', 'error');
+                showToast(t('Mikrofon açılamadı'), 'error');
             }
         }
     }
@@ -2640,7 +2717,7 @@
     // ========================================================
     function openVoiceMode() {
         if (!window.NesilSTT || !window.NesilTTS) {
-            showToast('Sesli sohbet bu tarayıcıda tam desteklenmiyor', 'error');
+            showToast(t('Sesli sohbet bu tarayıcıda tam desteklenmiyor'), 'error');
             return;
         }
 
@@ -2764,7 +2841,7 @@
 
     function handleAttachmentFile(file) {
         if (!file.type.startsWith('image/')) {
-            showToast('Lütfen bir resim dosyası seçin', 'warning');
+            showToast(t('Lütfen bir resim dosyası seçin'), 'warning');
             return;
         }
 
@@ -2790,7 +2867,7 @@
                     });
                     activeAttachment.extractedText = text;
                     attachmentStatus.innerHTML = text ? icon('i-check') + ' Metin okundu' : icon('i-info') + ' Metin bulunamadı';
-                    showToast('Görsel başarıyla analiz edildi');
+                    showToast(t('Görsel başarıyla analiz edildi'));
                 } catch (err) {
                     attachmentStatus.textContent = 'OCR başarısız oldu';
                 }
@@ -2834,16 +2911,17 @@
             settingSfx.checked = window.NesilSFX.enabled();
         }
 
-        // Sağlayıcı listesini doldur
+        // Sağlayıcı listesini doldur (anahtarsız motorlar tek "NesilAI YZ" girişi)
         if (aiProviderSelect) {
             aiProviderSelect.innerHTML = '';
-            Object.keys(AI.PROVIDERS).forEach(id => {
+            AI.getUiProviders().forEach(p => {
                 const opt = document.createElement('option');
-                opt.value = id;
-                opt.textContent = AI.PROVIDERS[id].label;
+                opt.value = p.id;
+                opt.textContent = p.label;
                 aiProviderSelect.appendChild(opt);
             });
-            aiProviderSelect.value = AI.getSettings().provider;
+            const activeProvider = AI.getSettings().provider;
+            aiProviderSelect.value = AI.isNesilAiBrand(activeProvider) ? 'nesilai-yz' : activeProvider;
         }
 
         const stored = AI.getSettings();
@@ -2852,16 +2930,97 @@
             if (aiTempVal) aiTempVal.textContent = Number(stored.temperature).toFixed(1);
         }
 
+        // Dil Seçme bölümünü doldur
+        initLanguageSettings();
+
         syncProviderFields();
         updateAiStatusChip();
+    }
+
+    // ========================================================
+    // Dil Seçme — ayarlar modalındaki dil listesi + "diğer dil"
+    // ========================================================
+    // ========================================================
+    // Dil Seçme — ayarlar modalındaki dil listeleri + "diğer dil"
+    //   Yanıt dili (YZ çıktısı) + Arayüz dili (menüler/düğmeler)
+    // ========================================================
+    function initLanguageSettings() {
+        if (!settingLanguageSelect) return;
+
+        const savedChatLang = AI.getLanguage ? AI.getLanguage() : '';
+
+        // --- Arayüz dili seçici ---
+        if (settingUiLanguageSelect) {
+            settingUiLanguageSelect.innerHTML = '';
+            (AI.UI_LANGUAGES || []).forEach(l => {
+                const opt = document.createElement('option');
+                opt.value = l.code || '__auto__';
+                opt.textContent = (l.flag ? l.flag + ' ' : '') + l.name;
+                settingUiLanguageSelect.appendChild(opt);
+            });
+            settingUiLanguageSelect.value = (AI.getUiLanguage ? AI.getUiLanguage() : 'tr') || '__auto__';
+        }
+
+        // --- Yanıt dili seçici (+ özel dil) ---
+        settingLanguageSelect.innerHTML = '';
+        (AI.AI_LANGUAGES || []).forEach(l => {
+            const opt = document.createElement('option');
+            opt.value = l.code || '__auto__';
+            opt.textContent = (l.flag ? l.flag + ' ' : '') + l.name;
+            settingLanguageSelect.appendChild(opt);
+        });
+        const customOpt = document.createElement('option');
+        customOpt.value = '__custom__';
+        customOpt.textContent = '✏️ Diğer dili kendin seç…';
+        settingLanguageSelect.appendChild(customOpt);
+
+        if (savedChatLang.indexOf('custom:') === 0) {
+            settingLanguageSelect.value = '__custom__';
+            if (settingLanguageCustom) settingLanguageCustom.value = savedChatLang.slice(7);
+            if (settingLanguageCustomField) settingLanguageCustomField.classList.remove('hidden');
+        } else {
+            settingLanguageSelect.value = savedChatLang || '__auto__';
+            if (settingLanguageCustomField) settingLanguageCustomField.classList.add('hidden');
+        }
     }
 
     // Seçilen sağlayıcıya göre form alanlarını göster/gizle
     function syncProviderFields() {
         if (!aiProviderSelect) return;
 
-        const provider = AI.getProvider(aiProviderSelect.value);
+        const provider = AI.getProviderByUiId(aiProviderSelect.value) || AI.getProvider();
         const stored = AI.getSettings();
+
+        // NesilAI YZ seçiliyse gerçek model seçim listesini göster
+        // (minimax ↔ codestral ↔ GLM ↔ Mistral Nemo)
+        if (aiNesilModelField && aiNesilModelSelect) {
+            const isBrandUi = AI.isNesilAiBrand(provider.id);
+            aiNesilModelField.classList.toggle('hidden', !isBrandUi);
+            if (isBrandUi) {
+                const nesil = AI.PROVIDERS.llm7;
+                const currentModel = (stored.models && stored.models.llm7) || nesil.defaultModel;
+                aiNesilModelSelect.innerHTML = '';
+                (nesil.suggestedModels || []).forEach(modelId => {
+                    const opt = document.createElement('option');
+                    opt.value = modelId;
+                    const hint = nesil.modelHints && nesil.modelHints[modelId];
+                    opt.textContent = hint ? modelId + ' — ' + hint : modelId;
+                    aiNesilModelSelect.appendChild(opt);
+                });
+                aiNesilModelSelect.value = (nesil.suggestedModels || []).indexOf(currentModel) !== -1
+                    ? currentModel
+                    : nesil.defaultModel;
+                if (aiNesilModelNote) {
+                    aiNesilModelNote.textContent = 'Anahtarsız çalışır; modeli istediğin an değiştirebilirsin. Değişiklik anında kaydedilir.';
+                }
+            }
+        }
+
+        // Marka görünümündeyken ham "Model" kutusunu gizle: NesilAI YZ modeli
+        // yukarıdaki açılır listeden seçilir, iki kontrol çakışmasın.
+        if (aiModelInput && aiModelInput.closest('.field')) {
+            aiModelInput.closest('.field').classList.toggle('hidden', AI.isNesilAiBrand(provider.id));
+        }
 
         if (aiModelInput) {
             aiModelInput.value = stored.models[provider.id] || provider.defaultModel || '';
@@ -2917,11 +3076,19 @@
 
     // Formdaki değerleri kayıt nesnesine çevir
     function collectSettingsFromForm() {
-        const provider = AI.getProvider(aiProviderSelect ? aiProviderSelect.value : undefined);
+        const provider = AI.getProviderByUiId(aiProviderSelect ? aiProviderSelect.value : undefined) || AI.getProvider();
         const patch = { provider: provider.id };
 
+        // NesilAI YZ (marka) seçiliyken gerçek model yukarıdaki açılır listeden gelir
+        if (provider.id === 'llm7' && aiNesilModelSelect && aiNesilModelSelect.value) {
+            patch.models = { llm7: aiNesilModelSelect.value };
+        }
+
         const model = aiModelInput ? aiModelInput.value.trim() : '';
-        if (model) {
+        if (provider.id === 'llm7') {
+            // NesilAI YZ: model yukarıdaki açılır listeden gelir;
+            // gizli ham "Model" kutusunun kalıntı değeri yok sayılır.
+        } else if (model) {
             patch.models = {};
             patch.models[provider.id] = model;
         }
@@ -2946,35 +3113,40 @@
 
         const readiness = AI.isReady();
         const provider = readiness.provider;
+        const isBrand = AI.isNesilAiBrand(provider.id);
+        const displayShort = isBrand ? AI.BRAND_NAME : provider.short;
+        const activeModel = AI.getModel(provider.id);
 
         if (aiStatusText) {
             if (readiness.ok) {
-                aiStatusText.textContent = provider.short + ' · ' + AI.getModel(provider.id);
+                // NesilAI YZ için marka adı + seçili gerçek model (minimax, codestral…)
+                aiStatusText.textContent = displayShort + ' · ' + activeModel;
             } else if (readiness.reason === 'missing-key') {
-                aiStatusText.textContent = provider.short + ' · anahtar gerekli';
+                aiStatusText.textContent = displayShort + ' · ' + t('anahtar gerekli');
             } else {
-                aiStatusText.textContent = 'Sağlayıcı ayarla';
+                aiStatusText.textContent = t('Sağlayıcı ayarla');
             }
         }
 
         aiStatusChip.classList.toggle('needs-setup', !readiness.ok);
         aiStatusChip.title = readiness.ok
-            ? 'Aktif yapay zeka: ' + provider.label + ' (' + AI.getModel(provider.id) + ')'
+            ? 'Aktif yapay zeka: ' + provider.label + ' (' + activeModel + ')'
             : 'Yapay zeka sağlayıcısı ayarlanmadı — tıkla ve anahtarını ekle.';
 
         if (welcomeProvider) {
             welcomeProvider.textContent = readiness.ok
-                ? provider.short + ' · ' + AI.getModel(provider.id)
-                : provider.short + ' (kurulum gerekli)';
+                ? displayShort + ' · ' + activeModel
+                : displayShort + ' ' + t('(kurulum gerekli)');
         }
 
         if (welcomeSetupBtn) {
-            welcomeSetupBtn.textContent = readiness.ok ? 'Kaynağı değiştir' : 'Anahtarını ekle';
+            welcomeSetupBtn.textContent = readiness.ok ? t('Kaynağı değiştir') : t('Anahtarını ekle');
         }
 
-        // Composer'daki model seçici etiketi de aynı bilgiyi taşır
-        if (modelPickerLabel && aiStatusText) {
-            modelPickerLabel.textContent = aiStatusText.textContent;
+        // Composer'daki model seçici yalnızca markayı gösterir: "NesilAI YZ"
+        // (motor/model ayrıntısı Ayarlar → Yapay Zeka'dan seçilir)
+        if (modelPickerLabel) {
+            modelPickerLabel.textContent = AI.BRAND_NAME;
         }
     }
 
@@ -2988,11 +3160,14 @@
         if (!modelMenu) return;
         const settings = AI.getSettings();
         const activePid = settings.provider;
-        modelMenu.innerHTML = '';
 
-        Object.keys(AI.PROVIDERS).forEach(pid => {
-            if (pid === 'custom') return; // Özel uç nokta kurulumu ayarlardan yapılır
-            const provider = AI.PROVIDERS[pid];
+        // ÖNEMLİ: Menünün tamamını değil, yalnızca liste kapsayıcısını temizle.
+        // (Aksi halde arama kutusu + kaydırma kapsayıcısı silinir, menü
+        // overflow:hidden olduğu için içerik kırpılır ve kaydırılamaz.)
+        const listHost = modelMenuList || modelMenu;
+        listHost.innerHTML = '';
+
+        function appendProviderSection(pid, provider, sectionModels) {
             const section = document.createElement('div');
             section.className = 'model-section' + (pid === activePid ? ' active-provider' : '');
 
@@ -3000,11 +3175,11 @@
             head.className = 'model-section-head';
             const keyOwned = !provider.needsKey || (settings.keys[pid] || '').trim();
             head.innerHTML = `<span>${provider.short}</span>` +
-                (provider.needsKey && !keyOwned ? '<span class="model-key-warn"><svg class="icon" aria-hidden="true"><use href="#i-key"/></svg> anahtar gerekli (Ayarlar)</span>' : '') +
-                (pid === activePid ? '<span class="model-current-tag">aktif</span>' : '');
+                (provider.needsKey && !keyOwned ? '<span class="model-key-warn"><svg class="icon" aria-hidden="true"><use href="#i-key"/></svg> ' + t('anahtar gerekli') + ' (' + t('Ayarlar') + ')</span>' : '') +
+                (pid === activePid ? '<span class="model-current-tag">' + t('aktif') + '</span>' : '');
             section.appendChild(head);
 
-            (provider.suggestedModels || []).forEach(modelId => {
+            sectionModels.forEach(modelId => {
                 const item = document.createElement('button');
                 item.type = 'button';
                 item.className = 'model-option' + (pid === activePid && settings.models[pid] === modelId ? ' selected' : '');
@@ -3016,20 +3191,38 @@
                     AI.saveSettings({ provider: pid, models: { [pid]: modelId } });
                     updateAiStatusChip();
                     hideModelPicker();
-                    showToast(provider.short + ' · ' + modelId + ' seçildi', 'success');
+                    const msg = (pid === 'llm7')
+                        ? t('NesilAI YZ · {m} seçildi').replace('{m}', modelId)
+                        : (provider.short + ' · ' + modelId + ' seçildi');
+                    showToast(msg, 'success');
                 });
 
                 section.appendChild(item);
             });
 
-            modelMenu.appendChild(section);
+            listHost.appendChild(section);
+        }
+
+    // --- NesilAI YZ bölümü: marka + tüm ücretsiz modeller ---
+        appendProviderSection('llm7', {
+            id: 'llm7',
+            short: AI.BRAND_NAME,
+            label: 'NesilAI YZ — ücretsiz, anahtarsız motor',
+            needsKey: false
+        }, (AI.PROVIDERS.llm7 && AI.PROVIDERS.llm7.suggestedModels) || []);
+
+        Object.keys(AI.PROVIDERS).forEach(pid => {
+            if (pid === 'custom') return; // Özel uç nokta kurulumu ayarlardan yapılır
+            if (AI.isNesilAiBrand(pid)) return; // Zaten NesilAI YZ bölümünde
+            appendProviderSection(pid, AI.PROVIDERS[pid], AI.PROVIDERS[pid].suggestedModels || []);
         });
     }
 
     function filterModelMenu(q) {
         if (!modelMenu) return;
         const needle = (q || '').trim().toLowerCase();
-        modelMenu.querySelectorAll('.model-section').forEach(section => {
+        const host = modelMenuList || modelMenu;
+        host.querySelectorAll('.model-section').forEach(section => {
             let visible = 0;
             section.querySelectorAll('.model-option').forEach(opt => {
                 const show = !needle || (opt.dataset.search || '').includes(needle);
@@ -3273,7 +3466,7 @@
             item.innerHTML =
                 '<span class="slash-option-icon"><svg class="icon" aria-hidden="true"><use href="#' + c.icon + '"/></svg></span>' +
                 '<span class="mode-option-texts"><span class="mode-option-name">' + c.name + '</span>' +
-                '<span class="mode-option-desc">' + c.desc + '</span></span>';
+                '<span class="mode-option-desc">' + t(c.desc) + '</span></span>';
             item.addEventListener('click', () => {
                 userInput.value = c.cmd + ' ';
                 userInput.focus();
@@ -3323,10 +3516,25 @@
         if (settingSfx && window.NesilSFX) {
             window.NesilSFX.setEnabled(settingSfx.checked);
         }
+        // Dil Seçme kalıcı kaydı: yanıt dili + arayüz dili
+        if (settingLanguageSelect) {
+            const langVal = settingLanguageSelect.value === '__custom__'
+                ? 'custom:' + (settingLanguageCustom ? settingLanguageCustom.value.trim() : '')
+                : (settingLanguageSelect.value === '__auto__' ? '' : settingLanguageSelect.value);
+            AI.saveSettings({ language: langVal });
+        }
+        if (settingUiLanguageSelect) {
+            const uiVal = settingUiLanguageSelect.value === '__auto__' ? '' : settingUiLanguageSelect.value;
+            AI.saveSettings({ uiLanguage: uiVal });
+            applyUiTranslations();
+            updateAiStatusChip();
+            buildModeMenu();
+        }
+
         AI.saveSettings(collectSettingsFromForm());
         updateAiStatusChip();
         settingsModal.classList.add('hidden');
-        showToast('Ayarlar kaydedildi', 'success');
+        showToast(t('Ayarlar kaydedildi'), 'success');
     });
 
     // ========================================================
@@ -3369,12 +3577,50 @@
             if (!confirm('Kalıcı bellekteki tüm bilgiler silinecek. Emin misin?')) return;
             if (window.NesilMemory) window.NesilMemory.clear();
             renderMemoryList();
-            showToast('Bellek temizlendi');
+            showToast(t('Bellek temizlendi'));
         });
     }
 
     if (aiProviderSelect) {
         aiProviderSelect.addEventListener('change', syncProviderFields);
+    }
+
+    if (aiNesilModelSelect) {
+        // NesilAI YZ modeli anında kaydedilir (minimax ↔ codestral vb.)
+        aiNesilModelSelect.addEventListener('change', () => {
+            AI.saveSettings({ provider: 'llm7', models: { llm7: aiNesilModelSelect.value } });
+            updateAiStatusChip();
+            showToast(t('NesilAI YZ · {m} seçildi').replace('{m}', aiNesilModelSelect.value), 'success');
+        });
+    }
+
+    if (settingLanguageSelect) {
+        settingLanguageSelect.addEventListener('change', () => {
+            const isCustom = settingLanguageSelect.value === '__custom__';
+            if (settingLanguageCustomField) settingLanguageCustomField.classList.toggle('hidden', !isCustom);
+            if (isCustom && settingLanguageCustom) settingLanguageCustom.focus();
+        });
+    }
+
+    if (settingUiLanguageSelect) {
+        // Arayüz dili anında uygulanır ve kaydedilir (menüler/düğmeler çevrilir)
+        settingUiLanguageSelect.addEventListener('change', () => {
+            const uiVal = settingUiLanguageSelect.value === '__auto__' ? '' : settingUiLanguageSelect.value;
+            AI.saveSettings({ uiLanguage: uiVal });
+            applyUiTranslations();
+            updateAiStatusChip();
+            buildModeMenu();
+            showToast(t('Ayarlar kaydedildi'), 'success');
+        });
+    }
+
+    if (settingLanguageCustom) {
+        // "Diğer dil" yazıldıkça anında kaydedilir (Kapate/Kapat düğmesine gerek yok)
+        settingLanguageCustom.addEventListener('input', () => {
+            if (settingLanguageSelect && settingLanguageSelect.value === '__custom__') {
+                AI.saveSettings({ language: 'custom:' + settingLanguageCustom.value.trim() });
+            }
+        });
     }
 
     if (aiTemperature) {
@@ -3422,7 +3668,7 @@
 
                 const seconds = (result.ms / 1000).toFixed(1);
                 setTestResult('ok', 'Bağlantı başarılı · ' + result.model + ' · ' + seconds + 's');
-                showToast('Yapay zeka bağlantısı çalışıyor');
+                showToast(t('Yapay zeka bağlantısı çalışıyor'));
             } catch (error) {
                 setTestResult('error', error.message);
             } finally {
@@ -3446,7 +3692,7 @@
             localStorage.removeItem('nesilai_chats_v2');
             createNewChat();
             settingsModal.classList.add('hidden');
-            showToast('Tüm geçmiş temizlendi');
+            showToast(t('Tüm geçmiş temizlendi'));
         }
     });
 
@@ -3641,7 +3887,7 @@
         if (navigator.clipboard && navigator.clipboard.writeText) {
             return navigator.clipboard.writeText(text)
                 .then(() => {
-                    showToast('Panoya kopyalandı');
+                    showToast(t('Panoya kopyalandı'));
                     return true;
                 })
                 .catch(() => fallbackCopy(text));
@@ -3662,7 +3908,7 @@
             copied = document.execCommand('copy');
             showToast(copied ? 'Panoya kopyalandı' : 'Kopyalama başarısız', copied ? 'info' : 'error');
         } catch (e) {
-            showToast('Kopyalama başarısız', 'error');
+            showToast(t('Kopyalama başarısız'), 'error');
         }
 
         document.body.removeChild(ta);
