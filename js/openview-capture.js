@@ -15,7 +15,11 @@
     // 0. Platform Kapısı — OpenView yalnızca PC / masaüstünde
     // ========================================================
     const bridge = window.nesilaiDesktop || null; // Electron preload köprüsü
-    const isElectron = bridge ? !!bridge.isDesktop : /Electron/i.test(navigator.userAgent);
+    // Electron tespiti YALNIZCA preload köprüsüne bakar. UA'da 'Electron' geçmesi
+    // yetmez: Chromium gömülü webview'lerde (tarayıcı-içi önizleme vb.) web sayfası
+    // Electron sanıp PiP düğmesini gizler, ekranı otomatik bağlamaya çalışırdı.
+    // Köprü yoksa güvenli varsayım web davranışıdır.
+    const isElectron = !!(bridge && bridge.isDesktop);
     const isMobileLike = !!window.Capacitor ||
         /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
     const hasCaptureApi = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
@@ -272,7 +276,9 @@
                         rectEl.classList.add('hidden');
                         return;
                     }
-                    cleanup({ dataUrl: crop(box) });
+                    crop(box)
+                        .then(dataUrl => cleanup({ dataUrl }))
+                        .catch(() => cleanup(null));
                 });
 
                 function currentRect(cx, cy) {
@@ -293,27 +299,37 @@
                     sizeEl.textContent = Math.round(box.w) + ' × ' + Math.round(box.h);
                 }
 
-                /** Önizleme üzerindeki seçimi, donmuş kare üzerindeki piksellere çevirir */
+                /**
+                 * Önizleme üzerindeki seçimi, donmuş kare üzerindeki piksellere çevirir.
+                 * Kare henüz yüklenmemişse drawImage sessizce BOŞ çizerdi (siyah kırpım
+                 * hatasının kök nedeni) → görüntünün yüklenmesi beklenir.
+                 * @returns {Promise<string>} JPEG dataUrl
+                 */
                 function crop(box) {
-                    const ir = img.getBoundingClientRect();
-                    const scaleX = frozen.width / ir.width;
-                    const scaleY = frozen.height / ir.height;
-                    const sx = Math.max(0, Math.round((box.x - ir.left) * scaleX));
-                    const sy = Math.max(0, Math.round((box.y - ir.top) * scaleY));
-                    const sw = Math.max(1, Math.min(frozen.width - sx, Math.round(box.w * scaleX)));
-                    const sh = Math.max(1, Math.min(frozen.height - sy, Math.round(box.h * scaleY)));
+                    return new Promise((resolve, reject) => {
+                        const ir = img.getBoundingClientRect();
+                        const scaleX = frozen.width / ir.width;
+                        const scaleY = frozen.height / ir.height;
+                        const sx = Math.max(0, Math.round((box.x - ir.left) * scaleX));
+                        const sy = Math.max(0, Math.round((box.y - ir.top) * scaleY));
+                        const sw = Math.max(1, Math.min(frozen.width - sx, Math.round(box.w * scaleX)));
+                        const sh = Math.max(1, Math.min(frozen.height - sy, Math.round(box.h * scaleY)));
 
-                    const canvas = document.createElement('canvas');
-                    canvas.width = sw;
-                    canvas.height = sh;
-                    const ctx = canvas.getContext('2d');
+                        const canvas = document.createElement('canvas');
+                        canvas.width = sw;
+                        canvas.height = sh;
+                        const ctx = canvas.getContext('2d');
 
-                    const source = new Image();
-                    source.src = frozen.dataUrl;
-                    try {
-                        ctx.drawImage(source, sx, sy, sw, sh, 0, 0, sw, sh);
-                    } catch (e) { /* yoksay — boş kare döner */ }
-                    return canvas.toDataURL('image/jpeg', settings.jpegQuality);
+                        const source = new Image();
+                        source.onload = () => {
+                            try {
+                                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, sw, sh);
+                                resolve(canvas.toDataURL('image/jpeg', settings.jpegQuality));
+                            } catch (e) { reject(e); }
+                        };
+                        source.onerror = () => reject(new Error('Kare görseli yüklenemedi'));
+                        source.src = frozen.dataUrl;
+                    });
                 }
 
                 host.body.appendChild(overlay);

@@ -993,7 +993,15 @@
         if (isPipActive()) return;
 
         try {
-            const pip = await window.documentPictureInPicture.requestWindow({ width: 400, height: 520 });
+            // requestWindow bazı ortamlarda (izin reddi / sayfa gizli / tarayıcı
+            // kalabalığı) NE reddetmeden NE çözmeden askıda kalabilir; panel
+            // o belirsizlikta kilitlenirdi → 5 sn zaman aşımı koy.
+            const pip = await Promise.race([
+                window.documentPictureInPicture.requestWindow({ width: 400, height: 520 }),
+                new Promise((_, rej) => setTimeout(function () {
+                    rej(new Error('PiP penceresi zaman aşımına uğradı'));
+                }, 5000))
+            ]);
             copyStylesToPip(pip);
             pip.document.title = 'OpenView — NesilAI';
 
@@ -1184,7 +1192,11 @@
         renderAnswer();
         updateStatusDots();
         setTimeout(function () { inputEl && inputEl.focus(); }, 80);
-        if (!SC.isActive()) connectScreen();
+        // Ekran bağlantısı yalnızca kullanıcı eylemiyle kurulur (gönderi basınca
+        // ya da "Ekranı Bağla"). Web'de açılışta otomatik getDisplayMedia çağırmak
+        // tarayıcıdan izin penceresi fırlatır ve çoğu zaman reddedilir — Electron
+        // ana süreç sessiz seçtiği için orada otomatik bağlantı güvenli kalır.
+        if (Core.isElectron && !SC.isActive()) connectScreen();
     }
 
     function closeView() {
