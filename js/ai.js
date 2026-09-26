@@ -854,19 +854,24 @@
             .replace(/\n*-{2,}\s*\n*\*\*Support Pollinations[\s\S]*$/i, '')
             .replace(/\n*-{2,}\s*\n*🌸 \*\*Ad\*\* 🌸[\s\S]*$/i, '')
             .replace(/\n*🌸 \*\*Ad\*\* 🌸[\s\S]*$/i, '')
+            // minimax modelleri (llm7) bazen yanıtın sonuna araç çağrısı
+            // kalıntısı ekler: <minimax:tool_call>…<invoke>… — bunu temizle
+            .replace(/\n*<minimax:tool_call>[\s\S]*$/i, '')
+            .replace(/\n*<function_calls>\s*<invoke[\s\S]*$/i, '')
             .trim();
     }
 
     // Sağlayıcıya özel metin temizliği + gömülü hata kontrolü
     function finalizeText(text, provider) {
-        const trimmed = text.trim();
+        let trimmed = text.trim();
 
         if (provider.id === 'pollinations') {
             const embedded = checkEmbeddedError(trimmed, provider);
             if (embedded) throw embedded;
-            return stripProviderFooter(trimmed);
         }
 
+        // Araç çağrısı / altbilgi kalıntılarını tüm açıkai uyumlu motorlarda temizle
+        trimmed = stripProviderFooter(trimmed);
         return trimmed;
     }
 
