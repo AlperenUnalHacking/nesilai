@@ -273,6 +273,9 @@
     const aiNesilModelField = document.getElementById('ai-nesil-model-field');
     const aiNesilModelSelect = document.getElementById('ai-nesil-model-select');
     const aiNesilModelNote = document.getElementById('ai-nesil-model-note');
+    const aiNesilKeyField = document.getElementById('ai-nesil-key-field');
+    const aiNesilKeyInput = document.getElementById('ai-nesil-key-input');
+    const aiNesilKeySave = document.getElementById('ai-nesil-key-save');
     const aiTemperature = document.getElementById('ai-temperature');
     const aiTempVal = document.getElementById('ai-temp-val');
     const aiTestBtn = document.getElementById('ai-test-btn');
@@ -2631,6 +2634,10 @@
             onDelta: onDelta,
             signal: signal
         });
+        // llm7 tıkandıysa sessiz yedek motor devreye girer; kullanıcıya haber ver
+        if (result && result.fallbackFrom === 'llm7') {
+            showToast(t('NesilAI YZ yoğun — otomatik yedek motora geçildi'), 'info');
+        }
         return typeof result === 'string' ? result : result.text;
     }
 
@@ -2996,6 +3003,11 @@
         if (aiNesilModelField && aiNesilModelSelect) {
             const isBrandUi = AI.isNesilAiBrand(provider.id);
             aiNesilModelField.classList.toggle('hidden', !isBrandUi);
+            // Ücretsiz hız anahtarı alanı: yalnızca NesilAI YZ seçiliyken görünür
+            if (aiNesilKeyField && aiNesilKeyInput) {
+                aiNesilKeyField.classList.toggle('hidden', !isBrandUi);
+                if (isBrandUi) aiNesilKeyInput.value = (stored.keys && stored.keys.llm7) || '';
+            }
             if (isBrandUi) {
                 const nesil = AI.PROVIDERS.llm7;
                 const currentModel = (stored.models && stored.models.llm7) || nesil.defaultModel;
@@ -3591,6 +3603,14 @@
             AI.saveSettings({ provider: 'llm7', models: { llm7: aiNesilModelSelect.value } });
             updateAiStatusChip();
             showToast(t('NesilAI YZ · {m} seçildi').replace('{m}', aiNesilModelSelect.value), 'success');
+        });
+    }
+
+    if (aiNesilKeySave && aiNesilKeyInput) {
+        // Ücretsiz llm7 hız anahtarı: limiti yükseltir, isteğe bağlıdır
+        aiNesilKeySave.addEventListener('click', () => {
+            AI.saveSettings({ keys: { llm7: aiNesilKeyInput.value.trim() } });
+            showToast(t('Anahtar eklendi — limitin yükseltildi'), 'success');
         });
     }
 

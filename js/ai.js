@@ -311,7 +311,12 @@
             'Tüm komutları listeler (/yardim ile aynı)': 'Список всех команд (то же, что /yardim)',
             'Komutlar: /ultrathink /report /ultracode /ayarlar /tema /ses /temizle /yardim': 'Команды: /ultrathink /report /ultracode /ayarlar /tema /ses /temizle /yardim',
             'Yanıt verirken internette araştırma yap': 'Искать в интернете при ответе',
-            'NesilAI YZ modelini değiştir': 'Сменить модель NesilAI YZ', 'Üretim modu seç': 'Выбрать режим создания'
+            'NesilAI YZ modelini değiştir': 'Сменить модель NesilAI YZ', 'Üretim modu seç': 'Выбрать режим создания',
+            'Ücretsiz hız anahtarı (isteğe bağlı)': 'Бесплатный ключ скорости (необязательно)',
+            'Ücretsiz hız anahtarı al ↗': 'Получить бесплатный ключ ↗',
+            'İsteğe bağlı: alırsan hız limitin yükselir; anahtarsız da çalışır.': 'Необязательно: с ключом выше лимиты; работает и без ключа.',
+            'Anahtar eklendi — limitin yükseltildi': 'Ключ добавлен — лимиты повышены',
+            'NesilAI YZ yoğun — otomatik yedek motora geçildi': 'NesilAI YZ перегружен — выполнен переход на резервный двигатель'
         },
         es: {
             'Yeni sohbet': 'Nuevo chat', 'Kendini Tanıt': 'Preséntate', 'Sohbetler': 'Chats',
@@ -389,7 +394,12 @@
             'Tüm komutları listeler (/yardim ile aynı)': 'Lista todos los comandos (igual que /yardim)',
             'Komutlar: /ultrathink /report /ultracode /ayarlar /tema /ses /temizle /yardim': 'Comandos: /ultrathink /report /ultracode /ayarlar /tema /ses /temizle /yardim',
             'Yanıt verirken internette araştırma yap': 'Buscar en internet al responder',
-            'NesilAI YZ modelini değiştir': 'Cambiar el modelo de NesilAI YZ', 'Üretim modu seç': 'Elegir modo de creación'
+            'NesilAI YZ modelini değiştir': 'Cambiar el modelo de NesilAI YZ', 'Üretim modu seç': 'Elegir modo de creación',
+            'Ücretsiz hız anahtarı (isteğe bağlı)': 'Clave de velocidad gratuita (opcional)',
+            'Ücretsiz hız anahtarı al ↗': 'Obtener clave gratuita ↗',
+            'İsteğe bağlı: alırsan hız limitin yükselir; anahtarsız da çalışır.': 'Opcional: con clave hay más límite; funciona sin ella.',
+            'Anahtar eklendi — limitin yükseltildi': 'Clave añadida — límites ampliados',
+            'NesilAI YZ yoğun — otomatik yedek motora geçildi': 'NesilAI YZ saturado — cambiado al motor de reserva'
         },
         hi: {
             'Yeni sohbet': 'नया चैट', 'Kendini Tanıt': 'अपना परिचय दें', 'Sohbetler': 'चैट',
@@ -467,7 +477,12 @@
             'Tüm komutları listeler (/yardim ile aynı)': 'सभी कमांड सूचीबद्ध करता है (/yardim जैसा)',
             'Komutlar: /ultrathink /report /ultracode /ayarlar /tema /ses /temizle /yardim': 'कमांड: /ultrathink /report /ultracode /ayarlar /tema /ses /temizle /yardim',
             'Yanıt verirken internette araştırma yap': 'उत्तर देते समय इंटरनेट पर खोजें',
-            'NesilAI YZ modelini değiştir': 'NesilAI YZ मॉडल बदलें', 'Üretim modu seç': 'निर्माण मोड चुनें'
+            'NesilAI YZ modelini değiştir': 'NesilAI YZ मॉडल बदलें', 'Üretim modu seç': 'निर्माण मोड चुनें',
+            'Ücretsiz hız anahtarı (isteğe bağlı)': 'मुफ़्त स्पीड कुंजी (वैकल्पिक)',
+            'Ücretsiz hız anahtarı al ↗': 'मुफ़्त कुंजी प्राप्त करें ↗',
+            'İsteğe bağlı: alırsan hız limitin yükselir; anahtarsız da çalışır.': 'वैकल्पिक: कुंजी से सीमा बढ़ती है; बिना भी चलता है।',
+            'Anahtar eklendi — limitin yükseltildi': 'कुंजी जोड़ी गई — सीमा बढ़ाई गई',
+            'NesilAI YZ yoğun — otomatik yedek motora geçildi': 'NesilAI YZ व्यस्त — बैकअप इंजन पर स्विच किया गया'
         },
         de: {
             'Yeni sohbet': 'Neuer Chat', 'Kendini Tanıt': 'Vorstellen', 'Sohbetler': 'Chats',
@@ -545,7 +560,12 @@
             'Tüm komutları listeler (/yardim ile aynı)': 'Listet alle Befehle auf (wie /yardim)',
             'Komutlar: /ultrathink /report /ultracode /ayarlar /tema /ses /temizle /yardim': 'Befehle: /ultrathink /report /ultracode /ayarlar /tema /ses /temizle /yardim',
             'Yanıt verirken internette araştırma yap': 'Beim Antworten im Internet suchen',
-            'NesilAI YZ modelini değiştir': 'NesilAI YZ-Modell wechseln', 'Üretim modu seç': 'Erstellungsmodus wählen'
+            'NesilAI YZ modelini değiştir': 'NesilAI YZ-Modell wechseln', 'Üretim modu seç': 'Erstellungsmodus wählen',
+            'Ücretsiz hız anahtarı (isteğe bağlı)': 'Kostenloser Geschwindigkeitsschlüssel (optional)',
+            'Ücretsiz hız anahtarı al ↗': 'Kostenlosen Schlüssel holen ↗',
+            'İsteğe bağlı: alırsan hız limitin yükselir; anahtarsız da çalışır.': 'Optional: mit Schlüssel höhere Limits; läuft auch ohne.',
+            'Anahtar eklendi — limitin yükseltildi': 'Schlüssel hinzugefügt — Limits erhöht',
+            'NesilAI YZ yoğun — otomatik yedek motora geçildi': 'NesilAI YZ überlastet — auf Backup-Motor umgeschaltet'
         }
     };
 
@@ -858,6 +878,9 @@
             // kalıntısı ekler: <minimax:tool_call>…<invoke>… — bunu temizle
             .replace(/\n*<minimax:tool_call>[\s\S]*$/i, '')
             .replace(/\n*<function_calls>\s*<invoke[\s\S]*$/i, '')
+            // reasoning modelleri (GLM, minimax) <think>…</think> bloğu basar;
+            // yanıtı bozmamak için yalnızca DENGELİ çiftler kaldırılır
+            .replace(/<think>[\s\S]*?<\/think>/gi, '')
             .trim();
     }
 
