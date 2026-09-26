@@ -300,6 +300,7 @@
     // birebir eşleşirse çevrilir; "tr"/otomatikte orijinale döner.
     const __uiOrigText = new WeakMap();   // text node → orijinal içerik
     const __uiOrigTitle = new WeakMap();  // element → orijinal title
+    const __uiOrigAria = new WeakMap();   // element → orijinal aria-label
     const __uiOrigPh = new WeakMap();     // element → orijinal placeholder
 
     function applyUiTranslations() {
@@ -339,7 +340,18 @@
             if (tr && tr !== el.title) el.title = tr;
         });
 
-        // 3) placeholder'lar
+        // 3) aria-label öznitelikleri
+        document.querySelectorAll('[aria-label]').forEach(el => {
+            if (isTr) {
+                if (__uiOrigAria.has(el)) el.setAttribute('aria-label', __uiOrigAria.get(el));
+                return;
+            }
+            if (!__uiOrigAria.has(el)) __uiOrigAria.set(el, el.getAttribute('aria-label'));
+            const tr = AI.translateUi(el.getAttribute('aria-label'));
+            if (tr && tr !== el.getAttribute('aria-label')) el.setAttribute('aria-label', tr);
+        });
+
+        // 4) placeholder'lar
         document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(inp => {
             if (isTr) {
                 if (__uiOrigPh.has(inp)) inp.placeholder = __uiOrigPh.get(inp);
@@ -2258,7 +2270,7 @@
             const wantResearch = (cmdInfo && (cmdInfo.cmd === 'report' || cmdInfo.cmd === 'ultracode')) ||
                 (!cmdInfo && webSearchToggle && webSearchToggle.checked);
             if (wantResearch && window.NesilResearch) {
-                setThinkingLabel('İnternette araştırılıyor');
+                setThinkingLabel(t('İnternette araştırılıyor'));
                 try {
                     const results = await window.NesilResearch.research(cmdInfo ? (cmdInfo.body || text) : text, {
                         deep: !!(cmdInfo && (cmdInfo.cmd === 'report' || cmdInfo.cmd === 'ultracode')),
@@ -2274,7 +2286,7 @@
             // ULTRACODE: kod yazmadan önce kısa mimari plan çıkar
             let planBlock = '';
             if (cmdInfo && cmdInfo.cmd === 'ultracode') {
-                setThinkingLabel('Mimari plan çıkarılıyor');
+                setThinkingLabel(t('Mimari plan çıkarılıyor'));
                 try {
                     const plan = await AI.ask(
                         'Şu isteği gerçekleştirmek için 3-6 maddelik kısa bir uygulama planı yaz. Sadece madde listesi ver, kod yazma. Kullanıcının dilinde yaz:\n\n' + (cmdInfo.body || text),
@@ -2286,7 +2298,7 @@
                 } catch (e) { /* plan üretilemedi — doğrudan kodla */ }
             }
 
-            setThinkingLabel(cmdMeta ? cmdMeta.label + ' çalışıyor' : 'Yanıt yazılıyor');
+            setThinkingLabel(cmdMeta ? cmdMeta.label + ' ' + t('çalışıyor') : t('Yanıt yazılıyor'));
             setStreamingUi(true);
             await generateAiResponse(text, attachment, activeChat.messages, onDelta, researchBlock + planBlock, activeAiAbort ? activeAiAbort.signal : null);
 
@@ -2360,7 +2372,7 @@
             saveChatsToStorage();
 
             const needsSetup = !AI.isReady().ok || error.kind === 'auth' || error.kind === 'quota';
-            showToast(needsSetup ? 'Yapay zeka kaynağı yeniden ayarlanmalı' : 'Yapay zekadan yanıt alınamadı', 'error');
+            showToast(needsSetup ? t('Yapay zeka kaynağı yeniden ayarlanmalı') : t('Yapay zekadan yanıt alınamadı'), 'error');
             if (window.NesilSFX) window.NesilSFX.error();
             if (needsSetup) openSettingsModal();
         } finally {
@@ -2648,21 +2660,21 @@
         const kind = error && error.kind;
 
         const lines = [
-            '**Yapay zekadan yanıt alınamadı.**',
+            '**' + t('Yapay zekadan yanıt alınamadı.') + '**',
             '',
-            '> ' + (error && error.message ? error.message : 'Bilinmeyen hata')
+            '> ' + (error && error.message ? error.message : t('Bilinmeyen hata'))
         ];
 
         if (!readiness.ok) {
-            lines.push('', 'Ayarlar → Yapay Zeka bölümünden bir sağlayıcı seçip anahtarını ekle, ardından **Bağlantıyı test et** butonunu kullan.');
+            lines.push('', t('Ayarlar → Yapay Zeka bölümünden bir sağlayıcı seçip anahtarını ekle, ardından') + ' **' + t('Bağlantıyı test et') + '** ' + t('butonunu kullan.'));
         } else if (kind === 'auth') {
-            lines.push('', 'Anahtar geçersiz görünüyor. Ayarlar → Yapay Zeka bölümünden güncelleyip **Bağlantıyı test et** ile doğrula.');
+            lines.push('', t('Anahtar geçersiz görünüyor. Ayarlar → Yapay Zeka bölümünden güncelleyip') + ' **' + t('Bağlantıyı test et') + '** ' + t('ile doğrula.'));
         } else if (kind === 'quota') {
-            lines.push('', `Aktif sağlayıcı: **${provider.short}**. Ayarlar → Yapay Zeka bölümünden başka bir sağlayıcı ya da model seçmeyi dene.`);
+            lines.push('', t('Aktif sağlayıcı: ') + '**' + provider.short + '**.' + t('. Ayarlar → Yapay Zeka bölümünden başka bir sağlayıcı ya da model seçmeyi dene.'));
         } else if (kind === 'network') {
-            lines.push('', 'Bağlantını kontrol edip tekrar dene. Ağ engelleyicin isteği durduruyor olabilir.');
+            lines.push('', t('Bağlantını kontrol edip tekrar dene. Ağ engelleyicin isteği durduruyor olabilir.'));
         } else {
-            lines.push('', `Tekrar deneyebilir ya da Ayarlar → Yapay Zeka bölümünden ${provider.short} için farklı bir model seçebilirsin.`);
+            lines.push('', t('Tekrar deneyebilir ya da Ayarlar → Yapay Zeka bölümünden') + ' ' + provider.short + t(' için farklı bir model seçebilirsin.'));
         }
 
         return lines.join('\n');
@@ -2924,7 +2936,7 @@
             AI.getUiProviders().forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.id;
-                opt.textContent = p.label;
+                opt.textContent = t(p.label);
                 aiProviderSelect.appendChild(opt);
             });
             const activeProvider = AI.getSettings().provider;
@@ -2962,7 +2974,7 @@
             (AI.UI_LANGUAGES || []).forEach(l => {
                 const opt = document.createElement('option');
                 opt.value = l.code || '__auto__';
-                opt.textContent = (l.flag ? l.flag + ' ' : '') + l.name;
+                opt.textContent = (l.flag ? l.flag + ' ' : '') + t(l.name);
                 settingUiLanguageSelect.appendChild(opt);
             });
             settingUiLanguageSelect.value = (AI.getUiLanguage ? AI.getUiLanguage() : 'tr') || '__auto__';
@@ -2973,12 +2985,12 @@
         (AI.AI_LANGUAGES || []).forEach(l => {
             const opt = document.createElement('option');
             opt.value = l.code || '__auto__';
-            opt.textContent = (l.flag ? l.flag + ' ' : '') + l.name;
+            opt.textContent = (l.flag ? l.flag + ' ' : '') + t(l.name);
             settingLanguageSelect.appendChild(opt);
         });
         const customOpt = document.createElement('option');
         customOpt.value = '__custom__';
-        customOpt.textContent = '✏️ Diğer dili kendin seç…';
+        customOpt.textContent = t('✏️ Diğer dili kendin seç…');
         settingLanguageSelect.appendChild(customOpt);
 
         if (savedChatLang.indexOf('custom:') === 0) {
@@ -3016,14 +3028,14 @@
                     const opt = document.createElement('option');
                     opt.value = modelId;
                     const hint = nesil.modelHints && nesil.modelHints[modelId];
-                    opt.textContent = hint ? modelId + ' — ' + hint : modelId;
+                    opt.textContent = hint ? modelId + ' — ' + t(hint) : modelId;
                     aiNesilModelSelect.appendChild(opt);
                 });
                 aiNesilModelSelect.value = (nesil.suggestedModels || []).indexOf(currentModel) !== -1
                     ? currentModel
                     : nesil.defaultModel;
                 if (aiNesilModelNote) {
-                    aiNesilModelNote.textContent = 'Anahtarsız çalışır; modeli istediğin an değiştirebilirsin. Değişiklik anında kaydedilir.';
+                    aiNesilModelNote.textContent = t('Anahtarsız çalışır; modeli istediğin an değiştirebilirsin. Değişiklik anında kaydedilir.');
                 }
             }
         }
@@ -3053,7 +3065,7 @@
             aiKeyInput.value = stored.keys[provider.id] || '';
             aiKeyInput.type = 'password';
         }
-        if (aiKeyToggle) aiKeyToggle.textContent = 'Göster';
+        if (aiKeyToggle) aiKeyToggle.textContent = t('Göster');
 
         if (aiBaseUrlField) aiBaseUrlField.classList.toggle('hidden', provider.id !== 'custom');
         if (aiBaseUrlInput) aiBaseUrlInput.value = (stored.baseUrls && stored.baseUrls[provider.id]) || '';
@@ -3070,10 +3082,10 @@
 
         if (aiProviderNote) {
             const parts = [];
-            if (provider.keyHint) parts.push(provider.keyHint);
-            if (provider.note) parts.push(provider.note);
-            if (!provider.needsKey && provider.id !== 'custom') parts.push('API anahtarı gerekmez.');
-            if (provider.vision) parts.push('Görsel okuma (vision) desteklenir.');
+            if (provider.keyHint) parts.push(t(provider.keyHint));
+            if (provider.note) parts.push(t(provider.note));
+            if (!provider.needsKey && provider.id !== 'custom') parts.push(t('API anahtarı gerekmez.'));
+            if (provider.vision) parts.push(t('Görsel okuma (vision) desteklenir.'));
             aiProviderNote.textContent = parts.join(' ');
         }
 
@@ -3467,7 +3479,7 @@
         if (!items.length) {
             const none = document.createElement('p');
             none.className = 'slash-menu-none';
-            none.textContent = 'Bu isimde komut yok — yazmaya devam et, normal mesaj olarak gönderilir.';
+            none.textContent = t('Bu isimde komut yok — yazmaya devam et, normal mesaj olarak gönderilir.');
             slashMenuList.appendChild(none);
             return;
         }
@@ -3581,7 +3593,7 @@
                 memoryListEl.appendChild(row);
             });
         }
-        if (memoryCountNote) memoryCountNote.textContent = list.length + ' kayıtlı bilgi · cihazında saklanıyor';
+        if (memoryCountNote) memoryCountNote.textContent = t('{n} kayıtlı bilgi · cihazında saklanıyor').replace('{n}', list.length);
     }
 
     if (memoryClearBtn) {
@@ -3653,7 +3665,7 @@
         aiKeyToggle.addEventListener('click', () => {
             const isHidden = aiKeyInput.type === 'password';
             aiKeyInput.type = isHidden ? 'text' : 'password';
-            aiKeyToggle.textContent = isHidden ? 'Gizle' : 'Göster';
+            aiKeyToggle.textContent = isHidden ? t('Gizle') : t('Göster');
         });
     }
 

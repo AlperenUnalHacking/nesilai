@@ -101,7 +101,9 @@
                 const opt = document.createElement('option');
                 opt.value = voice.name;
                 const isTr = voice.lang.toLowerCase().startsWith('tr');
-                const isLocal = voice.localService ? ' [yerel]' : ' [çevrimiçi]';
+                const AIi = window.NesilAI;
+                const tloc = function (s) { return AIi && AIi.translateUi ? AIi.translateUi(s) : s; };
+                const isLocal = voice.localService ? tloc('[yerel]') : tloc('[çevrimiçi]');
                 opt.textContent = `${isTr ? '🇹🇷 ' : ''}${voice.name} (${voice.lang})${isLocal}`;
                 if (savedVoiceName === voice.name || (!savedVoiceName && isTr && !selectedVoice)) {
                     opt.selected = true;
@@ -114,7 +116,10 @@
             const countNote = document.getElementById('voice-count-note');
             if (countNote) {
                 const trCount = sorted.filter(v => v.lang.toLowerCase().startsWith('tr')).length;
-                countNote.textContent = `${sorted.length} ses kullanılabilir (${trCount} Türkçe) — tüm diller listelenir; tarayıcının desteklediği sesler cihazına göre değişir.`;
+                const AIi = window.NesilAI;
+                const raw = `{n} ses kullanılabilir ({k} Türkçe) — tüm diller listelenir; tarayıcının desteklediği sesler cihazına göre değişir.`;
+                countNote.textContent = (AIi && AIi.translateUi ? AIi.translateUi(raw) : raw)
+                    .replace('{n}', sorted.length).replace('{k}', trCount);
             }
         }
 
