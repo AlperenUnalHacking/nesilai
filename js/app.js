@@ -111,6 +111,14 @@
     const poolBackdrop = document.getElementById('pool-backdrop');
     const closePoolModalBtn = document.getElementById('close-pool-modal-btn');
     const openPoolBtn = document.getElementById('open-pool-btn');
+
+    // Kitaplık
+    const libraryModal = document.getElementById('library-modal');
+    const libraryBackdrop = document.getElementById('library-backdrop');
+    const libraryGrid = document.getElementById('library-grid');
+    const libraryFilter = document.getElementById('library-filter');
+    const openLibraryBtn = document.getElementById('open-library-btn');
+    const closeLibraryModalBtn = document.getElementById('close-library-modal-btn');
     const poolTabs = document.querySelectorAll('.pool-tab');
     const poolPanes = document.querySelectorAll('.pool-pane');
     const poolImagePrompt = document.getElementById('pool-image-prompt');
@@ -494,11 +502,11 @@
         const plan = getPlan();
         const usage = currentSubscription.usage;
 
-        // Rozetler (ikonlu)
-        const badgeHtml = plan.badgeIcon ? icon(plan.badgeIcon) + ' ' + plan.badge : plan.badge;
+        // Rozetler (ikonlu) — plan adları dil seçimine uyar
+        const badgeHtml = plan.badgeIcon ? icon(plan.badgeIcon) + ' ' + t(plan.badge) : t(plan.badge);
         if (sidebarPlanBadge) sidebarPlanBadge.innerHTML = badgeHtml;
         if (headerPlanName) headerPlanName.innerHTML = badgeHtml;
-        if (widgetPlanName) widgetPlanName.textContent = plan.name;
+        if (widgetPlanName) widgetPlanName.textContent = t(plan.name);
 
         // Kenar Çubuğu Mini Barlar
         const paintMeter = (txtEl, barEl, used, limit) => {
@@ -563,7 +571,7 @@
                     addSndCard(url, '<svg class="icon" aria-hidden="true"><use href="#i-music"/></svg> ' + prompt.slice(0, 60), prompt, 'Bulut/cihaz müziği');
                     if (window.NesilStore) {
                         window.NesilStore.addPoolItem('music', { url, text: prompt, meta: 'Müzik' })
-                            .then(() => renderPoolGallery()).catch(() => {});
+                            .then(() => { renderPoolGallery(); renderLibrary(); }).catch(() => {});
                     }
                 } catch (e) {
                     sndMusicStatus.textContent = 'Üretilemedi: ' + (e && e.message ? e.message : 'bilinmeyen hata');
@@ -660,7 +668,7 @@
         sndMusicStatus.textContent = res.label + ' hazır — çalıyor.';
         if (window.NesilStore) {
             window.NesilStore.addPoolItem('music', { url: res.url, text: prompt, meta: 'SFX · ' + res.label })
-                .then(() => renderPoolGallery()).catch(() => {});
+                .then(() => { renderPoolGallery(); renderLibrary(); }).catch(() => {});
         }
     }    function addSndCard(url, title, prompt, meta) {
             const empty = sndResults.querySelector('.pool-status');
@@ -717,6 +725,14 @@
         initSoundStudio();
     }
 
+    function initLibrary() {
+        if (!libraryModal) return;
+        if (openLibraryBtn) openLibraryBtn.addEventListener('click', openLibraryModal);
+        if (closeLibraryModalBtn) closeLibraryModalBtn.addEventListener('click', closeLibraryModal);
+        if (libraryBackdrop) libraryBackdrop.addEventListener('click', closeLibraryModal);
+        if (libraryFilter) libraryFilter.addEventListener('change', renderLibrary);
+    }
+
     function closePoolModal() {
         poolModal.classList.add('hidden');
         if (window.NesilSTT && window.NesilSTT.isListening()) {
@@ -725,6 +741,264 @@
             setPoolSttStatus('Kayıt durduruldu.');
         }
         if (window.NesilTTS) window.NesilTTS.stop();
+    }
+
+    // ========================================================
+    // Kitaplık — üretilen görsel, müzik ve videoların koleksiyonu.
+    // Havuz kayıtları + sohbette üretilen medyalar (motor/prompt bilgisiyle).
+    // ========================================================
+    const LIBRARY_ENGINE_LABELS = {
+        'pollinations-flux': 'Pollinations · Flux',
+        'pollinations-turbo': 'Pollinations · Turbo',
+        'aihorde': 'AI Horde'
+    };
+    function libraryEngineName(meta, kind) {
+        const m = (meta || '').trim();
+        if (m) return m;
+        if (kind === 'image') return 'Pollinations · Flux';
+        if (kind === 'video') return 'Pollinations';
+        if (kind === 'music') return 'NesilAI Müzik Motoru';
+        return 'NesilAI';
+    }
+    function libraryItemMeta(it) {
+        if (it.kind === 'image') return {
+            engine: libraryEngineName(it.meta, 'image'),
+            prompt: it.text || '',
+            when: it.createdAt,
+            mime: 'image/jpeg',
+            ext: '.jpg'
+        };
+        if (it.kind === 'video') return {
+            engine: libraryEngineName(it.meta, 'video'),
+            prompt: it.text || '',
+            when: it.createdAt,
+            mime: 'video/webm',
+            ext: '.webm'
+        };
+        return {
+            engine: libraryEngineName(it.meta, 'music'),
+            prompt: it.text || '',
+            when: it.createdAt,
+            mime: 'audio/wav',
+            ext: '.wav'
+        };
+    }
+    function fmtLibraryDate(ts) {
+        const d = new Date(ts);
+        return d.toLocaleDateString('tr-TR') + ' ' + d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    }
+    function showLibraryInfo(it, info) {
+        let panel = document.getElementById('library-info-panel');
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'library-info-panel';
+            panel.className = 'modal hidden';
+            panel.setAttribute('role', 'dialog');
+            panel.setAttribute('aria-modal', 'true');
+            panel.innerHTML =
+                '<div class="modal-backdrop" id="library-info-backdrop"></div>' +
+                '<div class="modal-card library-info-card">' +
+                '<header class="modal-head"><div><h2 id="library-info-title">' + t('Üretim bilgisi') + '</h2>' +
+                '<p class="modal-sub" id="library-info-sub"></p></div>' +
+                '<button id="library-info-close" class="icon-btn" aria-label="Kapat">' + icon('i-close') + '</button></header>' +
+                '<div class="modal-body library-info-body">' +
+                '<div id="library-info-preview" class="library-info-preview"></div>' +
+                '<div class="library-info-rows">' +
+                '<div class="library-info-row"><span class="library-info-key" data-i18n-key="Motor">' + t('Motor') + '</span><span class="library-info-val" id="library-info-engine"></span></div>' +
+                '<div class="library-info-row"><span class="library-info-key" data-i18n-key="Tarih">' + t('Tarih') + '</span><span class="library-info-val" id="library-info-date"></span></div>' +
+                '<div class="library-info-row library-info-row-prompt"><span class="library-info-key" data-i18n-key="Prompt">' + t('Prompt') + '</span><span class="library-info-val" id="library-info-prompt"></span></div>' +
+                '</div>' +
+                '<div class="library-info-actions">' +
+                '<a id="library-info-download" class="btn btn-primary" download>' + icon('i-download') + ' <span data-i18n-key="İndir">' + t('İndir') + '</span></a>' +
+                '<button id="library-info-preview-btn" class="btn btn-outline">' + icon('i-eye') + ' <span data-i18n-key="Ön izle">' + t('Ön izle') + '</span></button>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+            document.body.appendChild(panel);
+            panel.querySelector('#library-info-backdrop').addEventListener('click', closeLibraryInfo);
+            panel.querySelector('#library-info-close').addEventListener('click', closeLibraryInfo);
+            panel.querySelector('#library-info-preview-btn').addEventListener('click', () => {
+                const pv = panel.querySelector('#library-info-preview');
+                if (!pv) return;
+                const media = pv.querySelector('audio, video');
+                if (media) { media.paused ? media.play().catch(() => {}) : media.pause(); return; }
+                const img = pv.querySelector('img');
+                if (img && img.src) { openLibraryPreview(img.src, 'image', pv.dataset.prompt || ''); return; }
+                if (pv.dataset.src) openLibraryPreview(pv.dataset.src, pv.dataset.kind, pv.dataset.prompt);
+            });
+        }
+        panel.querySelector('#library-info-title').textContent = t('Üretim bilgisi');
+        // Dil değişmiş olabileceğinden sabit etiketleri her açılışta tazele
+        panel.querySelectorAll('.library-info-key[data-i18n-key]').forEach(el => {
+            el.textContent = t(el.dataset.i18nKey);
+        });
+        panel.querySelectorAll('.library-info-actions [data-i18n-key]').forEach(el => {
+            el.textContent = t(el.dataset.i18nKey);
+        });
+        const kindLabel = { image: t('Görsel'), music: t('Müzik/Ses'), video: t('Video') }[it.kind] || it.kind;
+        panel.querySelector('#library-info-sub').textContent = kindLabel + ' · ' + fmtLibraryDate(info.when);
+        panel.querySelector('#library-info-engine').textContent = info.engine;
+        panel.querySelector('#library-info-date').textContent = fmtLibraryDate(info.when);
+        panel.querySelector('#library-info-prompt').textContent = info.prompt || '—';
+        const pv = panel.querySelector('#library-info-preview');
+        pv.innerHTML = '';
+        pv.dataset.src = it.url || '';
+        pv.dataset.kind = it.kind;
+        pv.dataset.prompt = info.prompt || '';
+        if (it.kind === 'image') {
+            const img = document.createElement('img');
+            img.src = it.url;
+            img.alt = info.prompt || 'Kitaplık görseli';
+            pv.appendChild(img);
+        } else if (it.kind === 'video') {
+            const vid = document.createElement('video');
+            vid.controls = true;
+            vid.preload = 'metadata';
+            vid.src = it.url;
+            pv.appendChild(vid);
+        } else {
+            const aud = document.createElement('audio');
+            aud.controls = true;
+            aud.preload = 'metadata';
+            aud.src = it.url;
+            pv.appendChild(aud);
+        }
+        const dl = panel.querySelector('#library-info-download');
+        dl.href = it.url;
+        dl.download = 'nesilai-' + it.kind + '-' + it.id + info.ext;
+        dl.setAttribute('type', info.mime);
+        panel.classList.remove('hidden');
+    }
+    function closeLibraryInfo() {
+        const panel = document.getElementById('library-info-panel');
+        if (panel) panel.classList.add('hidden');
+    }
+    function openLibraryPreview(src, kind, prompt) {
+        if (kind === 'image' && typeof openLightbox === 'function') {
+            openLightbox(src, prompt || 'Kitaplık görseli');
+            return;
+        }
+        window.open(src, '_blank');
+    }
+    function renderLibrary() {
+        if (!libraryGrid || !window.NesilStore) return;
+        const filter = (libraryFilter && libraryFilter.value) || 'all';
+        libraryGrid.innerHTML = '<p class="pool-status">' + t('Kitaplık yükleniyor…') + '</p>';
+        Promise.all([
+            window.NesilStore.getPoolItems(null).catch(() => []),
+            collectLibraryChatItems().catch(() => [])
+        ]).then(([poolItems, chatItems]) => {
+            const seen = new Set();
+            const mediaKinds = { image: 1, music: 1, video: 1 };
+            let items = poolItems.filter(i => mediaKinds[i.kind])
+                .map(i => ({ source: 'pool', id: i.id, kind: i.kind, url: i.url, text: i.text, meta: i.meta, createdAt: i.createdAt }));
+            items.forEach(i => { if (i.url) seen.add(i.url); });
+            chatItems.forEach(ci => { if (!ci.url || seen.has(ci.url)) return; seen.add(ci.url); items.push(ci); });
+            if (filter !== 'all') items = items.filter(i => i.kind === filter);
+            items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            libraryGrid.innerHTML = '';
+            if (!items.length) {
+                libraryGrid.innerHTML = '<p class="pool-status">' + t('Kitaplık henüz boş. Sohbette ya da Üretim havuzunda görsel, müzik veya video üret; hepsi burada birikecek.') + '</p>';
+                return;
+            }
+            items.forEach(it => {
+                const info = libraryItemMeta(it);
+                const card = document.createElement('div');
+                card.className = 'library-card-item';
+                card.dataset.kind = it.kind;
+
+                const stage = document.createElement('div');
+                stage.className = 'library-item-stage';
+                if (it.kind === 'image') {
+                    const img = document.createElement('img');
+                    img.src = it.url;
+                    img.alt = info.prompt || 'Kitaplık görseli';
+                    img.loading = 'lazy';
+                    img.addEventListener('click', () => openLibraryPreview(it.url, 'image', info.prompt));
+                    stage.appendChild(img);
+                } else if (it.kind === 'video') {
+                    const vid = document.createElement('video');
+                    vid.controls = true;
+                    vid.preload = 'metadata';
+                    vid.src = it.url;
+                    stage.appendChild(vid);
+                } else {
+                    const aud = document.createElement('audio');
+                    aud.controls = true;
+                    aud.preload = 'metadata';
+                    aud.src = it.url;
+                    stage.appendChild(aud);
+                }
+                const badge = document.createElement('span');
+                badge.className = 'library-item-badge';
+                badge.textContent = { image: t('Görsel'), music: t('Müzik'), video: t('Video') }[it.kind] || it.kind;
+                stage.appendChild(badge);
+                card.appendChild(stage);
+
+                const txt = document.createElement('p');
+                txt.className = 'library-item-text';
+                const t128 = info.prompt.slice(0, 128);
+                txt.textContent = info.prompt ? t128 + (info.prompt.length > 128 ? '…' : '') : '—';
+                txt.title = info.prompt || '';
+                card.appendChild(txt);
+
+                const foot = document.createElement('div');
+                foot.className = 'library-item-foot';
+                const dateSpan = document.createElement('span');
+                dateSpan.className = 'library-item-date';
+                dateSpan.textContent = fmtLibraryDate(info.when);
+                foot.appendChild(dateSpan);
+                const infoBtn = document.createElement('button');
+                infoBtn.className = 'btn btn-mini btn-outline library-info-btn';
+                infoBtn.title = 'Prompt ve motor bilgisi';
+                infoBtn.setAttribute('aria-label', 'Bilgi: prompt ve motor');
+                infoBtn.innerHTML = icon('i-info');
+                infoBtn.addEventListener('click', (e) => { e.stopPropagation(); showLibraryInfo(it, info); });
+                foot.appendChild(infoBtn);
+                card.appendChild(foot);
+
+                libraryGrid.appendChild(card);
+            });
+        });
+    }
+    function collectLibraryChatItems() {
+        if (!window.NesilStore || !window.NesilStore.loadMessageMedia) return Promise.resolve([]);
+        const jobs = [];
+        (chats || []).forEach(chat => {
+            (chat.messages || []).forEach(m => {
+                if (!m.isMediaGen && !m.isImageGen) return;
+                if (m.mediaError) return;
+                const kind = m.isImageGen ? 'image' : m.mediaKind;
+                if (kind !== 'image' && kind !== 'music' && kind !== 'video') return;
+                jobs.push(
+                    window.NesilStore.loadMessageMedia(m.id).then(rec => {
+                        const url = (rec && rec.url) || m.mediaUrl;
+                        if (!url) return null;
+                        return {
+                            source: 'chat',
+                            id: 'chat_' + m.id,
+                            kind: kind,
+                            url: url,
+                            text: (m.isImageGen ? m.imagePrompt : m.mediaPrompt) || '',
+                            meta: m.isImageGen ? (m.imageProvider || 'Pollinations · Flux') : (m.mediaModelLabel || ''),
+                            createdAt: m.timestamp || Date.now()
+                        };
+                    }).catch(() => null)
+                );
+            });
+        });
+        return Promise.all(jobs).then(list => list.filter(Boolean));
+    }
+
+    function openLibraryModal() {
+        libraryModal.classList.remove('hidden');
+        closeMobileSidebar();
+        renderLibrary();
+    }
+
+    function closeLibraryModal() {
+        libraryModal.classList.add('hidden');
+        closeLibraryInfo();
     }
 
     function setPoolSttStatus(text) {
@@ -893,12 +1167,12 @@
                         dl.className = 'btn btn-mini btn-outline';
                         dl.href = it.url;
                         dl.download = 'nesilai-' + it.kind + '-' + it.id + (it.kind === 'image' ? '.jpg' : it.kind === 'video' ? '.webm' : it.kind === 'tts' || it.kind === 'music' ? '.wav' : '.txt');
-                        dl.textContent = 'İndir';
+                        dl.textContent = t('İndir');
                         foot.appendChild(dl);
                     }
                     const rm = document.createElement('button');
                     rm.className = 'btn btn-mini btn-outline';
-                    rm.textContent = 'Sil';
+                    rm.textContent = t('Sil');
                     rm.addEventListener('click', () => {
                         window.NesilStore.deletePoolItem(it.id).then(renderPoolGallery);
                     });
@@ -964,7 +1238,7 @@
                         img.style.display = 'block';
                         const dl = document.createElement('button');
                         dl.className = 'btn btn-outline btn-mini pool-dl';
-                        dl.textContent = 'İndir';
+                        dl.textContent = t('İndir');
                         dl.addEventListener('click', async () => {
                             try {
                                 const res = await fetch(url);
@@ -985,7 +1259,7 @@
                         // Kalıcı galeri: havuz görseli IndexedDB'ye yaz
                         if (window.NesilStore) {
                             window.NesilStore.addPoolItem('image', { url: url, text: prompt, meta: w + '×' + h })
-                                .then(() => renderPoolGallery()).catch(() => {});
+                                .then(() => { renderPoolGallery(); renderLibrary(); }).catch(() => {});
                         }
                     };
                     img.onerror = () => {
@@ -1489,7 +1763,10 @@
         // Üretim havuzu galerisi açıksa görselleri de gezilecek listeye kat
         const poolImgs = [...document.querySelectorAll('#pool-gallery-grid .pool-gallery-card img')]
             .filter(i => i.src && i.offsetWidth > 0);
-        return [...chatImgs, ...poolImgs].map(i => ({ src: i.src, alt: i.alt || '' }));
+        // Kitaplık açıksa görselleri de gezilecek listeye kat
+        const libImgs = [...document.querySelectorAll('#library-grid .library-card-item img')]
+            .filter(i => i.src && i.offsetWidth > 0);
+        return [...chatImgs, ...poolImgs, ...libImgs].map(i => ({ src: i.src, alt: i.alt || '' }));
     }
 
     function ensureLightbox() {
@@ -1662,7 +1939,7 @@
             // Seslendir butonu
             const speakBtn = document.createElement('button');
             speakBtn.className = 'btn-action-pill';
-            speakBtn.innerHTML = icon('i-volume') + ' <span>Dinle</span>';
+            speakBtn.innerHTML = icon('i-volume') + ' <span>' + t('Dinle') + '</span>';
             speakBtn.title = 'Seslendir (Yazıdan Sese)';
 
             speakBtn.addEventListener('click', () => {
@@ -1671,12 +1948,12 @@
                 if (window.NesilTTS) {
                     if (currentlySpeakingBtn === speakBtn) {
                         window.NesilTTS.stop();
-                        speakBtn.innerHTML = icon('i-volume') + ' <span>Dinle</span>';
+                        speakBtn.innerHTML = icon('i-volume') + ' <span>' + t('Dinle') + '</span>';
                         speakBtn.classList.remove('speaking');
                         currentlySpeakingBtn = null;
                     } else {
                         if (currentlySpeakingBtn) {
-                            currentlySpeakingBtn.innerHTML = icon('i-volume') + ' <span>Dinle</span>';
+                            currentlySpeakingBtn.innerHTML = icon('i-volume') + ' <span>' + t('Dinle') + '</span>';
                             currentlySpeakingBtn.classList.remove('speaking');
                         }
 
@@ -1689,12 +1966,12 @@
                                 currentlySpeakingBtn = speakBtn;
                             },
                             () => {
-                                speakBtn.innerHTML = icon('i-volume') + ' <span>Dinle</span>';
+                                speakBtn.innerHTML = icon('i-volume') + ' <span>' + t('Dinle') + '</span>';
                                 speakBtn.classList.remove('speaking');
                                 if (currentlySpeakingBtn === speakBtn) currentlySpeakingBtn = null;
                             },
                             (err) => {
-                                speakBtn.innerHTML = icon('i-volume') + ' <span>Dinle</span>';
+                                speakBtn.innerHTML = icon('i-volume') + ' <span>' + t('Dinle') + '</span>';
                                 speakBtn.classList.remove('speaking');
                                 if (currentlySpeakingBtn === speakBtn) currentlySpeakingBtn = null;
                                 showToast(t('Seslendirme başlatılamadı'), 'error');
@@ -1707,7 +1984,7 @@
             // Kopyala butonu
             const copyBtn = document.createElement('button');
             copyBtn.className = 'btn-action-pill';
-            copyBtn.innerHTML = icon('i-copy') + ' <span>Kopyala</span>';
+            copyBtn.innerHTML = icon('i-copy') + ' <span>' + t('Kopyala') + '</span>';
             copyBtn.title = 'Metni Kopyala';
             copyBtn.addEventListener('click', () => {
                 copyTextToClipboard(msg.text);
@@ -3294,7 +3571,7 @@
         // kalıcı depo
         if (window.NesilStore) {
             window.NesilStore.addPoolItem('music', { url: sfx.url, text: prompt, meta: 'SFX · ' + sfx.label })
-                .then(() => renderPoolGallery()).catch(() => {});
+                .then(() => { renderPoolGallery(); renderLibrary(); }).catch(() => {});
         }
     }
 
@@ -3335,7 +3612,12 @@
             // Kalıcı depo: blob IndexedDB'ye yazılır; sayfa yenilense bile geri yüklenir
             if (window.NesilStore) {
                 window.NesilStore.saveMessageMedia(aiMsg.id, kind, url, prompt)
-                    .then(ok => { aiMsg.mediaPersisted = ok; saveChatsToStorage(); })
+                    .then(ok => {
+                        aiMsg.mediaPersisted = ok;
+                        saveChatsToStorage();
+                        window.NesilStore.addPoolItem(kind, { url: url, text: prompt, meta: chosen.label })
+                            .then(() => renderLibrary()).catch(() => {});
+                    })
                     .catch(() => {});
             }
             saveChatsToStorage();
@@ -3425,17 +3707,28 @@
     }
 
     // ========================================================
-    // Cihaz Modu — Telefon / Masaüstü / Otomatik
+    // Cihaz Modu — Telefon / Masaüstü / TV / Otomatik
+    //   TV tespiti: Android TV/Google TV (ua TV flag'i), Fire TV,
+    //   büyük ekran + dokunmatik yok (masaüstü tarayıcı hariç).
     // ========================================================
+    function isTvDevice() {
+        const ua = navigator.userAgent || '';
+        if (/\bTV\b|SmartTV|GoogleTV|Android TV|AppleTV|CrKey|FireTV|NETCAST|HbbTV/i.test(ua)) return true;
+        // WebView + dokunmatik yok + geniş ekran → TV (masaüstü Chrome hariç)
+        const isAndroid = /Android/i.test(ua);
+        const noTouch = !(('ontouchstart' in window) || navigator.maxTouchPoints > 0);
+        const wide = Math.min(screen.width, screen.height) >= 720;
+        return isAndroid && noTouch && wide;
+    }
+
     function applyDeviceMode() {
-        const mode = localStorage.getItem('nesilai_device_mode') || 'auto';
-        const isNarrow = window.matchMedia('(max-width: 720px)').matches;
+        const stored = localStorage.getItem('nesilai_device_mode') || 'auto';
         const html = document.documentElement;
-        if (mode === 'phone' || (mode === 'auto' && isNarrow)) {
-            html.setAttribute('data-device', 'phone');
-        } else {
-            html.removeAttribute('data-device');
-        }
+        let mode = stored;
+        if (mode === 'auto') mode = isTvDevice() ? 'tv' : (window.matchMedia('(max-width: 720px)').matches ? 'phone' : 'desktop');
+        if (mode === 'phone') html.setAttribute('data-device', 'phone');
+        else if (mode === 'tv') html.setAttribute('data-device', 'tv');
+        else html.removeAttribute('data-device');
     }
 
     // Ekran döndürme / boyut değişiminde otomatik modu güncelle
@@ -3642,6 +3935,8 @@
             applyUiTranslations();
             updateAiStatusChip();
             buildModeMenu();
+            renderPoolGallery();   // galeri/kütüphane yazıları da anında çevrilsin
+            renderLibrary();
             showToast(t('Ayarlar kaydedildi'), 'success');
         });
     }
@@ -3735,8 +4030,14 @@
         // Yeni Sohbet
         newChatBtn.addEventListener('click', createNewChat);
 
-        // Sidebar Mobil Aç/Kapa
+        // Sidebar Aç/Kapa — yalnızca hamburger düzen değiştirir:
+        // masaüstünde 1. düzen (tam menü) ↔ 2. düzen (yalnızca sohbet listesi).
+        // Diğer düğmeler (havuz, kitaplık vb.) düzeni ASLA değiştirmez.
         toggleSidebarBtn.addEventListener('click', () => {
+            if (window.matchMedia('(min-width: 861px)').matches) {
+                document.body.classList.toggle('rail-active');
+                return;
+            }
             sidebar.classList.toggle('open');
             sidebarBackdrop.classList.toggle('active');
         });
@@ -3756,6 +4057,7 @@
 
         // Üretim Havuzu
         initPool();
+        initLibrary();
 
         // Composer Model Seçici
         if (modelPickerBtn) {
@@ -3902,6 +4204,10 @@
         }
         if (poolModal && !poolModal.classList.contains('hidden')) {
             closePoolModal();
+            return;
+        }
+        if (libraryModal && !libraryModal.classList.contains('hidden')) {
+            closeLibraryModal();
         }
     }
 

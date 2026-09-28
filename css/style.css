@@ -4175,3 +4175,272 @@ html.ov-overlay-host body > *:not(#openview-panel):not(.icon-sprite) { display: 
     to { opacity: 1; transform: translateY(0); }
 }
 
+
+/* ==========================================================
+   16. TV MODU (html[data-device="tv"]) — kumanda ile gezinme
+   10-foot arayüz: büyük tipografi, belirgin odak halkaları,
+   D-pad (yön tuşları + OK + geri) ile tam kullanım.
+   ========================================================== */
+html[data-device="tv"] {
+    /* TV: her şey büyür — 3 m mesafeden okunur */
+    font-size: 20px;
+    --sidebar-w: min(30vw, 460px);
+}
+
+html[data-device="tv"] body { font-size: 19px; }
+
+/* D-pad odağı: hangi öğede olduğunu kumandadan gör */
+html[data-device="tv"] :focus { outline: none; }
+html[data-device="tv"] button:focus,
+html[data-device="tv"] a:focus,
+html[data-device="tv"] input:focus,
+html[data-device="tv"] textarea:focus,
+html[data-device="tv"] select:focus,
+html[data-device="tv"] [tabindex]:focus {
+    outline: 4px solid var(--accent) !important;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 10px var(--accent-soft), 0 0 26px var(--accent-soft) !important;
+    border-radius: var(--r-md);
+}
+
+/* Kenar çubuğu: kalın öğeler, rahat hedefler */
+html[data-device="tv"] .sidebar { width: var(--sidebar-w); }
+html[data-device="tv"] .history-item {
+    min-height: 64px;
+    font-size: 19px;
+    padding-inline: var(--s-3);
+}
+html[data-device="tv"] .nav-item,
+html[data-device="tv"] .btn { min-height: 56px; font-size: 19px; }
+html[data-device="tv"] .brand-name { font-size: 26px; }
+html[data-device="tv"] .section-label { font-size: 15px; }
+
+/* Topbar + başlık */
+html[data-device="tv"] .topbar { padding: var(--s-3) var(--s-4); }
+html[data-device="tv"] .topbar-title h1 { font-size: 30px; }
+html[data-device="tv"] .status-chip { font-size: 17px; padding: 10px 18px; }
+html[data-device="tv"] .icon-btn { width: 56px; height: 56px; }
+
+/* Composer: kumandayla yazım ve gönderim */
+html[data-device="tv"] .composer { padding: var(--s-3); border-width: 2px; }
+html[data-device="tv"] .composer-input {
+    font-size: 22px;
+    min-height: 64px;
+    max-height: 200px;
+    padding: 14px 18px;
+}
+html[data-device="tv"] .composer-btn { width: 64px; height: 64px; }
+html[data-device="tv"] .composer-chip {
+    min-height: 52px;
+    font-size: 17px;
+    padding: 10px 18px;
+    max-width: 300px;
+}
+
+/* Mesaj baloncukları: koltuktan okunur */
+html[data-device="tv"] .messages { padding: var(--s-5) var(--s-6); font-size: 20px; }
+html[data-device="tv"] .message-bubble {
+    font-size: 21px;
+    line-height: 1.7;
+    padding: 18px 22px;
+    max-width: 76%;
+}
+html[data-device="tv"] .message-code code,
+html[data-device="tv"] .message-bubble pre { font-size: 17px; }
+
+/* Model/mod menüleri: TV odaklı öğeler */
+html[data-device="tv"] .model-menu { width: min(560px, 60vw); }
+html[data-device="tv"] .model-option { min-height: 56px; font-size: 18px; padding: 12px var(--s-3); }
+html[data-device="tv"] .model-option-provider { min-width: 120px; font-size: 14px; }
+html[data-device="tv"] .model-menu-search input { font-size: 18px; padding: 12px 14px; }
+
+/* Modallar: büyük ve odaklı */
+html[data-device="tv"] .modal-card { max-width: min(900px, 92vw); }
+html[data-device="tv"] .settings-body { font-size: 19px; }
+html[data-device="tv"] .input, html[data-device="tv"] select.input { font-size: 19px; min-height: 52px; }
+
+/* TV modunda telefon benzeri kenar çubuğu davranışı: masaüstünde açık kalır */
+@media (min-width: 721px) {
+    html[data-device="tv"] .sidebar { transform: none !important; position: relative; }
+    html[data-device="tv"] #sidebar-backdrop { display: none !important; }
+}
+
+/* ==========================================================
+   17. Kitaplık + Dar Sohbet Rayı
+   ----------------------------------------------------------
+   Kitaplık: üretilen görsel/müzik/video koleksiyonu.
+   Dar ray: kenar çubuğu kapanınca sohbet listesi görünür kalmaya
+   devam eder (body.rail-active).
+   ========================================================== */
+
+/* --------- Kitaplık modalı --------- */
+.library-head-actions { display: flex; align-items: center; gap: var(--s-2); }
+.library-head-actions .input { width: auto; min-width: 150px; }
+.library-body { overflow-y: auto; }
+
+.library-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--s-3);
+}
+
+.library-card-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: var(--s-2);
+    min-width: 0;
+    transition: border-color 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.library-card-item:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+
+.library-item-stage {
+    position: relative;
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: var(--surface-2);
+    min-height: 56px;
+}
+.library-item-stage img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    cursor: zoom-in;
+}
+.library-item-stage video,
+.library-item-stage audio { display: block; width: 100%; }
+.library-item-stage audio { height: 44px; margin: var(--s-1) 0; }
+
+.library-item-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text-1);
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    pointer-events: none;
+}
+
+.library-item-text {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--text-2);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    min-height: 2.9em;
+}
+
+.library-item-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+}
+.library-item-date { font-size: 11px; color: var(--text-3); }
+.library-info-btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+    border-radius: var(--r-sm);
+}
+.library-info-btn .icon { width: 15px; height: 15px; }
+.library-info-btn:hover { color: var(--text-1); border-color: var(--border-strong); }
+
+/* --------- Kitaplık bilgi paneli --------- */
+.library-info-card { max-width: min(520px, 92vw); }
+.library-info-body { display: flex; flex-direction: column; gap: var(--s-4); }
+.library-info-preview {
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: var(--surface-2);
+    display: grid;
+    place-items: center;
+    min-height: 56px;
+}
+.library-info-preview img {
+    display: block;
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+}
+.library-info-preview video { display: block; width: 100%; max-height: 300px; }
+.library-info-preview audio { width: 100%; }
+
+.library-info-rows { display: flex; flex-direction: column; gap: var(--s-2); }
+.library-info-row {
+    display: grid;
+    grid-template-columns: 68px minmax(0, 1fr);
+    gap: var(--s-2);
+    align-items: baseline;
+}
+.library-info-key {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-3);
+}
+.library-info-val {
+    font-size: 13.5px;
+    color: var(--text-1);
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+.library-info-actions { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.library-info-actions .btn { display: inline-flex; align-items: center; gap: 8px; }
+.library-info-actions .icon { width: 16px; height: 16px; }
+
+/* --------- Düzen geçişleri akıcı olsun --------- */
+.sidebar { transition: width 0.25s var(--ease); }
+
+/* --------- Dar sohbet rayı: hamburger kapatınca sohbet listesi kalır ---------
+   Ray tam kenar çubuğu genişliğindedir; üst/alt tuşlar gizlenir,
+   yalnızca sohbet listesi görünür kalır.
+   --------- */
+@media (min-width: 861px) {
+    body.rail-active .sidebar { width: var(--sidebar-w); }
+    body.rail-active .sidebar > *:not(.sidebar-scroll) { display: none; }
+    body.rail-active .sidebar-scroll { padding: var(--s-2) var(--s-3) var(--s-4); }
+}
+
+/* --------- Telefon: ray yok (tam ekran overlay zaten var) --------- */
+@media (max-width: 860px) {
+    body.rail-active .sidebar { width: var(--sidebar-w); }
+    body.rail-active .sidebar > *:not(.sidebar-scroll) { display: flex; }
+    body.rail-active .sidebar-foot { display: flex; }
+    body.rail-active .sidebar-head { display: flex; }
+}
+
+/* --------- Kitaplık: telefon düzeni --------- */
+@media (max-width: 520px) {
+    .library-grid { grid-template-columns: 1fr; }
+}
+
+/* --------- TV: büyük odak hedefleri --------- */
+html[data-device="tv"] .library-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--s-4); }
+html[data-device="tv"] .library-card-item { padding: var(--s-3); }
+html[data-device="tv"] .library-item-text { font-size: 17px; }
+html[data-device="tv"] .library-item-date { font-size: 14px; }
+html[data-device="tv"] .library-info-btn { width: 48px; height: 48px; }
+html[data-device="tv"] .library-info-btn .icon { width: 24px; height: 24px; }
+html[data-device="tv"] .library-info-val { font-size: 19px; }
+html[data-device="tv"] .library-info-key { font-size: 14px; }
+html[data-device="tv"] .library-info-actions .btn { min-height: 56px; font-size: 19px; }
+html[data-device="tv"] .library-head-actions .input { min-height: 52px; font-size: 19px; }
