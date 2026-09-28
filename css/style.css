@@ -2265,7 +2265,10 @@ select.input { cursor: pointer; appearance: none; padding-right: var(--s-8); bac
     .modal-foot { padding: var(--s-3) var(--s-4); }
 }
 
-/* Hareket hassasiyeti */
+/* Hareket hassasiyeti
+   Not: kenar çubuğu düzen geçişi (.sidebar width) kullanıcı tarafından
+   başlatılan bir yapı değişikliğidir; hareket azaltma tercihinden
+   bağımsız olarak yumuşak kalsın diye aşağıda yeniden tanımlanır. */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.001ms !important;
@@ -2273,6 +2276,16 @@ select.input { cursor: pointer; appearance: none; padding-right: var(--s-8); bac
         transition-duration: 0.001ms !important;
     }
     .messages { scroll-behavior: auto; }
+    /* Düzen geçişi yine de yumuşak olsun */
+    .sidebar {
+        transition-property: width !important;
+        transition-duration: 0.28s !important;
+        transition-timing-function: var(--ease) !important;
+    }
+    .sidebar-head,
+    .sidebar-foot {
+        transition-duration: 0.22s, 0.26s, 0.3s, 0.3s, 0s !important;
+    }
 }
 
 /* Yazdırma: arayüzü sadeleştir */
@@ -4407,25 +4420,72 @@ html[data-device="tv"] .input, html[data-device="tv"] select.input { font-size: 
 .library-info-actions .btn { display: inline-flex; align-items: center; gap: 8px; }
 .library-info-actions .icon { width: 16px; height: 16px; }
 
-/* --------- Düzen geçişleri akıcı olsun --------- */
-.sidebar { transition: width 0.25s var(--ease); }
+/* --------- Düzen geçişleri: akıcı ve yumuşak --------- */
+.sidebar { transition: width 0.28s var(--ease); }
 
-/* --------- Dar sohbet rayı: hamburger kapatınca sohbet listesi kalır ---------
-   Ray tam kenar çubuğu genişliğindedir; üst/alt tuşlar gizlenir,
-   yalnızca sohbet listesi görünür kalır.
+/* --------- 2. düzen (dar sohbet görünümü) ---------
+   Hamburger ile geçilir. Marka + "Yeni sohbet" görünür kalır;
+   "Kendini Tanıt" ve "Kitaplık" tuşları ile alt bölüm (Bilgiler,
+   plan, indirme, nav) yumuşakça katlanır. Yalnızca masaüstü.
    --------- */
 @media (min-width: 861px) {
     body.rail-active .sidebar { width: var(--sidebar-w); }
-    body.rail-active .sidebar > *:not(.sidebar-scroll) { display: none; }
+
+    /* Katlanan bölümler: şeffaflık + kayma + yükseklik animasyonu */
+    .sidebar-head,
+    .sidebar-foot {
+        max-height: 600px;
+        transition: opacity 0.22s var(--ease),
+                    transform 0.26s var(--ease),
+                    max-height 0.3s var(--ease),
+                    padding 0.3s var(--ease),
+                    visibility 0s linear 0s;
+        overflow: hidden;
+    }
+    body.rail-active .sidebar-foot {
+        opacity: 0;
+        transform: translateX(-10px);
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        pointer-events: none;
+        visibility: hidden;
+        transition: opacity 0.22s var(--ease),
+                    transform 0.26s var(--ease),
+                    max-height 0.3s var(--ease),
+                    padding 0.3s var(--ease),
+                    visibility 0s linear 0.3s;
+    }
+
+    /* 2. düzen üst bölümü: marka + Yeni sohbet kalır, diğerleri gizlenir */
+    body.rail-active .sidebar-head {
+        padding: var(--s-3);
+        gap: var(--s-2);
+        animation: railFadeIn 0.28s var(--ease);
+    }
+    body.rail-active #introduce-btn,
+    body.rail-active #open-library-btn { display: none; }
+
     body.rail-active .sidebar-scroll { padding: var(--s-2) var(--s-3) var(--s-4); }
 }
 
-/* --------- Telefon: ray yok (tam ekran overlay zaten var) --------- */
+@keyframes railFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* --------- Telefon/TV: rail sınıfı etkisiz (her şey normal görünür) --------- */
 @media (max-width: 860px) {
     body.rail-active .sidebar { width: var(--sidebar-w); }
-    body.rail-active .sidebar > *:not(.sidebar-scroll) { display: flex; }
-    body.rail-active .sidebar-foot { display: flex; }
-    body.rail-active .sidebar-head { display: flex; }
+    body.rail-active #introduce-btn,
+    body.rail-active #open-library-btn { display: revert; }
+    body.rail-active .sidebar-foot {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        max-height: none;
+        transform: none;
+    }
 }
 
 /* --------- Kitaplık: telefon düzeni --------- */
