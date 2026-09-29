@@ -4504,3 +4504,96 @@ html[data-device="tv"] .library-info-val { font-size: 19px; }
 html[data-device="tv"] .library-info-key { font-size: 14px; }
 html[data-device="tv"] .library-info-actions .btn { min-height: 56px; font-size: 19px; }
 html[data-device="tv"] .library-head-actions .input { min-height: 52px; font-size: 19px; }
+
+
+/* ==========================================================
+   19. ACS v1 — komut gradyanları, ghost loading, duygu
+   renkleri, Acsida imzası, üç ilke, mobil düzen tuşu
+   ========================================================== */
+
+/* --- 19.1 Komut rozetleri: her komutun kendi gradyanı --- */
+.command-badge.cmd-trustme { background: linear-gradient(100deg, #0a0f24 0%, #23c55e 55%, #05230f 100%); color: rgba(212, 255, 224, 0.55); border-color: rgba(35, 197, 94, 0.28); }
+.command-badge.cmd-acsmod { background: linear-gradient(100deg, #140a26 0%, #8b5cf6 45%, #14b8a6 100%); color: rgba(235, 225, 255, 0.55); border-color: rgba(139, 92, 246, 0.3); }
+
+/* --- 19.2 Ghost "yazıyor / üretiyor" satırları: şeffaf italik gri, kutu yok --- */
+.message-row.thinking .thinking-bubble {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    animation: ghostBreathe 1.6s ease-in-out infinite;
+}
+.message-row.thinking .thinking-label {
+    color: var(--text-3);
+    font-style: italic;
+    opacity: 0.45;
+}
+@keyframes ghostBreathe {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 0.9; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .message-row.thinking .thinking-bubble { animation: none; }
+}
+
+/* --- 19.3 Duygu tonları: red/öfke kırmızı, sevinç yeşil, üzgünlük mavi,
+   şaşkınlık turuncu, coşku pembe, ironi mor --- */
+.emotion-angry { border-left: 3px solid rgba(239, 68, 68, 0.55); }
+.emotion-happy { border-left: 3px solid rgba(35, 197, 94, 0.5); }
+.emotion-sad { border-left: 3px solid rgba(59, 130, 246, 0.5); }
+.emotion-surprised { border-left: 3px solid rgba(249, 115, 22, 0.5); }
+.emotion-hedonistic { border-left: 3px solid rgba(236, 72, 153, 0.5); }
+.emotion-ironic { border-left: 3px solid rgba(139, 92, 246, 0.5); }
+
+/* --- 19.4 Acsida imzası --- */
+.acsida-sign {
+    margin-top: 8px;
+    font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace);
+    font-size: 10.5px;
+    font-style: italic;
+    letter-spacing: 0.12em;
+    color: rgba(139, 92, 246, 0.5);
+    user-select: none;
+    pointer-events: none;
+}
+
+/* --- 19.5 Bilgiler: üç ilke --- */
+.info-principles { display: grid; gap: 10px; margin: 8px 0 4px; }
+.info-principle {
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    overflow: hidden;
+}
+.info-principle summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 12px 14px;
+    font-weight: 600;
+    font-size: 14.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.info-principle summary::-webkit-details-marker { display: none; }
+.info-principle summary::before { content: '\203A'; transform: rotate(90deg); font-weight: 700; color: var(--text-3); transition: transform 0.2s var(--ease); }
+.info-principle[open] summary::before { transform: rotate(-90deg); }
+.info-principle-body { padding: 0 14px 12px; color: var(--text-2); font-size: 14px; line-height: 1.6; }
+.info-principle-body p { margin: 0; }
+
+/* --- 19.6 Mobilde 1.LYT / 2.LYT geçiş tuşu (rail yalnızca masaüstüydü) --- */
+.layout-toggle-btn { display: none; }
+@media (max-width: 860px) {
+    .layout-toggle-btn { display: flex; }
+    html[data-device="phone"] .layout-toggle-btn { min-height: 52px; }
+}
+@media (min-width: 861px) {
+    body.rail-active .layout-toggle-btn { display: none; }
+}
+
+
+/* --- 19.7 Mobil 2. LYT: alt bölüm (Bilgiler/plan/indirme) katlanır --- */
+@media (max-width: 860px) {
+    body.rail-active .sidebar-foot { display: none; }
+}

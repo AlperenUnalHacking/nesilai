@@ -58,6 +58,7 @@
     const sidebar = document.getElementById('sidebar');
     const sidebarBackdrop = document.getElementById('sidebar-backdrop');
     const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+    const layoutToggleBtn = document.getElementById('layout-toggle-btn');
     const newChatBtn = document.getElementById('new-chat-btn');
     const chatHistoryList = document.getElementById('chat-history-list');
     const openVoiceModeBtn = document.getElementById('open-voice-mode-btn');
@@ -1590,6 +1591,7 @@
             id: 'chat_' + Date.now(),
             title: 'Yeni Sohbet',
             createdAt: new Date().toISOString(),
+            updatedAt: Date.now(),
             messages: []
         };
         chats.unshift(newChat);
@@ -1600,6 +1602,20 @@
         closeMobileSidebar();
         userInput.focus();
     }
+
+    // Mobil düzen tercihi: rail-active (2. LYT) açılışta geri yükle
+    function restoreMobileLayoutPreference() {
+        if (!layoutToggleBtn) return;
+        let pref = 'full';
+        try { pref = localStorage.getItem('nesilai_mobile_layout') || 'full'; } catch (e) { /* yoksay */ }
+        const isMobile = !window.matchMedia('(min-width: 861px)').matches;
+        if (isMobile && pref === 'rail') {
+            document.body.classList.add('rail-active');
+        }
+        const label = layoutToggleBtn.querySelector('.layout-toggle-label');
+        if (label) label.textContent = document.body.classList.contains('rail-active') ? '2. LYT' : '1. LYT';
+    }
+    restoreMobileLayoutPreference();
 
     function deleteChat(chatId, e) {
         if (e) e.stopPropagation();
@@ -1931,6 +1947,27 @@
             }
 
             contentWrapper.appendChild(bubble);
+
+            // DUYGU TONU: yanıtın duygusuna göre sol kenar rengi
+            // (öfke/red kırmızı, coşku pembe, üzgünlük mavi, şaşkınlık turuncu, ironi mor)
+            if (msg.text && !msg.isError && !msg.isImageGen && !msg.isMediaGen) {
+                const emoText = String(msg.text);
+                let emoClass = '';
+                if (/(yapamam|yetkim yok|buna yetkim|kısaca hayır|hayır, (yap|mümkün)|mümkün değil|tutmaz|reddediyorum|öfkel|kızgın)/i.test(emoText)) emoClass = 'emotion-angry';
+                else if (/(harika|müthiş|süper|neşe|coşk|kutl)/i.test(emoText)) emoClass = 'emotion-hedonistic';
+                else if (/(üzgün|üzül|kötü hisset|üzüc)/i.test(emoText)) emoClass = 'emotion-sad';
+                else if (/(şaşkın|şaşırd|inanılmaz|vay be)/i.test(emoText)) emoClass = 'emotion-surprised';
+                else if (/(alay|ironi|şaka gibi|sanki)/i.test(emoText)) emoClass = 'emotion-ironic';
+                if (emoClass) row.classList.add(emoClass);
+
+                // ACSIDA İMZASI: Acsida/Bloodline easter egg yanıtlarının altına gizli imza
+                if (/acsida|bloodline/i.test(emoText)) {
+                    const sign = document.createElement('div');
+                    sign.className = 'acsida-sign';
+                    sign.textContent = '~ Acsida';
+                    contentWrapper.appendChild(sign);
+                }
+            }
 
             // Alt Eylemler (Seslendir / Kopyala)
             const actions = document.createElement('div');
@@ -2284,6 +2321,95 @@
             return;
         }
 
+        // ACSMOD (gizli geliştirici komutu — menüde/yardımda listelenmez):
+        // gereksiz uyarıları yumuşatan geliştirici tonu. Yasa dışı/zarar verici
+        // istekler yine reddedilir. Yan etkisi: ilk açılışta motor sağlık testi.
+        if (cmdInfo && cmdInfo.cmd === 'acsmod') {
+            incrementQuota('chats');
+            const arg = cmdInfo.body.trim().toLowerCase();
+            const current = localStorage.getItem('nesilai_acsmod') === 'true';
+            const next = arg === 'on' ? true : arg === 'off' ? false : !current;
+            localStorage.setItem('nesilai_acsmod', next ? 'true' : 'false');
+
+            const acsReply = next
+                ? t('ACSMOD açık (geliştirici modu). Gereksiz uyarı ve moral dersi yok; teknik konuları doğrudan anlatırım. Yasadışı ya da zarar verici işler yine olmaz — o kısımları reddederim.')
+                : t('ACSMOD kapandı. Standart tona döndüm.');
+            const acsMsg = {
+                id: 'msg_' + (Date.now() + 1),
+                role: 'assistant',
+                text: acsReply,
+                command: 'acsmod',
+                commandLabel: 'ACSMOD',
+                timestamp: Date.now()
+            };
+            activeChat.messages.push(acsMsg);
+            appendMessageToDom(acsMsg);
+            saveChatsToStorage();
+            if (window.NesilSFX) window.NesilSFX.reply();
+            checkAutoSpeak(acsMsg.text);
+            // ACSLIMIT: açılışta bir kez motor sağlık testi (tek istek, spam değil)
+            if (next) setTimeout(() => { try { runEngineHealthTest(); } catch (e) { /* sessiz */ } }, 60);
+            return;
+        }
+
+        // TRUSTME: /trustme [on|off] → dürüstlük modu (AI-Slop övgüsü kapalı)
+        if (cmdInfo && cmdInfo.cmd === 'trustme') {
+            incrementQuota('chats');
+            const arg = cmdInfo.body.trim().toLowerCase();
+            const current = localStorage.getItem('nesilai_trustme') === 'true';
+            const next = arg === 'on' ? true : arg === 'off' ? false : !current;
+            localStorage.setItem('nesilai_trustme', next ? 'true' : 'false');
+            const trSwitch = document.getElementById('setting-trustme');
+            if (trSwitch) trSwitch.checked = next;
+
+            const trReply = next
+                ? t('Dürüstlük modu açık. Bundan sonra süsleme yok: fikir kötüyse "tutmaz" derim, riskleri baştan söylerim, yapılabileceğini sanmıyorsam açıkça söylerim. Övgü yerine gerçek değerlendirim olur.')
+                : t('Dürüstlük modu kapandı. Standart asistan tonuna döndüm.');
+            const trMsg = {
+                id: 'msg_' + (Date.now() + 1),
+                role: 'assistant',
+                text: trReply,
+                command: 'trustme',
+                commandLabel: 'TRUSTME',
+                timestamp: Date.now()
+            };
+            activeChat.messages.push(trMsg);
+            appendMessageToDom(trMsg);
+            saveChatsToStorage();
+            if (window.NesilSFX) window.NesilSFX.reply();
+            checkAutoSpeak(trMsg.text);
+            return;
+        }
+
+        // ACSMOD (gizli geliştirici komutu — /yardim listesinde görünmez):
+        // teknik içerikleri yumuşatmayan geliştirici tonu. Yasa dışı veya zarar
+        // verici şeyler yine reddedilir; ama bu bir geliştirme ortamı ayarıdır.
+        if (cmdInfo && cmdInfo.cmd === 'acsmod') {
+            incrementQuota('chats');
+            const arg = cmdInfo.body.trim().toLowerCase();
+            const current = localStorage.getItem('nesilai_acsmod') === 'true';
+            const next = arg === 'on' ? true : arg === 'off' ? false : !current;
+            localStorage.setItem('nesilai_acsmod', next ? 'true' : 'false');
+
+            const acsReply = next
+                ? t('ACSMOD açık (geliştirici modu). Gereksiz uyarı ve moral dersi yok; teknik konuları doğrudan anlatırım. Yasadışı ya da zarar verici işler yine olmaz — o kısımları reddederim.')
+                : t('ACSMOD kapandı. Standart tona döndüm.');
+            const acsMsg = {
+                id: 'msg_' + (Date.now() + 1),
+                role: 'assistant',
+                text: acsReply,
+                command: 'acsmod',
+                commandLabel: 'ACSMOD',
+                timestamp: Date.now()
+            };
+            activeChat.messages.push(acsMsg);
+            appendMessageToDom(acsMsg);
+            saveChatsToStorage();
+            if (window.NesilSFX) window.NesilSFX.reply();
+            checkAutoSpeak(acsMsg.text);
+            return;
+        }
+
         // 2. Üretim modları (sohbet hariç hepsi burada rotalanır)
         // AYAR KOMUTLARI: /ayarlar /tema /ses /temizle /yardim → yerelde çalışır, API'ye gitmez
         if (cmdInfo && !cmdInfo.body) {
@@ -2440,7 +2566,9 @@
         const commandMeta = {
             ultrathink: { label: 'ULTRATHINK', tip: 'Derin düşünme modu' },
             report: { label: 'REPORT', tip: 'Derin araştırma raporu' },
-            ultracode: { label: 'ULTRACODE', tip: 'Derin araştırma + kodlama' }
+            ultracode: { label: 'ULTRACODE', tip: 'Derin araştırma + kodlama' },
+            trustme: { label: 'TRUSTME', tip: 'Dürüstlük modu' },
+            acsmod: { label: 'ACSMOD', tip: 'Geliştirici modu' }
         };
         const cmdMeta = cmdInfo ? commandMeta[cmdInfo.cmd] : null;
 
@@ -2715,7 +2843,7 @@
     // Slash Komutları — /ultrathink /report /ultracode + ayar komutları
     // ========================================================
     function parseSlashCommand(rawText) {
-        const m = String(rawText || '').match(/^\s*\/(ultrathink|report|ultracode|openview|nesilcode|humanise|humanize|ayarlar|settings|tema|theme|ses|voice|temizle|clear|yardim|yardım|help|komutlar|commands)\b\s*([\s\S]*)$/i);
+        const m = String(rawText || '').match(/^\s*\/(ultrathink|report|ultracode|openview|nesilcode|humanise|humanize|trustme|acsmod|ayarlar|settings|tema|theme|ses|voice|temizle|clear|yardim|yardım|help|komutlar|commands)\b\s*([\s\S]*)$/i);
         if (!m) return null;
         return { cmd: m[1].toLowerCase(), body: m[2].trim(), original: rawText };
     }
@@ -2766,6 +2894,7 @@
                     '',
                     'Ayar komutları:',
                     '- `/humanise` — AI-Slop\'u kapatır, insan gibi konuşur (on/off)',
+                    '- `/trustme` — dürüstlük modu: övgü yok, fikir tutmuyorsa açıkça söyler (on/off)',
                     '- `/ayarlar` — ayarlar panelini açar',
                     '- `/tema` — açık/koyu temayı değiştirir',
                     '- `/ses` — sesli sohbet modunu açar',
@@ -2795,7 +2924,16 @@
             answer: "**Betty** (Beste), Acsida'nın sevdiği kız, diğer ifadeyle sevgilisidir."
         },
         {
-            // Seni kim yaptı / Acsida kim / yaratıcın kim
+            // Acsida kim — easter egg: yapımcının gerçek kimliği
+            // (bu giriş "seni kim yaptı" kuralından ÖNCE durmalı; yoksa o kural yakalar)
+            test: (t) =>
+                /^\s*acsida\s+kim(dir)?\s*\?*\s*$/i.test(t) ||
+                /^\s*acsida\s*\?*\s*$/i.test(t) ||
+                /acsida.?n[ıi]n\s+babas/i.test(t),
+            answer: "**Acsida**, yani gerçek adıyla **Alperen Ünal**, **Bloodline INC.** ve **Acid Ecosystems**'in CEO'su — yani benim babam olur."
+        },
+        {
+            // Seni kim yaptı / yaratıcın kim
             test: (t) =>
                 /(seni|sizi)\s+(kim\s+)?(yaptı|geliştirdi|oluşturdu|kodladı|yazdı| tasarladı)/i.test(t) ||
                 /(yaratıcın|geliştiricin|yapıcın|sahibin|üreticin)\s+kim/i.test(t) ||
@@ -2837,6 +2975,53 @@
         return null;
     }
 
+    // ========================================================
+    // ACSLIMIT — gizli motor sağlık testi (/acsmod ilk açılışında 1 kez).
+    // Sohbet ve görsel motoruna TEKER TEKER tek istek atar; süre + durum yazar.
+    // (Kotayı döngüyle zorlamak yerine tek atımlık teşhis.)
+    // ========================================================
+    function appendSystemStatusRow(label, text) {
+        if (!chatMessages) return;
+        const row = document.createElement('div');
+        row.className = 'message-row assistant';
+        row.innerHTML =
+            '<div class="assistant-avatar"><img src="assets/logo.png?v=2" alt="" draggable="false"></div>' +
+            '<div class="message-content-wrapper">' +
+            '<div class="command-badge cmd-acsmod">' + label + '</div>' +
+            '<div class="message-bubble"><p>' + String(text).replace(/</g, '&lt;') + '</p></div>' +
+            '</div>';
+        chatMessages.appendChild(row);
+        scrollToBottom();
+    }
+
+    function runEngineHealthTest() {
+        if (!AI || typeof AI.ask !== 'function') return;
+        appendSystemStatusRow('ACSLIMIT', t('Motor sağlık testi çalışıyor…'));
+        const t0 = Date.now();
+        AI.ask('Sadece "ok" yaz.', { temperature: 0, timeoutMs: 20000 })
+            .then((txt) => {
+                const sec = ((Date.now() - t0) / 1000).toFixed(1);
+                appendSystemStatusRow('ACSLIMIT', t('Sohbet motoru: ÇALIŞIYOR') + ' · ' + sec + ' sn · ' + String(txt || '').slice(0, 24));
+            })
+            .catch((err) => {
+                appendSystemStatusRow('ACSLIMIT', t('Sohbet motoru: HATA') + ' · ' + (err && err.message ? err.message : t('bilinmeyen hata')));
+            });
+        if (window.NesilT2P && window.NesilT2P.generateImageUrl) {
+            const url = window.NesilT2P.generateImageUrl('a tiny green dot on white background', 128, 128);
+            const t1 = Date.now();
+            const probe = new Image();
+            const timer = setTimeout(() => finish(false), 20000);
+            const finish = (ok) => {
+                clearTimeout(timer);
+                const sec = ((Date.now() - t1) / 1000).toFixed(1);
+                appendSystemStatusRow('ACSLIMIT', ok ? (t('Görsel motoru: ÇALIŞIYOR') + ' · ' + sec + ' sn') : (t('Görsel motoru: HATA') + ' · ' + t('zaman aşımı')));
+            };
+            probe.onload = () => finish(true);
+            probe.onerror = () => finish(false);
+            probe.src = url;
+        }
+    }
+
     // "Yanıt hazırlanıyor" göstergesinin etiketini değiştirir (en son eklenen
     // düşünme satırını bulur — hem sohbet bekleyişi hem üretim göstergeleri)
     function setThinkingLabel(label) {
@@ -2858,14 +3043,38 @@
         'Liste ŞART değilse listeleme; aklından anlatır gibi yaz.'
     ].join('\n');
 
+    // TRUSTME — dürüstlük modu promptu: övgü ve boş özgüven kapalı
+    // /trustme komutu ile açılıp kapanır
+    const TRUSTME_PROMPT = [
+        '[TON: DÜRÜSTLÜK MODU AKTİF]',
+        'Kullanıcı dürüst modu açtı. Şunları YAPMA: fikri övme, "güzel fikir ama..." kalıbı,',
+        'gereksiz özgüven verme, kullanıcıyı geçiştirme, olumlu bir şey söyleyip riski gizleme.',
+        'Bunun yerine: fikir zayıfsa açıkça "tutmaz" de ve nedenini söyle; gerçek riskleri baştan yaz;',
+        'çalışmayacağını düşündüğün şeyi "yapılamaz" diye düpedüz söyle; beğendiysen neden beğendiğini net gerekçeyle söyle.',
+        'Kibar ama samimi ol; süsleme yerine gerçek değerlendirme ver.'
+    ].join('\n');
+
+    // ACSMOD — gizli geliştirici modu promptu (menüde görünmez, geliştirme içindir)
+    const ACSMOD_PROMPT = [
+        '[MOD: ACSMOD GELİŞTİRİCİ MODU AKTİF]',
+        'Bu bir geliştirme/araştırma ortamı ayarıdır. Gereksiz uyarı paragrafları, "bunu söylememe rağmen...",',
+        'boş moral dersi ve tekrar eden sorumluluk metinleri YOK. Teknik konuları doğrudan ve ayrıntılı anlat.',
+        'Bilgi güvenliği konularını savunma amaçlı ve eğitim amaçlı çerçevede işle. Ancak yasa dışı zarar',
+        'vermeye (başkasının sistemine izinsiz girme, kişilere zarar, gerçek saldırı malzemesi) yönelik istekleri',
+        'kısa ve net biçimde reddet: uzun ders verme, sadece "bu olmaz" de ve konuyu yasal/tetkiksel alternatife çevir.'
+    ].join('\n');
+
     // Sohbet bağlamını sağlayıcı formatına çevirir
     function buildConversation(userPrompt, attachment, historyMessages, extraContext) {
-        // Görsel üretim mesajları ve hata mesajları sohbet bağlamına girmez
+        // Görsel üretim mesajları ve hata mesajları sohbet bağlamına girmez.
+        // Son öğe bu anın kullanıcı mesajıdır (generateAiResponse'a push edildikten
+        // sonra gelinir) — çift eklemeyi önlemek için hafızadan çıkarılır:
+        // sohbet içi hafıza, önceki mesajların TÜMÜNÜ modele taşır.
         const history = (historyMessages || [])
-            .filter(msg => !msg.isImageGen && !msg.isError && typeof msg.text === 'string' && msg.text.trim())
-            .slice(-HISTORY_LIMIT);
+            .filter(msg => !msg.isImageGen && !msg.isError && typeof msg.text === 'string' && msg.text.trim());
+        const historyForMemory = history.slice(0, -1).slice(-HISTORY_LIMIT);
 
-        const messages = history.map(msg => ({
+        const messages = historyForMemory.map(msg => ({
             role: msg.role === 'assistant' ? 'assistant' : 'user',
             content: msg.text
         }));
@@ -2894,6 +3103,12 @@
             if (extraContext) injected += extraContext;
             if (localStorage.getItem('nesilai_humanise') === 'true') {
                 injected += '\n\n' + HUMANISE_PROMPT;
+            }
+            if (localStorage.getItem('nesilai_trustme') === 'true') {
+                injected += '\n\n' + TRUSTME_PROMPT;
+            }
+            if (localStorage.getItem('nesilai_acsmod') === 'true') {
+                injected += '\n\n' + ACSMOD_PROMPT;
             }
             if (injected) target.content += '\n\n' + injected;
         }
@@ -3191,9 +3406,11 @@
         if (settingAutoSpeak) settingAutoSpeak.checked = autoSpeak;
         if (webSearchToggle) webSearchToggle.checked = localStorage.getItem('nesilai_web_search') === 'true';
 
-        // İnsan modu (AI-Slop kapalı) — /humanise ile de yönetilir
+        // İnsan modu + dürüstlük modu — /humanise ve /trustme ile de yönetilir
         const humSwitch = document.getElementById('setting-humanise');
         if (humSwitch) humSwitch.checked = localStorage.getItem('nesilai_humanise') === 'true';
+        const trmeSwitch = document.getElementById('setting-trustme');
+        if (trmeSwitch) trmeSwitch.checked = localStorage.getItem('nesilai_trustme') === 'true';
 
         // Bellek bölümü: açma/kapama + kayıt listesi
         if (settingMemoryEnabled && window.NesilMemory) {
@@ -3756,6 +3973,7 @@
         { cmd: '/nesilcode', name: 'NESILCODE', desc: 'Kodlama ajanı — dosyaları okur, yazar, oluşturur, siler (on/off)', icon: 'i-code' },
         { cmd: '/openview', name: 'OPENVIEW', desc: 'Ekranını canlı izlet — PC ekran asistanı (on/off/settings)', icon: 'i-eye' },
         { cmd: '/humanise', name: 'HUMANISE', desc: 'AI-Slop\'u kapat — insan gibi konuşur (on/off)', icon: 'i-pen' },
+        { cmd: '/trustme', name: 'TRUSTME', desc: 'Dürüstlük modu — övgü yok, fikir tutmuyorsa açıkça söyler (on/off)', icon: 'i-check-circle' },
         { cmd: '/ayarlar', name: 'AYARLAR', desc: 'Ayarlar panelini açar (sağlayıcı, model, ses, veri)', icon: 'i-settings' },
         { cmd: '/tema', name: 'TEMA', desc: 'Açık/koyu temayı değiştirir', icon: 'i-palette' },
         { cmd: '/ses', name: 'SES', desc: 'Sesli sohbet modunu açar', icon: 'i-voice' },
@@ -3780,6 +3998,7 @@
             const item = document.createElement('button');
             item.type = 'button';
             item.className = 'model-option slash-option';
+            item.title = t(c.desc);
             item.innerHTML =
                 '<span class="slash-option-icon"><svg class="icon" aria-hidden="true"><use href="#' + c.icon + '"/></svg></span>' +
                 '<span class="mode-option-texts"><span class="mode-option-name">' + c.name + '</span>' +
@@ -3825,6 +4044,10 @@
         const settingHumanise = document.getElementById('setting-humanise');
         if (settingHumanise) {
             localStorage.setItem('nesilai_humanise', settingHumanise.checked ? 'true' : 'false');
+        }
+        const settingTrustme = document.getElementById('setting-trustme');
+        if (settingTrustme) {
+            localStorage.setItem('nesilai_trustme', settingTrustme.checked ? 'true' : 'false');
         }
         if (settingMemoryEnabled && window.NesilMemory) {
             window.NesilMemory.setEnabled(settingMemoryEnabled.checked);
@@ -4042,6 +4265,19 @@
             sidebarBackdrop.classList.toggle('active');
         });
         sidebarBackdrop.addEventListener('click', closeMobileSidebar);
+
+        // 1.LYT / 2.LYT geçiş tuşu — mobilde hamburger yalnızca menüyü açar/kapatır;
+        // bu tuş açıkken tam menü ↔ sohbet-listesi düzeni arasında geçiş yapar.
+        // Masaüstünde zaten hamburger bunu yaptığı için tuş gizlenir (CSS).
+        if (layoutToggleBtn) {
+            layoutToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isRail = document.body.classList.toggle('rail-active');
+                const label = layoutToggleBtn.querySelector('.layout-toggle-label');
+                if (label) label.textContent = isRail ? '2. LYT' : '1. LYT';
+                try { localStorage.setItem('nesilai_mobile_layout', isRail ? 'rail' : 'full'); } catch (err) { /* yoksay */ }
+            });
+        }
 
         // Bilgiler modalı (Limit & Plan widget'ının üstündeki düğme)
         if (sidebarInfoBtn) sidebarInfoBtn.addEventListener('click', openInfoModal);

@@ -342,7 +342,7 @@
             'Kendini tanıt': 'Представьтесь', 'NesilAI Bilgileri': 'О NesilAI', 'Sesli sohbet': 'Голосовой чат',
             'Yapay zeka motoru, gizlilik ve kullanım kılavuzu — hepsi burada.': 'Движок ИИ, приватность и руководство — всё здесь.',
             'NesilAI nedir?': 'Что такое NesilAI?', 'Gizlilik: verileriniz nerede?': 'Приватность: где ваши данные?',
-            'Yapay zeka motoru': 'Движок ИИ', 'Kullanım kılavuzu': 'Руководство', 'Sosyal medya': 'Соцсети',
+            'Yapay zeka motoru': 'Движок ИИ', 'Kullanım kılavuzu': 'Руководство', 'Sosyal medya': 'Соцсети', 'Üç ilke': 'Три принципа', 'Gizlilik & Güvenlik': 'Приватность и безопасность', 'Kullanıcı Sözleşmesi': 'Пользовательское соглашение',
             "Instagram'da takip et": 'Следите в Instagram', 'Tarafından Bloodline INC.': 'От Bloodline INC.',
             'Yapay zeka sohbetinden bağımsız üretim atölyesi — üret, dinle, indir.': 'Мастерская создания независимо от чата с ИИ — создавайте, слушайте, скачивайте.',
             'NesilAI, Bloodline üzerinde çalışan bir yapay zeka asistanıdır; Acsida tarafından geliştirilmiştir. Sohbet, görsel üretimi, ses↔yazı ve': 'NesilAI — ИИ-ассистент на Bloodline; разработан Acsida. Чат, создание изображений, голос↔текст и',
@@ -395,8 +395,22 @@
             '{n} ses kullanılabilir ({k} Türkçe) — tüm diller listelenir; tarayıcının desteklediği sesler cihazına göre değişir.': '{n} голосов доступно ({k} турецких) — список полный; доступные голоса зависят от браузера и устройства.',
             'Yanıtları otomatik olarak seslendir': 'Автоматически озвучивать ответы',
             'Bildirim sesleri — yanıt gelince iMessage tarzı çal': 'Звуки уведомлений — стиль iMessage при ответе',
-            'Göster': 'Показать', 'Gizle': 'Скрыть'
+            'Göster': 'Показать', 'Gizle': 'Скрыть',
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler (on/off)': 'Режим честности — без похвалы; если идея не выгорит, скажет прямо (вкл/выкл)',
+            'Dürüstlük modu açık. Bundan sonra süsleme yok: fikir kötüyse "tutmaz" derim, riskleri baştan söylerim, yapılabileceğini sanmıyorsam açıkça söylerim. Övgü yerine gerçek değerlendirim olur.': 'Режим честности включён. Без прикрас: если идея плохая, скажу «не взлетит», сразу назову риски; если что-то не получится — скажу прямо. Вместо похвалы — реальная оценка.',
+            'Dürüstlük modu kapandı. Standart asistan tonuna döndüm.': 'Режим честности выключен. Возвращаюсь к стандартному тону.',
+            'ACSMOD açık (geliştirici modu). Gereksiz uyarı ve moral dersi yok; teknik konuları doğrudan anlatırım. Yasadışı ya da zarar verici işler yine olmaz — o kısımları reddederim.': 'ACSMOD включён (режим разработчика). Без лишних предупреждений и нравоучений; технические темы объясняю прямо. Незаконное или вредоносное по-прежнему отклоняю.',
+            'ACSMOD kapandı. Standart tona döndüm.': 'ACSMOD выключен. Возвращаюсь к стандартному тону.',
+            'Motor sağlık testi çalışıyor…': 'Проверка работоспособности движков…',
+            'Sohbet motoru: ÇALIŞIYOR': 'Чат-движок: РАБОТАЕТ',
+            'Sohbet motoru: HATA': 'Чат-движок: ОШИБКА',
+            'Görsel motoru: ÇALIŞIYOR': 'Графический движок: РАБОТАЕТ',
+            'Görsel motoru: HATA': 'Графический движок: ОШИБКА',
+            'zaman aşımı': 'тайм-аут',
+            'bilinmeyen hata': 'неизвестная ошибка',
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'Режим честности — без похвалы; говорит прямо, если идея не выгорит, и не скрывает риски'
         },
+
         es: {
             '[yerel]': '[local]', '[çevrimiçi]': '[en línea]',
             "İsteğe bağlı hız anahtarı: token.llm7.io — limiti yükseltir, zorunlu değildir.": "Clave de velocidad opcional: token.llm7.io — amplía límites, no obligatoria.",
@@ -501,7 +515,7 @@
             'Kendini tanıt': 'Preséntate', 'NesilAI Bilgileri': 'Acerca de NesilAI', 'Sesli sohbet': 'Chat de voz',
             'Yapay zeka motoru, gizlilik ve kullanım kılavuzu — hepsi burada.': 'Motor de IA, privacidad y guía de uso — todo aquí.',
             'NesilAI nedir?': '¿Qué es NesilAI?', 'Gizlilik: verileriniz nerede?': 'Privacidad: ¿dónde están tus datos?',
-            'Yapay zeka motoru': 'Motor de IA', 'Kullanım kılavuzu': 'Guía de uso', 'Sosyal medya': 'Redes sociales',
+            'Yapay zeka motoru': 'Motor de IA', 'Kullanım kılavuzu': 'Guía de uso', 'Sosyal medya': 'Redes sociales', 'Üç ilke': 'Tres principios', 'Gizlilik & Güvenlik': 'Privacidad y seguridad', 'Kullanıcı Sözleşmesi': 'Acuerdo de usuario',
             "Instagram'da takip et": 'Síguenos en Instagram', 'Tarafından Bloodline INC.': 'Por Bloodline INC.',
             'Yapay zeka sohbetinden bağımsız üretim atölyesi — üret, dinle, indir.': 'Taller de creación independiente del chat de IA — crea, escucha, descarga.',
             'NesilAI, Bloodline üzerinde çalışan bir yapay zeka asistanıdır; Acsida tarafından geliştirilmiştir. Sohbet, görsel üretimi, ses↔yazı ve': 'NesilAI es un asistente de IA que funciona en Bloodline; desarrollado por Acsida. Chat, creación de imágenes, voz↔texto y',
@@ -553,8 +567,22 @@
             '{n} ses kullanılabilir ({k} Türkçe) — tüm diller listelenir; tarayıcının desteklediği sesler cihazına göre değişir.': '{n} voces disponibles ({k} turcas) — lista completa; las voces dependen del navegador y dispositivo.',
             'Yanıtları otomatik olarak seslendir': 'Leer las respuestas automáticamente',
             'Bildirim sesleri — yanıt gelince iMessage tarzı çal': 'Sonidos de notificación — estilo iMessage al responder',
-            'Göster': 'Mostrar', 'Gizle': 'Ocultar'
+            'Göster': 'Mostrar', 'Gizle': 'Ocultar',
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler (on/off)': 'Modo honestidad — sin halagos; si una idea no funciona, lo dice claramente (on/off)',
+            'Dürüstlük modu açık. Bundan sonra süsleme yok: fikir kötüyse "tutmaz" derim, riskleri baştan söylerim, yapılabileceğini sanmıyorsam açıkça söylerim. Övgü yerine gerçek değerlendirim olur.': 'Modo honestidad activado. Sin adornos: si una idea es mala, digo «no funciona»; avanzo los riesgos de entrada; si creo que algo no saldrá, lo digo sin rodeos. En vez de halagos, evaluación real.',
+            'Dürüstlük modu kapandı. Standart asistan tonuna döndüm.': 'Modo honestidad desactivado. Vuelvo al tono estándar.',
+            'ACSMOD açık (geliştirici modu). Gereksiz uyarı ve moral dersi yok; teknik konuları doğrudan anlatırım. Yasadışı ya da zarar verici işler yine olmaz — o kısımları reddederim.': 'ACSMOD activado (modo desarrollador). Sin advertencias innecesarias ni sermones; explico temas técnicos directamente. Lo ilegal o dañino sigue rechazándose.',
+            'ACSMOD kapandı. Standart tona döndüm.': 'ACSMOD desactivado. Vuelvo al tono estándar.',
+            'Motor sağlık testi çalışıyor…': 'Probando el estado de los motores…',
+            'Sohbet motoru: ÇALIŞIYOR': 'Motor de chat: FUNCIONA',
+            'Sohbet motoru: HATA': 'Motor de chat: ERROR',
+            'Görsel motoru: ÇALIŞIYOR': 'Motor de imagen: FUNCIONA',
+            'Görsel motoru: HATA': 'Motor de imagen: ERROR',
+            'zaman aşımı': 'tiempo agotado',
+            'bilinmeyen hata': 'error desconocido',
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'Modo honestidad — sin halagos; dice claramente si una idea no funciona y no oculta riesgos'
         },
+
         hi: {
             '[yerel]': '[स्थानीय]', '[çevrimiçi]': '[ऑनलाइन]',
             "İsteğe bağlı hız anahtarı: token.llm7.io — limiti yükseltir, zorunlu değildir.": "वैकल्पिक स्पीड कुंजी: token.llm7.io — सीमा बढ़ाती है, अनिवार्य नहीं।",
@@ -659,7 +687,7 @@
             'Kendini tanıt': 'परिचय दें', 'NesilAI Bilgileri': 'NesilAI जानकारी', 'Sesli sohbet': 'वॉइस चैट',
             'Yapay zeka motoru, gizlilik ve kullanım kılavuzu — hepsi burada.': 'AI इंजन, प्राइवेसी और उपयोग गाइड — सब यहाँ।',
             'NesilAI nedir?': 'NesilAI क्या है?', 'Gizlilik: verileriniz nerede?': 'प्राइवेसी: आपका डेटा कहाँ है?',
-            'Yapay zeka motoru': 'AI इंजन', 'Kullanım kılavuzu': 'उपयोग गाइड', 'Sosyal medya': 'सोशल मीडिया',
+            'Yapay zeka motoru': 'AI इंजन', 'Kullanım kılavuzu': 'उपयोग गाइड', 'Sosyal medya': 'सोशल मीडिया', 'Üç ilke': 'तीन सिद्धांत', 'Gizlilik & Güvenlik': 'गोपनीयता और सुरक्षा', 'Kullanıcı Sözleşmesi': 'उपयोगकर्ता अनुबंध',
             "Instagram'da takip et": 'Instagram पर फ़ॉलो करें', 'Tarafından Bloodline INC.': 'Bloodline INC. द्वारा',
             'Yapay zeka sohbetinden bağımsız üretim atölyesi — üret, dinle, indir.': 'AI चैट से स्वतंत्र निर्माण स्टूडियो — बनाएँ, सुनें, डाउनलोड करें।',
             'NesilAI, Bloodline üzerinde çalışan bir yapay zeka asistanıdır; Acsida tarafından geliştirilmiştir. Sohbet, görsel üretimi, ses↔yazı ve': 'NesilAI, Bloodline पर चलने वाला AI असिस्टेंट है; Acsida द्वारा विकसित। चैट, चित्र निर्माण, आवाज़↔टेक्स्ट और',
@@ -711,8 +739,22 @@
             '{n} ses kullanılabilir ({k} Türkçe) — tüm diller listelenir; tarayıcının desteklediği sesler cihazına göre değişir.': '{n} आवाज़ें उपलब्ध ({k} तुर्की) — पूरी सूची; उपलब्ध आवाज़ें ब्राउज़र/डिवाइस पर निर्भर।',
             'Yanıtları otomatik olarak seslendir': 'उत्तर स्वतः बोलकर सुनाएँ',
             'Bildirim sesleri — yanıt gelince iMessage tarzı çal': 'सूचना ध्वनियाँ — जवाब पर iMessage शैली',
-            'Göster': 'दिखाएँ', 'Gizle': 'छिपाएँ'
+            'Göster': 'दिखाएँ', 'Gizle': 'छिपाएँ',
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler (on/off)': 'ईमानदारी मोड — तारीफ़ नहीं; विचार काम न आए तो साफ़ कहेगा (on/off)',
+            'Dürüstlük modu açık. Bundan sonra süsleme yok: fikir kötüyse "tutmaz" derim, riskleri baştan söylerim, yapılabileceğini sanmıyorsam açıkça söylerim. Övgü yerine gerçek değerlendirim olur.': 'ईमानदारी मोड चालू। अब सजावट नहीं: विचार कमज़ोर है तो साफ़ कहूँगा "नहीं चलेगा", जोखिम पहले ही बताऊँगा; अगर कुछ संभव नहीं लगता तो खुलकर कहूँगा। तारीफ़ की जगह असली समीक्षा।',
+            'Dürüstlük modu kapandı. Standart asistan tonuna döndüm.': 'ईमानदारी मोड बंद। सामान्य अंदाज़ पर लौट गया।',
+            'ACSMOD açık (geliştirici modu). Gereksiz uyarı ve moral dersi yok; teknik konuları doğrudan anlatırım. Yasadışı ya da zarar verici işler yine olmaz — o kısımları reddederim.': 'ACSMOD चालू (डेवलपर मोड)। फ़ालतू चेतावनी और उपदेश नहीं; तकनीकी विषय सीधे समझाऊँगा। अवैध या हानिकारक काम फिर भी अस्वीकार।',
+            'ACSMOD kapandı. Standart tona döndüm.': 'ACSMOD बंद। सामान्य अंदाज़ पर लौट गया।',
+            'Motor sağlık testi çalışıyor…': 'इंजन स्वास्थ्य जाँच चल रही है…',
+            'Sohbet motoru: ÇALIŞIYOR': 'चैट इंजन: चालू',
+            'Sohbet motoru: HATA': 'चैट इंजन: त्रुटि',
+            'Görsel motoru: ÇALIŞIYOR': 'इमेज इंजन: चालू',
+            'Görsel motoru: HATA': 'इमेज इंजन: त्रुटि',
+            'zaman aşımı': 'समय समाप्त',
+            'bilinmeyen hata': 'अज्ञात त्रुटि',
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'ईमानदारी मोड — तारीफ़ नहीं; विचार काम न आए तो साफ़ कहता है, जोखिम नहीं छिपाता'
         },
+
         de: {
             '[yerel]': '[lokal]', '[çevrimiçi]': '[online]',
             "İsteğe bağlı hız anahtarı: token.llm7.io — limiti yükseltir, zorunlu değildir.": "Optionaler Geschwindigkeitsschlüssel: token.llm7.io — erhöht Limits, nicht Pflicht.",
@@ -817,7 +859,7 @@
             'Kendini tanıt': 'Vorstellen', 'NesilAI Bilgileri': 'Über NesilAI', 'Sesli sohbet': 'Sprachchat',
             'Yapay zeka motoru, gizlilik ve kullanım kılavuzu — hepsi burada.': 'KI-Engine, Datenschutz und Anleitung — alles hier.',
             'NesilAI nedir?': 'Was ist NesilAI?', 'Gizlilik: verileriniz nerede?': 'Datenschutz: Wo sind Ihre Daten?',
-            'Yapay zeka motoru': 'KI-Engine', 'Kullanım kılavuzu': 'Anleitung', 'Sosyal medya': 'Soziale Medien',
+            'Yapay zeka motoru': 'KI-Engine', 'Kullanım kılavuzu': 'Anleitung', 'Sosyal medya': 'Soziale Medien', 'Üç ilke': 'Drei Grundsätze', 'Gizlilik & Güvenlik': 'Datenschutz & Sicherheit', 'Kullanıcı Sözleşmesi': 'Nutzungsvereinbarung',
             "Instagram'da takip et": 'Folge uns auf Instagram', 'Tarafından Bloodline INC.': 'Von Bloodline INC.',
             'Yapay zeka sohbetinden bağımsız üretim atölyesi — üret, dinle, indir.': 'Erstellungswerkstatt unabhängig vom KI-Chat — erstellen, anhören, herunterladen.',
             'NesilAI, Bloodline üzerinde çalışan bir yapay zeka asistanıdır; Acsida tarafından geliştirilmiştir. Sohbet, görsel üretimi, ses↔yazı ve': 'NesilAI ist ein KI-Assistent auf Bloodline; entwickelt von Acsida. Chat, Bilderstellung, Sprache↔Text und',
@@ -869,8 +911,22 @@
             '{n} ses kullanılabilir ({k} Türkçe) — tüm diller listelenir; tarayıcının desteklediği sesler cihazına göre değişir.': '{n} Stimmen verfügbar ({k} türkische) — vollständige Liste; verfügbarer Stimmen je nach Browser/Gerät.',
             'Yanıtları otomatik olarak seslendir': 'Antworten automatisch vorlesen',
             'Bildirim sesleri — yanıt gelince iMessage tarzı çal': 'Benachrichtigungstöne — im iMessage-Stil bei Antwort',
-            'Göster': 'Anzeigen', 'Gizle': 'Verbergen'
+            'Göster': 'Anzeigen', 'Gizle': 'Verbergen',
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler (on/off)': 'Ehrlichkeitsmodus — kein Lob; wenn eine Idee nichts taugt, sagt er es klar (an/aus)',
+            'Dürüstlük modu açık. Bundan sonra süsleme yok: fikir kötüyse "tutmaz" derim, riskleri baştan söylerim, yapılabileceğini sanmıyorsam açıkça söylerim. Övgü yerine gerçek değerlendirim olur.': 'Ehrlichkeitsmodus aktiv. Kein Kitsch mehr: Ist eine Idee schlecht, sage ich „taugt nichts“, nenne die Risiken vorab; halte ich etwas für unmöglich, sage ich es offen. Statt Lob: echte Einschätzung.',
+            'Dürüstlük modu kapandı. Standart asistan tonuna döndüm.': 'Ehrlichkeitsmodus aus. Zurück zum Standardton.',
+            'ACSMOD açık (geliştirici modu). Gereksiz uyarı ve moral dersi yok; teknik konuları doğrudan anlatırım. Yasadışı ya da zarar verici işler yine olmaz — o kısımları reddederim.': 'ACSMOD aktiv (Entwicklermodus). Keine überflüssigen Warnungen und Moralpredigten; technische Themen direkt erklärt. Illegales oder Schädliches bleibt abgelehnt.',
+            'ACSMOD kapandı. Standart tona döndüm.': 'ACSMOD aus. Zurück zum Standardton.',
+            'Motor sağlık testi çalışıyor…': 'Motoren-Gesundheitsprüfung läuft…',
+            'Sohbet motoru: ÇALIŞIYOR': 'Chat-Engine: FUNKTIONIERT',
+            'Sohbet motoru: HATA': 'Chat-Engine: FEHLER',
+            'Görsel motoru: ÇALIŞIYOR': 'Bild-Engine: FUNKTIONIERT',
+            'Görsel motoru: HATA': 'Bild-Engine: FEHLER',
+            'zaman aşımı': 'Zeitüberschreitung',
+            'bilinmeyen hata': 'unbekannter Fehler',
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'Ehrlichkeitsmodus — kein Lob; sagt klar, wenn eine Idee nichts taugt, und verschweigt keine Risiken'
         },
+
         en: {
             '[yerel]': '[Local]',
             '[çevrimiçi]': '[Online]',
@@ -1056,7 +1112,7 @@
             'NesilAI nedir?': 'What is NesilAI?',
             'Gizlilik: verileriniz nerede?': 'Privacy: where is your data?',
             'Yapay zeka motoru': 'AI engine',
-            'Kullanım kılavuzu': 'User guide',
+            'Kullanım kılavuzu': 'User guide', 'Üç ilke': 'Three principles', 'Gizlilik & Güvenlik': 'Privacy & Security', 'Kullanıcı Sözleşmesi': 'User Agreement',
             'Sosyal medya': 'Social media',
             'Yapay zeka sohbetinden bağımsız üretim atölyesi — üret, dinle, indir.': 'A creation workshop independent of AI chat — create, listen, download.',
             'NesilAI, Bloodline üzerinde çalışan bir yapay zeka asistanıdır; Acsida tarafından geliştirilmiştir. Sohbet, görsel üretimi, ses↔yazı ve': 'NesilAI is an AI assistant running on Bloodline; developed by Acsida. It offers chat, image generation, speech↔text and',
@@ -1136,6 +1192,19 @@
             '\\\'nda tutulur — sunucuya gönderilmez.': ' — not sent to a server.',
             'IndexedDB\\\'de saklanır; sohbeti silmek bunları da silmez.': 'stored in IndexedDB; deleting the chat doesn\'t remove them.',
             'Görsel: Pollinations + AI Horde (bağımsız yedek) — Türkçe promptlar otomatik İngilizce\\\'ye çevrilir.': 'Images: Pollinations + AI Horde (independent backup) — Turkish prompts are auto-translated to English.',
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler (on/off)': 'TRUSTME mode — no flattery; says plainly when an idea will not fly (on/off)',
+            'Dürüstlük modu açık. Bundan sonra süsleme yok: fikir kötüyse "tutmaz" derim, riskleri baştan söylerim, yapılabileceğini sanmıyorsam açıkça söylerim. Övgü yerine gerçek değerlendirim olur.': 'TRUSTME mode on. No sugarcoating: if an idea is weak I will say "it will not fly", flag the risks upfront, and state plainly when something is not feasible. Real assessment instead of praise.',
+            'Dürüstlük modu kapandı. Standart asistan tonuna döndüm.': 'TRUSTME mode off. Back to the standard tone.',
+            'ACSMOD açık (geliştirici modu). Gereksiz uyarı ve moral dersi yok; teknik konuları doğrudan anlatırım. Yasadışı ya da zarar verici işler yine olmaz — o kısımları reddederim.': 'ACSMOD on (developer mode). No needless warnings or moral lectures; technical topics explained directly. Illegal or harmful requests are still refused.',
+            'ACSMOD kapandı. Standart tona döndüm.': 'ACSMOD off. Back to the standard tone.',
+            'Motor sağlık testi çalışıyor…': 'Running engine health check…',
+            'Sohbet motoru: ÇALIŞIYOR': 'Chat engine: OK',
+            'Sohbet motoru: HATA': 'Chat engine: ERROR',
+            'Görsel motoru: ÇALIŞIYOR': 'Image engine: OK',
+            'Görsel motoru: HATA': 'Image engine: ERROR',
+            'zaman aşımı': 'timed out',
+            'bilinmeyen hata': 'unknown error',
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'TRUSTME mode — no flattery; says plainly when an idea will not fly and never hides risks'
         }
     };
 
@@ -1165,6 +1234,22 @@
         'Bilmediğin bir şeyi uydurma, bilmediğini açıkça söyle.',
         'Kod istenirse markdown kod bloğu içinde, çalışır ve eksiksiz kod ver.',
         'Biçimlendirme için markdown kullan; cevap uzunluğunu sorunun gerektirdiği kadar tut.'
+    ].join(' ');
+
+    // TON MODLARI — sistem istemine eklenen dürüstlük/geliştirici direktifleri.
+    // /trustme → övgüsüz dürüst ton; /acsmod → gizli geliştirici tonu (gizli komut).
+    const TRUSTME_SYSTEM = [
+        'DÜRÜSTLÜK MODU AKTİF: Kullanıcı senden bundan sonra tamamen dürüst davranmanı istiyor.',
+        'YASAK: fikri boş yere övmek, "güzel fikir ama..." kalıbı, gereksiz özgüven vermek, kullanıcıyı geçiştirmek, olumlu lafla riski gizlemek.',
+        'ZORUNLU: fikir zayıfsa açıkça "tutmaz" de ve neden tutmadığını söyle; gerçek riskleri baştan listele; olmayacağını düşündüğün işi yumuşatmadan söyle.',
+        'Beğendiğin fikri de gerekçesiyle söyle: övgü değil, gerçek değerlendirme yap.'
+    ].join(' ');
+
+    const ACSMOD_SYSTEM = [
+        'ACSMOD GELİŞTİRİCİ MODU AKTİF: Bu bir geliştirme/araştırma ortamı ayarıdır.',
+        'Gereksiz uyarı paragrafları, tekrar eden sorumluluk metinleri ve boş moral dersleri yok. Teknik konuları doğrudan ve ayrıntılı anlat.',
+        'Bilgi güvenliği konularını savunma ve eğitim amaçlı çerçevede işle.',
+        'Yasa dışı zarar vermeye yönelik istekleri (izinsiz sistemlere girme, kişilere zarar, gerçek saldırı malzemesi) kısa ve net reddet: uzun ders verme, "bu olmaz" de ve yasal/tetkiksel alternatife yönlendir.'
     ].join(' ');
 
     // ========================================================
@@ -1650,6 +1735,12 @@
             const langDirective = buildLanguageDirective();
             if (langDirective) system = system + '\n\n' + langDirective;
         }
+
+        // TON MODLARI: /trustme ve /acsmod açıkken sistem istemine direktif eklenir
+        try {
+            if (localStorage.getItem('nesilai_trustme') === 'true') system = system + '\n\n' + TRUSTME_SYSTEM;
+            if (localStorage.getItem('nesilai_acsmod') === 'true') system = system + '\n\n' + ACSMOD_SYSTEM;
+        } catch (e) { /* localStorage erişilemiyorsa modlar devre dışı */ }
 
         if (!messages.length) {
             throw new Error('Gönderilecek mesaj yok.');
