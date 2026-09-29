@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="assets/logo.png?v=2">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
-    <link rel="stylesheet" href="css/style.css?v=21">
+    <link rel="stylesheet" href="css/style.css?v=22">
 </head>
 <body>
 
@@ -696,6 +696,38 @@
 </div>
 
 <!-- ============================================================== -->
+<!-- ============================================================== -->
+<!-- Kota — günlük limit dolduğunda açılan uyarı                      -->
+<!-- ============================================================== -->
+<div id="quota-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="quota-title">
+    <div class="modal-backdrop" id="quota-backdrop"></div>
+    <div class="modal-card quota-card">
+        <div class="quota-glow" aria-hidden="true"></div>
+        <header class="quota-head">
+            <svg class="icon quota-icon" aria-hidden="true"><use href="#i-coin"/></svg>
+            <h2 id="quota-title">NesilAI Usage Reached</h2>
+            <p class="quota-sub" id="quota-sub">Bugünlük ücretsiz kullanımın bitti.</p>
+        </header>
+        <div class="quota-timer">
+            <span class="quota-timer-label">Yenilenmeye</span>
+            <span class="quota-timer-value" id="quota-timer">--:--:--</span>
+            <span class="quota-timer-label">kaldı</span>
+        </div>
+        <p class="quota-note" id="quota-note">Limit her 5 saatte yenilenir. Uygulamaları kullanırsan limitler sınırsızdır.</p>
+        <div class="quota-actions">
+            <a class="btn btn-primary quota-dl" href="https://github.com/AlperenUnalHacking/nesilai/releases/latest/download/NesilAI-Android.apk" target="_blank" rel="noopener noreferrer">
+                <svg class="icon icon-fill" aria-hidden="true"><use href="#i-android"/></svg>
+                <span>Android uygulaması</span>
+            </a>
+            <a class="btn btn-outline quota-dl" href="https://github.com/AlperenUnalHacking/NesilAI-PC/releases/latest/download/NesilAI-Setup.exe" target="_blank" rel="noopener noreferrer">
+                <svg class="icon icon-fill" aria-hidden="true"><use href="#i-windows"/></svg>
+                <span>Bilgisayar uygulaması</span>
+            </a>
+        </div>
+        <button id="quota-close-btn" class="btn btn-ghost btn-block">Tamam</button>
+    </div>
+</div>
+
 <!-- Ayarlar Modalı                                                  -->
 <!-- ============================================================== -->
 <div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
@@ -961,7 +993,7 @@
 <script src="js/memory.js?v=m3"></script>
 <script src="js/research.js?v=r1"></script>
 <script src="js/projectfiles.js?v=p2"></script>
-<script src="js/ai.js?v=ai17"></script>
+<script src="js/ai.js?v=ai18"></script>
 <script src="js/tts.js?v=links3"></script>
 <script src="js/stt.js?v=stt2"></script>
 <script src="js/openview-capture.js?v=ov9"></script>
@@ -969,6 +1001,6 @@
 <script src="js/nesilcode.js?v=nc7"></script>
 <script src="js/textToPhoto.js?v=tr9"></script>
 <script src="js/photoToText.js?v=pool"></script>
-<script src="js/app.js?v=ui25"></script>
+<script src="js/app.js?v=ui26"></script>
 </body>
 </html>

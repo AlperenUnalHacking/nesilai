@@ -408,7 +408,11 @@
             'Görsel motoru: HATA': 'Графический движок: ОШИБКА',
             'zaman aşımı': 'тайм-аут',
             'bilinmeyen hata': 'неизвестная ошибка',
-            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'Режим честности — без похвалы; говорит прямо, если идея не выгорит, и не скрывает риски'
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'Режим честности — без похвалы; говорит прямо, если идея не выгорит, и не скрывает риски',
+            'Günlük kullanım sınırına ulaştın. 5 saat sonra tekrar dene.': 'Дневной лимит исчерпан. Повтори попытку через 5 часов.',
+            'günlük ücretsiz hakkın doldu.': 'дневной бесплатный лимит исчерпан.',
+            'Bugünlük ücretsiz kullanımın bitti.': 'Бесплатный лимит на сегодня исчерпан.',
+            'Limit her 5 saatte yenilenir. Uygulamaları kullanırsan limitler sınırsızdır.': 'Лимит обновляется каждые 5 часов. В приложениях лимиты не ограничены.'
         },
 
         es: {
@@ -580,7 +584,11 @@
             'Görsel motoru: HATA': 'Motor de imagen: ERROR',
             'zaman aşımı': 'tiempo agotado',
             'bilinmeyen hata': 'error desconocido',
-            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'Modo honestidad — sin halagos; dice claramente si una idea no funciona y no oculta riesgos'
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'Modo honestidad — sin halagos; dice claramente si una idea no funciona y no oculta riesgos',
+            'Günlük kullanım sınırına ulaştın. 5 saat sonra tekrar dene.': 'Límite diario alcanzado. Inténtalo de nuevo en 5 horas.',
+            'günlük ücretsiz hakkın doldu.': 'cuota gratuita diaria agotada.',
+            'Bugünlük ücretsiz kullanımın bitti.': 'Tu uso gratuito de hoy se ha agotado.',
+            'Limit her 5 saatte yenilenir. Uygulamaları kullanırsan limitler sınırsızdır.': 'El límite se renueva cada 5 horas. Con las apps, los límites son ilimitados.'
         },
 
         hi: {
@@ -752,7 +760,11 @@
             'Görsel motoru: HATA': 'इमेज इंजन: त्रुटि',
             'zaman aşımı': 'समय समाप्त',
             'bilinmeyen hata': 'अज्ञात त्रुटि',
-            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'ईमानदारी मोड — तारीफ़ नहीं; विचार काम न आए तो साफ़ कहता है, जोखिम नहीं छिपाता'
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'ईमानदारी मोड — तारीफ़ नहीं; विचार काम न आए तो साफ़ कहता है, जोखिम नहीं छिपाता',
+            'Günlük kullanım sınırına ulaştın. 5 saat sonra tekrar dene.': 'दैनिक सीमा पूरी। 5 घंटे बाद फिर कोशिश करें।',
+            'günlük ücretsiz hakkın doldu.': 'का दैनिक मुफ़्त कोटा खत्म।',
+            'Bugünlük ücretsiz kullanımın bitti.': 'आज का मुफ़्त उपयोग समाप्त।',
+            'Limit her 5 saatte yenilenir. Uygulamaları kullanırsan limitler sınırsızdır.': 'सीमा हर 5 घंटे में नवीनीकृत होती है। ऐप्स में सीमाएँ असीमित हैं।'
         },
 
         de: {
@@ -924,7 +936,11 @@
             'Görsel motoru: HATA': 'Bild-Engine: FEHLER',
             'zaman aşımı': 'Zeitüberschreitung',
             'bilinmeyen hata': 'unbekannter Fehler',
-            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'Ehrlichkeitsmodus — kein Lob; sagt klar, wenn eine Idee nichts taugt, und verschweigt keine Risiken'
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'Ehrlichkeitsmodus — kein Lob; sagt klar, wenn eine Idee nichts taugt, und verschweigt keine Risiken',
+            'Günlük kullanım sınırına ulaştın. 5 saat sonra tekrar dene.': 'Tageslimit erreicht. Versuche es in 5 Stunden erneut.',
+            'günlük ücretsiz hakkın doldu.': 'tägliches Gratis-Kontingent aufgebraucht.',
+            'Bugünlük ücretsiz kullanımın bitti.': 'Dein kostenloses Nutzungskontingent für heute ist aufgebraucht.',
+            'Limit her 5 saatte yenilenir. Uygulamaları kullanırsan limitler sınırsızdır.': 'Das Limit erneuert sich alle 5 Stunden. In den Apps sind die Limits unbegrenzt.'
         },
 
         en: {
@@ -1204,7 +1220,11 @@
             'Görsel motoru: HATA': 'Image engine: ERROR',
             'zaman aşımı': 'timed out',
             'bilinmeyen hata': 'unknown error',
-            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'TRUSTME mode — no flattery; says plainly when an idea will not fly and never hides risks'
+            'Dürüstlük modu — övgü yok; fikir tutmuyorsa açıkça söyler, riskleri gizlemez': 'TRUSTME mode — no flattery; says plainly when an idea will not fly and never hides risks',
+            'Günlük kullanım sınırına ulaştın. 5 saat sonra tekrar dene.': 'Daily usage reached. Try again in 5 hours, or install NesilAI\'s apps.',
+            'günlük ücretsiz hakkın doldu.': 'daily free usage reached.',
+            'Bugünlük ücretsiz kullanımın bitti.': 'Your free usage for today has ended.',
+            'Limit her 5 saatte yenilenir. Uygulamaları kullanırsan limitler sınırsızdır.': 'The limit renews every 5 hours. NesilAI\'s apps have unlimited usage.'
         }
     };
 

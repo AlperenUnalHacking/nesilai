@@ -429,6 +429,7 @@
                 const parsed = JSON.parse(saved);
                 currentSubscription = {
                     plan: 'free',
+                    usageWindowStart: typeof parsed.usageWindowStart === 'number' ? parsed.usageWindowStart : 0,
                     usage: Object.assign({ images: 0, chats: 0, stt: 0, tts: 0 }, parsed.usage)
                 };
             }
@@ -439,15 +440,24 @@
             };
         }
 
-        // Günlük sıfırlama: takvim günü değişince kotalar sıfırlanır
-        const today = new Date().toDateString();
-        if (currentSubscription.usageDay !== today) {
-            currentSubscription.usageDay = today;
+        // Yenileme: 5 saatlik pencere. Limit dolduğunda uyarı "5 saat sonra"
+        // der; sayaç da gerçekten son hareket + 5 saate göre işler.
+        const RESET_MS = 5 * 60 * 60 * 1000;
+        const last = currentSubscription.usageWindowStart || 0;
+        if (Date.now() - last >= RESET_MS) {
+            currentSubscription.usageWindowStart = Date.now();
             currentSubscription.usage = { images: 0, chats: 0, stt: 0, tts: 0, music: 0, video: 0 };
             localStorage.setItem('nesilai_sub_v2', JSON.stringify(currentSubscription));
         }
 
         updateSubscriptionUI();
+    }
+
+    // Kota penceresinin kalan süresi (ms) — son hareket + 5 saat
+    function getQuotaResetMs() {
+        const RESET_MS = 5 * 60 * 60 * 1000;
+        const last = currentSubscription.usageWindowStart || 0;
+        return Math.max(0, last + RESET_MS - Date.now());
     }
 
     function saveSubscription() {
@@ -468,7 +478,7 @@
 
     function checkQuota(type) {
         // Abonelik sistemi kaldırıldı: web'de tek ücretsiz plan (100'er),
-        // uygulamalarda sınırsız. Limit bitince bilgi modalı açılır.
+        // uygulamalarda sınırsız. Limit bitince kota modalı açılır.
         const plan = getPlan();
         const current = currentSubscription.usage[type] || 0;
         const limit = plan.limits[type];
@@ -476,20 +486,49 @@
         if (limit === Infinity) return true;
 
         if (current >= limit) {
-            const typeLabels = {
-                images: 'Görsel oluşturma',
-                chats: 'Sohbet mesajı',
-                stt: 'Sesi yazıya çevirme (Mikrofon)',
-                tts: 'Yazıyı sese çevirme (Dinleme)',
-                music: 'Müzik/ses üretimi',
-                video: 'Video üretimi'
-            };
-            const label = typeLabels[type] || type;
-            showToast(`${label} günlük kullanım sınırına ulaştı (${current}/${limit}). Yarın sıfırlanır.`, 'warning');
-            openInfoModal();
+            openQuotaModal(type);
             return false;
         }
         return true;
+    }
+
+    // Kota modalı — "NesilAI Usage Reached" uyarısı + 5 saatlik yenileme sayacı
+    let quotaTimerInterval = null;
+    function openQuotaModal(type) {
+        const modal = document.getElementById('quota-modal');
+        if (!modal) { showToast(t('Günlük kullanım sınırına ulaştın. 5 saat sonra tekrar dene.'), 'warning'); return; }
+        const typeLabels = {
+            images: t('Görsel oluşturma'),
+            chats: t('Sohbet mesajı'),
+            stt: t('Sesi yazıya çevirme (Mikrofon)'),
+            tts: t('Yazıyı sese çevirme (Dinleme)'),
+            music: t('Müzik/ses üretimi'),
+            video: t('Video üretimi')
+        };
+        const sub = document.getElementById('quota-sub');
+        if (sub) sub.textContent = typeLabels[type] ? (typeLabels[type] + ' — ' + t('günlük ücretsiz hakkın doldu.')) : t('Bugünlük ücretsiz kullanımın bitti.');
+        startQuotaCountdown();
+        modal.classList.remove('hidden');
+        closeMobileSidebar();
+    }
+
+    function startQuotaCountdown() {
+        const el = document.getElementById('quota-timer');
+        if (!el) return;
+        if (quotaTimerInterval) clearInterval(quotaTimerInterval);
+        const tick = () => {
+            const ms = getQuotaResetMs();
+            if (ms <= 0) {
+                el.textContent = '--:--:--';
+                return;
+            }
+            const h = Math.floor(ms / 3600000);
+            const m = Math.floor((ms % 3600000) / 60000);
+            const s = Math.floor((ms % 60000) / 1000);
+            el.textContent = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        };
+        tick();
+        quotaTimerInterval = setInterval(tick, 1000);
     }
 
     function incrementQuota(type) {
@@ -4283,6 +4322,14 @@
         if (sidebarInfoBtn) sidebarInfoBtn.addEventListener('click', openInfoModal);
         if (closeInfoBtn) closeInfoBtn.addEventListener('click', closeInfoModal);
         if (infoBackdrop) infoBackdrop.addEventListener('click', closeInfoModal);
+
+        // Kota modalı
+        const quotaModal = document.getElementById('quota-modal');
+        const quotaClose = document.getElementById('quota-close-btn');
+        const quotaBackdrop = document.getElementById('quota-backdrop');
+        if (quotaClose) quotaClose.addEventListener('click', () => quotaModal.classList.add('hidden'));
+        if (quotaBackdrop) quotaBackdrop.addEventListener('click', () => quotaModal.classList.add('hidden'));
+
 
         // Kendini Tanıt — gizli bellek
         if (introduceBtn) introduceBtn.addEventListener('click', openIntroduceModal);
