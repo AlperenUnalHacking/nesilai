@@ -1,14 +1,12 @@
 /* ========================================================
-   NesilLLM — Yarış Uygulaması
+   NesilLLM — Klasik LLM Uygulaması
    --------------------------------------------------------
    /llm komutuyla açılır (kenar çubuğu düğmesi de var).
-   Soru iki modele paralel gider: Codestral ve MiniMax (llm7).
-   Sonra jüri (llm7 "openai" meta-modeli) her iki yanıtı
-   doğruluk/netlik/eksiksizlik üzerinden puanlar (0-10) ve
-   yüksek puan alan yanıt kazanır.
-   Kullanıcı, Ayarlar'dan eklediği kendi API modellerini de
-   yarışçı listesine ekleyebilir (providerId:model biçimi).
-   Hafıza: önceki soru-kazanan çiftleri yeni turn'a taşınır.
+   Tam bir LLM sohbeti: sor, yanıtı akış halinde al,
+   çok turlu geçmişle devam et. Yarış/jüri yok — düz, sade.
+   Sağlayıcı ve model seçimi kullanıcıda:
+   llm7 (minimax, codestral) + Ayarlar'dan eklenen kendi
+   API sağlayıcıları (Gemini, Groq, OpenRouter, OpenAI, Özel).
    ======================================================== */
 (function () {
     'use strict';
@@ -22,11 +20,11 @@
     var S = {
         open: false,
         busy: false,
-        racers: ['llm7:minimax-m2.7', 'llm7:codestral-latest'],
-        history: [],
-        turns: 0
+        providerId: 'llm7',
+        model: '',            // boş = sağlayıcının varsayılanı
+        history: []           // { role: 'user'|'assistant', text }
     };
-    var RACERS_KEY = 'nesilllm_racers_v1';
+    var SETTINGS_KEY = 'nesilllm_settings_v2';
     var HISTORY_KEY = 'nesilllm_history_v1';
     var abortController = null;
 
@@ -37,47 +35,39 @@
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    function loadRacers() {
+    function loadSettings() {
         try {
-            var raw = localStorage.getItem(RACERS_KEY);
+            var raw = localStorage.getItem(SETTINGS_KEY);
             if (raw) {
-                var arr = JSON.parse(raw);
-                if (Array.isArray(arr) && arr.length) {
-                    // Kaldırılan llm7 modelleri (GLM, Mistral Nemo) kayıtlıysa temizle
-                    arr = arr.filter(function (r) { return !/GLM|Nemo/i.test(String(r)); });
-                    if (arr.length) S.racers = arr.slice(0, 4);
-                }
+                var o = JSON.parse(raw);
+                if (o && o.providerId) S.providerId = o.providerId;
+                if (o && typeof o.model === 'string') S.model = o.model;
             }
         } catch (e) { /* varsayılan kalır */ }
     }
-    function saveRacers() {
-        try { localStorage.setItem(RACERS_KEY, JSON.stringify(S.racers)); } catch (e) {}
+    function saveSettings() {
+        try {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify({ providerId: S.providerId, model: S.model }));
+        } catch (e) {}
     }
     function loadHistory() {
         try {
             var raw = localStorage.getItem(HISTORY_KEY);
             if (raw) {
                 var arr = JSON.parse(raw);
-                if (Array.isArray(arr)) S.history = arr.slice(-30);
+                if (Array.isArray(arr)) S.history = arr.filter(function (m) {
+                    return m && (m.role === 'user' || m.role === 'assistant') && m.text;
+                }).slice(-40);
             }
         } catch (e) { /* sıfır */ }
     }
     function saveHistory() {
-        try { localStorage.setItem(HISTORY_KEY, JSON.stringify(S.history.slice(-30))); } catch (e) {}
+        try { localStorage.setItem(HISTORY_KEY, JSON.stringify(S.history.slice(-40))); } catch (e) {}
     }
 
     // ========================================================
-    // Sağlayıcı yardımcıları
+    // Sağlayıcı / Model yardımcıları
     // ========================================================
-    function findUiProvider(id) {
-        var list = AI.getUiProviders ? AI.getUiProviders() : [];
-        for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
-        return null;
-    }
-    function providerShort(id) {
-        var p = findUiProvider(id);
-        return p ? p.short : id;
-    }
     function listReadyProviders() {
         var list = AI.getUiProviders ? AI.getUiProviders() : [];
         return list.filter(function (p) {
@@ -85,181 +75,58 @@
             return r && r.ok && p.id !== 'pollinations';
         });
     }
-    function splitRacer(s) {
-        var idx = s.indexOf(':');
-        return idx < 0 ? { pid: s, model: '' } : { pid: s.slice(0, idx), model: s.slice(idx + 1) };
+    function providerShort(id) {
+        var list = AI.getUiProviders ? AI.getUiProviders() : [];
+        for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i].short;
+        return id;
     }
-    function joinRacer(pid, model) { return pid + ':' + model; }
-    function isRacerReady(pid) {
-        var r = AI.isReady(pid);
-        return !!(r && r.ok);
+    function providerSuggestions(pid) {
+        var p = AI.PROVIDERS[pid] || {};
+        var out = (p.suggestedModels || []).slice();
+        if (p.defaultModel && out.indexOf(p.defaultModel) === -1) out.unshift(p.defaultModel);
+        var stored = (AI.getSettings().models || {})[pid];
+        if (stored && out.indexOf(stored) === -1) out.push(stored);
+        return out;
     }
-    function racerLabel(s) {
-        var sp = splitRacer(s);
-        return providerShort(sp.pid) + ' · ' + (sp.model || 'varsayılan');
+    function currentLabel() {
+        return providerShort(S.providerId) + ' · ' + (S.model || 'varsayılan');
     }
 
     // ========================================================
-    // Sistem istemi + hafıza
+    // Çekirdek: klasik sohbet
     // ========================================================
-    function buildSystem() {
-        return 'NesilLLM yarış uygulamasın: net, doğru ve eksiksiz yanıt ver. Gereksiz uzatma, özü koru.';
-    }
-    function buildTurnMessages(question) {
+    function buildMessages(question) {
         var msgs = [];
-        S.history.forEach(function (h) {
-            if (h.q && h.winner) {
-                msgs.push({ role: 'user', content: h.q });
-                msgs.push({ role: 'assistant', content: h.winner });
-            }
+        S.history.slice(-40).forEach(function (m) {
+            msgs.push({ role: m.role, content: m.text });
         });
         msgs.push({ role: 'user', content: question });
         return msgs;
     }
-
-    // ========================================================
-    // Puanlama Jürisi
-    // ========================================================
-    var JUDGE_SYSTEM =
-        'Sen tarafsız bir yanıt jürisisin. Kullanıcının SORUSUNA verilen iki yanıtı karşılaştır. ' +
-        'Sadece geçerli JSON döndür: {"a":<0-10>,"b":<0-10>,"why":"<20 kelimeyi geçmeyen gerekçe>"} ' +
-        'Kriterler: doğruluk, netlik, eksiksizlik. Başka hiçbir metin yazma.';
-
-    function parseJudgeJson(raw) {
-        var t = String(raw || '');
-        var m = t.match(/\{[\s\S]*\}/);
-        if (!m) return null;
-        try {
-            var o = JSON.parse(m[0]);
-            var a = Math.max(0, Math.min(10, Math.round(Number(o.a) || 0)));
-            var b = Math.max(0, Math.min(10, Math.round(Number(o.b) || 0)));
-            var why = String(o.why || '').slice(0, 140);
-            if (!why) why = 'Jüri gerekçe vermedi.';
-            return { a: a, b: b, why: why };
-        } catch (e) { return null; }
+    function buildSystem() {
+        return 'NesilLLM: klasik bir yapay zekâ asistanısın. Net, doğru ve eksiksiz yanıt ver; gereksiz uzatma, özü koru.';
     }
 
-    async function judgeRace(q, ra, rb, signal) {
-        var judgePid = 'llm7', judgeModel = 'openai';
-        if (!isRacerReady(judgePid)) {
-            var ready = listReadyProviders();
-            if (!ready.length) return { a: 5, b: 5, why: 'Jüri yok — ilk yanıt kazandı.' };
-            judgePid = ready[0].id; judgeModel = '';
-        }
-        var prompt =
-            'SORU: ' + q + '\n\n' +
-            'YANIT A: ' + String(ra.text || '').slice(0, 2500) + '\n\n' +
-            'YANIT B: ' + String(rb.text || '').slice(0, 2500) + '\n\n' +
-            'İki yanıtı puanla (0-10). Sadece JSON döndür: {"a":7,"b":9,"why":"..."}';
-        try {
-            var res = await AI.chat({
-                messages: [{ role: 'user', content: prompt }],
-                providerId: judgePid,
-                model: judgeModel || undefined,
-                system: JUDGE_SYSTEM,
-                temperature: 0.2,
-                signal: signal,
-                fallback: false,
-                __internal: true
-            });
-            var text = typeof res === 'string' ? res : res.text;
-            var parsed = parseJudgeJson(text);
-            return parsed || { a: 5, b: 5, why: 'Jüri JSON vermedi — ilk yanıt kazandı.' };
-        } catch (e) {
-            return { a: 5, b: 5, why: 'Jüri çağrısı başarısız — ilk yanıt kazandı.' };
-        }
-    }
-
-    // ========================================================
-    // Çekirdek: Sor → Yarış → Jüri → Kazanan
-    // ========================================================
-    async function runRace(question, onStatus) {
-        var status = onStatus || function () {};
-        var racers = S.racers.filter(function (r) {
-            var sp = splitRacer(r);
-            return sp.pid && isRacerReady(sp.pid);
-        });
-        if (!racers.length) {
-            throw new Error('Yarışacak hazır sağlayıcı yok. NesilLLM Ayarları → Yarışçılar.');
-        }
+    async function askLLM(question, onDelta) {
         abortController = new AbortController();
-        var signal = abortController.signal;
-        var jTxt = '';
-
-        if (racers.length === 1) {
-            status('Tek yarışcı — jüri atlanıyor…', null);
-            var sp1 = splitRacer(racers[0]);
-            var res1 = await AI.chat({
-                messages: buildTurnMessages(question),
-                providerId: sp1.pid,
-                model: sp1.model || undefined,
-                system: buildSystem(),
-                signal: signal,
-                fallback: false,
-                __internal: true
-            });
-            return {
-                question: question,
-                winner: typeof res1 === 'string' ? res1 : res1.text,
-                winnerLabel: racerLabel(racers[0]),
-                judgeText: 'Tek yarışcı: jüri devre dışı.',
-                history: S.history
-            };
-        }
-
-        var pair = racers.slice(0, 2);
-        status('Yarış başladı: ' + racerLabel(pair[0]) + ' ⚡ ' + racerLabel(pair[1]), null);
-
-        var calls = pair.map(function (r) {
-            var sp = splitRacer(r);
-            return AI.chat({
-                messages: buildTurnMessages(question),
-                providerId: sp.pid,
-                model: sp.model || undefined,
-                system: buildSystem(),
-                signal: signal,
-                fallback: false,
-                __internal: true
-            }).then(function (res) {
-                return { ok: true, key: r, text: typeof res === 'string' ? res : res.text, pid: sp.pid, model: sp.model };
-            }, function (err) {
-                return { ok: false, key: r, pid: sp.pid, model: sp.model, err: err };
-            });
+        var res = await AI.chat({
+            messages: buildMessages(question),
+            providerId: S.providerId,
+            model: S.model || undefined,
+            system: buildSystem(),
+            onDelta: onDelta || null,
+            signal: abortController.signal,
+            fallback: false
         });
-
-        var results = await Promise.all(calls);
-        var okResults = results.filter(function (r) { return r.ok; });
-        if (!okResults.length) {
-            var e0 = results[0] && results[0].err;
-            throw (e0 instanceof Error) ? e0 : new Error('Tüm yarışçılar başarısız oldu.');
-        }
-
-        var winner = okResults[0];
-        if (okResults.length >= 2) {
-            status('Jüri puanlıyor…', null);
-            var judge = await judgeRace(question, okResults[0], okResults[1], signal);
-            if (judge.b > judge.a) { winner = okResults[1]; }
-            jTxt = '⚖️ Jüri: A ' + judge.a + ' — B ' + judge.b + ' — ' + judge.why;
-        }
-
-        S.turns++;
-        S.history.push({
-            q: String(question).slice(0, 160),
-            winner: String(winner.text || '').slice(0, 400),
-            t: Date.now()
-        });
+        var text = typeof res === 'string' ? res : res.text;
+        S.history.push({ role: 'user', text: String(question) });
+        S.history.push({ role: 'assistant', text: String(text || '') });
+        S.history = S.history.slice(-40);
         saveHistory();
-
-        return {
-            question: question,
-            winner: winner.text,
-            winnerLabel: racerLabel(winner.key),
-            judgeText: jTxt || 'Jüri devre dışı.',
-            history: S.history
-        };
+        return { text: text, label: currentLabel() };
     }
 
-    function stopRace() {
+    function stopAsk() {
         if (abortController) { try { abortController.abort(); } catch (e) {} }
     }
 
@@ -279,30 +146,30 @@
                     '<div class="nllm-brand">' +
                         '<svg class="icon" aria-hidden="true"><use href="#i-cpu"/></svg>' +
                         '<strong>NesilLLM</strong>' +
-                        '<span class="nllm-sub">Yarış — en iyi yanıt kazanır</span>' +
+                        '<span class="nllm-sub">Klasik yapay zekâ sohbeti</span>' +
                     '</div>' +
                     '<div class="nllm-header-actions">' +
-                        '<button type="button" id="nllm-settings" class="nllm-btn nllm-btn-ghost" title="Yarışçılar">' +
-                            '<svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg><span>Yarışçılar</span></button>' +
-                        '<button type="button" id="nllm-clear" class="nllm-btn nllm-btn-ghost" title="Hafızayı temizle">' +
-                            '<svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span>Hafıza</span></button>' +
+                        '<button type="button" id="nllm-model-btn" class="nllm-btn nllm-btn-ghost" title="Sağlayıcı ve model seç">' +
+                            '<svg class="icon" aria-hidden="true"><use href="#i-cpu"/></svg><span id="nllm-model-label">—</span></button>' +
+                        '<button type="button" id="nllm-clear" class="nllm-btn nllm-btn-ghost" title="Sohbeti temizle">' +
+                            '<svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span>Temizle</span></button>' +
                         '<button type="button" id="nllm-close" class="nllm-btn nllm-btn-ghost" title="Kapat (Esc)">' +
-                            '<svg class="icon" aria-hidden="true"><use href="#i-close"/></svg><span>Kapat</span></button>' +
+                            '<svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>' +
                     '</div>' +
                 '</header>' +
-                '<div id="nllm-settings-panel" class="nllm-settings hidden">' +
-                    '<h3>Yarışçılar</h3>' +
-                    '<p class="nllm-set-note">İlk iki hazır yarışçı yarışır; jüri kazananı seçer. Kendi API sağlayıcın Ayarlar → Yapay Zeka bölümünden anahtarını ekledikten sonra burada listelenir.</p>' +
-                    '<div id="nllm-racer-list" class="nllm-racer-list"></div>' +
+                '<div id="nllm-model-panel" class="nllm-settings hidden">' +
+                    '<h3>Model</h3>' +
+                    '<p class="nllm-set-note">Sağlayıcıyı seç; model adını yaz ya da listeden seç. Kendi API sağlayıcın Ayarlar → Yapay Zeka bölümünden anahtarını ekledikten sonra burada listelenir.</p>' +
                     '<div class="nllm-add-row">' +
-                        '<select id="nllm-add-provider" class="nllm-select"></select>' +
-                        '<input id="nllm-add-model" type="text" class="nllm-input" placeholder="model adı (örn. gpt-4o-mini)" spellcheck="false">' +
-                        '<button type="button" id="nllm-add-btn" class="nllm-btn nllm-btn-accent">Ekle</button>' +
+                        '<select id="nllm-provider" class="nllm-select"></select>' +
+                        '<input id="nllm-model" type="text" class="nllm-input" list="nllm-model-list" placeholder="model adı" spellcheck="false">' +
+                        '<datalist id="nllm-model-list"></datalist>' +
+                        '<button type="button" id="nllm-model-save" class="nllm-btn nllm-btn-accent">Kaydet</button>' +
                     '</div>' +
                 '</div>' +
                 '<div id="nllm-messages" class="nllm-messages"></div>' +
                 '<div class="nllm-composer">' +
-                    '<textarea id="nllm-input" rows="1" placeholder="Sorunu yaz — iki model yarışsın…" spellcheck="false"></textarea>' +
+                    '<textarea id="nllm-input" rows="1" placeholder="Sorunu yaz…" spellcheck="false"></textarea>' +
                     '<button type="button" id="nllm-stop" class="nllm-btn nllm-btn-ghost hidden" title="Durdur">' +
                         '<svg class="icon" aria-hidden="true"><use href="#i-stop"/></svg></button>' +
                     '<button type="button" id="nllm-send" class="nllm-btn nllm-btn-accent" title="Gönder">' +
@@ -318,12 +185,13 @@
             stop: $('#nllm-stop', root),
             close: $('#nllm-close', root),
             clear: $('#nllm-clear', root),
-            settingsBtn: $('#nllm-settings', root),
-            settingsPanel: $('#nllm-settings-panel', root),
-            racerList: $('#nllm-racer-list', root),
-            addProvider: $('#nllm-add-provider', root),
-            addModel: $('#nllm-add-model', root),
-            addBtn: $('#nllm-add-btn', root)
+            modelBtn: $('#nllm-model-btn', root),
+            modelLabel: $('#nllm-model-label', root),
+            modelPanel: $('#nllm-model-panel', root),
+            provider: $('#nllm-provider', root),
+            model: $('#nllm-model', root),
+            modelList: $('#nllm-model-list', root),
+            modelSave: $('#nllm-model-save', root)
         };
 
         el.send.addEventListener('click', function () { submit(); });
@@ -336,22 +204,72 @@
         });
         el.close.addEventListener('click', closeView);
         el.clear.addEventListener('click', function () {
-            S.history = []; S.turns = 0; saveHistory(); renderMessages();
-            pushSystem('Hafıza temizlendi — tertemiz başlangıç.');
+            S.history = []; saveHistory(); renderMessages();
+            pushSystem('Sohbet temizlendi — tertemiz başlangıç.');
         });
-        el.stop.addEventListener('click', function () { stopRace(); });
-        el.settingsBtn.addEventListener('click', function () {
-            el.settingsPanel.classList.toggle('hidden');
-            if (!el.settingsPanel.classList.contains('hidden')) renderSettings();
+        el.stop.addEventListener('click', function () { stopAsk(); });
+        el.modelBtn.addEventListener('click', function () {
+            el.modelPanel.classList.toggle('hidden');
+            if (!el.modelPanel.classList.contains('hidden')) renderModelPanel();
         });
-        el.addBtn.addEventListener('click', addRacer);
+        el.provider.addEventListener('change', function () {
+            fillModelList(el.provider.value);
+        });
+        el.modelSave.addEventListener('click', function () {
+            S.providerId = el.provider.value;
+            S.model = (el.model.value || '').trim();
+            saveSettings();
+            updateModelLabel();
+            el.modelPanel.classList.add('hidden');
+            pushSystem('Model seçildi: ' + currentLabel());
+        });
+    }
+
+    function renderModelPanel() {
+        el.provider.innerHTML = '';
+        listReadyProviders().forEach(function (p) {
+            var opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = (p.short || p.id) + (p.needsKey ? '' : ' (anahtarsız)');
+            if (p.id === S.providerId) opt.selected = true;
+            el.provider.appendChild(opt);
+        });
+        // Seçili sağlayıcı listede yoksa (hazır değilse) yine göster
+        var exists = listReadyProviders().some(function (p) { return p.id === S.providerId; });
+        if (!exists) {
+            var opt = document.createElement('option');
+            opt.value = S.providerId;
+            opt.textContent = providerShort(S.providerId) + ' (anahtar yok)';
+            opt.selected = true;
+            el.provider.appendChild(opt);
+        }
+        fillModelList(S.providerId);
+        el.model.value = S.model;
+    }
+
+    function fillModelList(pid) {
+        el.modelList.innerHTML = '';
+        providerSuggestions(pid).forEach(function (m) {
+            var opt = document.createElement('option');
+            opt.value = m;
+            el.modelList.appendChild(opt);
+        });
+        // Varsayılan model kutusuna öneri olarak düşsün (zorlamadan)
+        if (!el.model.value.trim()) {
+            var p = AI.PROVIDERS[pid] || {};
+            if (p.defaultModel) el.model.placeholder = p.defaultModel;
+        }
+    }
+
+    function updateModelLabel() {
+        if (el && el.modelLabel) el.modelLabel.textContent = currentLabel();
     }
 
     function renderMessages() {
         if (!el) return;
         el.messages.innerHTML = '';
-        S.history.forEach(function (h) {
-            addWinnerCard(h.q, h.winner, h.label || '—', h.judge || '');
+        S.history.forEach(function (m) {
+            addCard(m.role === 'user' ? m.text : '', m.role === 'assistant' ? m.text : '', m.label || '');
         });
         el.messages.scrollTop = el.messages.scrollHeight;
     }
@@ -364,61 +282,18 @@
         el.messages.scrollTop = el.messages.scrollHeight;
     }
 
-    function addWinnerCard(q, answer, label, judge) {
+    function addCard(q, a, label) {
         var card = document.createElement('div');
-        card.className = 'nllm-card';
+        card.className = 'nllm-card' + (q && !a ? ' nllm-card-q' : '');
         card.innerHTML =
-            '<div class="nllm-q"></div>' +
-            '<div class="nllm-meta"><span class="nllm-winner">🏆 ' + esc(label) + '</span>' +
-            (judge ? '<span class="nllm-judge">' + esc(judge) + '</span>' : '') + '</div>' +
-            '<div class="nllm-a"></div>';
-        card.querySelector('.nllm-q').textContent = q;
-        card.querySelector('.nllm-a').textContent = answer;
+            (q ? '<div class="nllm-q"></div>' : '') +
+            (a || label ? '<div class="nllm-meta"><span class="nllm-model">' + esc(label) + '</span></div>' : '') +
+            (a !== '' ? '<div class="nllm-a"></div>' : '');
+        if (q) card.querySelector('.nllm-q').textContent = q;
+        if (a !== '') card.querySelector('.nllm-a').textContent = a;
         el.messages.appendChild(card);
         el.messages.scrollTop = el.messages.scrollHeight;
         return card;
-    }
-
-    function renderSettings() {
-        // Yarışçı listesi
-        el.racerList.innerHTML = '';
-        S.racers.forEach(function (r, i) {
-            var sp = splitRacer(r);
-            var ready = isRacerReady(sp.pid);
-            var row = document.createElement('div');
-            row.className = 'nllm-racer-row' + (ready ? '' : ' nllm-racer-off');
-            row.innerHTML =
-                '<span class="nllm-racer-name">' + esc(providerShort(sp.pid)) + '</span>' +
-                '<span class="nllm-racer-model">' + esc(sp.model || 'varsayılan') + '</span>' +
-                '<span class="nllm-racer-state">' + (ready ? 'hazır' : 'anahtar yok') + '</span>' +
-                '<button type="button" class="nllm-racer-del" data-i="' + i + '" title="Kaldır">✕</button>';
-            row.querySelector('.nllm-racer-del').addEventListener('click', function () {
-                S.racers.splice(i, 1); saveRacers(); renderSettings();
-            });
-            el.racerList.appendChild(row);
-        });
-        // Sağlayıcı seçimi
-        el.addProvider.innerHTML = '';
-        var ready = listReadyProviders();
-        ready.forEach(function (p) {
-            var opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = p.short || p.id;
-            el.addProvider.appendChild(opt);
-        });
-    }
-
-    function addRacer() {
-        var pid = el.addProvider.value;
-        var model = (el.addModel.value || '').trim();
-        if (!pid) return;
-        var entry = model ? joinRacer(pid, model) : pid + ':';
-        if (S.racers.indexOf(entry) !== -1) { pushSystem('Bu yarışçı zaten listede.'); return; }
-        S.racers.push(entry);
-        S.racers = S.racers.slice(-4);
-        saveRacers();
-        el.addModel.value = '';
-        renderSettings();
     }
 
     async function submit() {
@@ -430,32 +305,25 @@
         el.input.value = '';
         el.input.style.height = 'auto';
 
-        var card = addWinnerCard(q, '…', 'yarış sürüyor', '');
+        // Kullanıcı sorusu + yanıt kartı (yanıt div'i '…' placeholder'ıyla oluşsun)
+        addCard(q, '', '');
+        var card = addCard('', '…', currentLabel());
         var aEl = card.querySelector('.nllm-a');
-        var metaEl = card.querySelector('.nllm-meta .nllm-winner');
+        aEl.textContent = '…';
 
-        var setStatus = function (txt) {
-            aEl.textContent = txt;
-        };
+        var streamed = '';
         try {
-            var out = await runRace(q, function (txt) {
-                setStatus(txt);
-                if (txt && txt.indexOf('⚖️') === 0) {
-                    var jEl = card.querySelector('.nllm-judge');
-                    if (jEl) jEl.textContent = txt;
-                }
+            var out = await askLLM(q, function (delta) {
+                streamed += String(delta || '');
+                aEl.textContent = streamed;
+                el.messages.scrollTop = el.messages.scrollHeight;
             });
-            card.querySelector('.nllm-a').textContent = out.winner;
-            metaEl.textContent = '🏆 ' + out.winnerLabel;
-            var jEl2 = card.querySelector('.nllm-judge');
-            if (jEl2) jEl2.textContent = out.judgeText;
-            // Kalıcı geçmişe etiketleri işle
-            var lastH = S.history[S.history.length - 1];
-            if (lastH) { lastH.label = out.winnerLabel; lastH.judge = out.judgeText; saveHistory(); }
+            aEl.textContent = out.text;
+            card.querySelector('.nllm-model').textContent = out.label;
             if (window.NesilSFX) window.NesilSFX.reply();
         } catch (err) {
-            card.querySelector('.nllm-a').textContent = 'Hata: ' + (err && err.message ? err.message : 'bilinmeyen');
-            metaEl.textContent = '⚠️ Yarış tamamlanamadı';
+            aEl.textContent = 'Hata: ' + (err && err.message ? err.message : 'bilinmeyen');
+            card.querySelector('.nllm-model').textContent = currentLabel();
         } finally {
             S.busy = false;
             el.send.disabled = false;
@@ -466,10 +334,11 @@
 
     function openView() {
         ensureDom();
-        loadRacers();
+        loadSettings();
         loadHistory();
         el.root.classList.remove('hidden');
         S.open = true;
+        updateModelLabel();
         renderMessages();
         setTimeout(function () { el.input.focus(); }, 60);
     }
@@ -485,11 +354,11 @@
     // /llm komut yönlendirmesi — app.js bunu çağırır
     function handleCommand(body) {
         var b = String(body || '').trim().toLowerCase();
-        if (b === 'on') { openView(); return 'NesilLLM açıldı. Sorunu yaz — iki model yarışsın.'; }
+        if (b === 'on') { openView(); return 'NesilLLM açıldı. Sorunu yaz — model yanıtlar.'; }
         if (b === 'off') { closeView(); return 'NesilLLM kapatıldı.'; }
         toggleView();
         return S.open
-            ? 'NesilLLM açıldı: Codestral ve MiniMax yarışır, jüri en iyisini seçer. Kendi API modellerini de Yarışçılar bölümünden ekleyebilirsin.'
+            ? 'NesilLLM açıldı: klasik yapay zekâ sohbeti. Model düğmesinden sağlayıcı ve model seçebilirsin.'
             : 'NesilLLM kapatıldı.';
     }
 
@@ -507,11 +376,14 @@
         toggle: toggleView,
         handleCommand: handleCommand,
         isOpen: function () { return !!S.open; },
-        getRacers: function () { return S.racers.slice(); },
-        setRacers: function (arr) {
-            if (Array.isArray(arr) && arr.length) { S.racers = arr.slice(0, 4); saveRacers(); }
+        getProviderId: function () { return S.providerId; },
+        getModel: function () { return S.model; },
+        setModel: function (pid, model) {
+            if (pid) S.providerId = pid;
+            S.model = String(model || '').trim();
+            saveSettings();
         },
-        runRace: runRace,
-        _test: { state: S, parseJudgeJson: parseJudgeJson }
+        askLLM: askLLM,
+        _test: { state: S, buildMessages: buildMessages }
     };
 })();

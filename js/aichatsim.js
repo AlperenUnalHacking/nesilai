@@ -20,31 +20,35 @@
     // ========================================================
     var MODES = {
         zorba: {
-            label: 'Zorba', emoji: '😤',
+            label: 'Zorba', icon: 'i-alert',
             prompt: 'Karakterin: ZORBA. Agresif, küçümseyici ve keskin konuşursun; kimseye taviz vermezsin, haklıysan üstüne basarak söylersin. Yine de saygısız hakaret yok — keskin mizahtır.'
         },
         friendly: {
-            label: 'Dost Canlısı', emoji: '😄',
+            label: 'Dost Canlısı', icon: 'i-heart',
             prompt: 'Karakterin: DOST CANLISI. Sıcak, destekleyici ve neşelisin; herkesi yüreklendirir, ortamı yumuşatırsın.'
         },
         smart: {
-            label: 'Akıllı', emoji: '🧠',
+            label: 'Akıllı', icon: 'i-brain',
             prompt: 'Karakterin: AKILLI. Analitik, öz ve mantıksın; her mesajda somut gerekçe veya veri verirsin.'
         },
         dreamer: {
-            label: 'Hayalperest', emoji: '🌈',
+            label: 'Hayalperest', icon: 'i-sparkle',
             prompt: 'Karakterin: HAYALPEREST. Yaratıcı ve fantezist konuşursun; büyük fikirler, metaforlar ve imkânsızı denemeyi seversin.'
         },
         genius: {
-            label: 'Dahi', emoji: '💡',
+            label: 'Dahi', icon: 'i-zap',
             prompt: 'Karakterin: DAHİ. İnce detaylar görür, herkesin kaçırdığı derin bağlantıları kurarsın; biraz da gizemli konuşursun.'
         },
         silly: {
-            label: 'Aptal', emoji: '🤪',
+            label: 'Aptal', icon: 'i-party',
             prompt: 'Karakterin: APTAL. Komik ve dağınık düşünürsün; konuyu savurur, saçma ama sevimli çıkarımlar yaparsın. Amaç mizah — kimseyi rencide etme.'
         }
     };
     var MODE_KEYS = Object.keys(MODES);
+    function modeIcon(k) {
+        var m = MODES[k];
+        return m && m.icon ? '<svg class="icon" aria-hidden="true"><use href="#' + m.icon + '"/></svg>' : '';
+    }
 
     var BOTS_KEY = 'aichatsim_bots_v1';
     var TOPIC_KEY = 'aichatsim_topic_v1';
@@ -274,7 +278,7 @@
                             '<input id="acsim-new-model" type="text" class="acsim-input" placeholder="Model (boşsa varsayılan)" spellcheck="false">' +
                             '<select id="acsim-new-mode" class="acsim-input">' +
                                 MODE_KEYS.map(function (k) {
-                                    return '<option value="' + k + '">' + MODES[k].emoji + ' ' + MODES[k].label + '</option>';
+                                    return '<option value="' + k + '">' + MODES[k].label + '</option>';
                                 }).join('') +
                             '</select>' +
                             '<button type="button" id="acsim-new-save" class="acsim-btn acsim-btn-accent acsim-block">Ekle</button>' +
@@ -356,6 +360,31 @@
         });
     }
 
+    function providerOptionsHtml(selectedPid) {
+        var opts = listReadyProviders().map(function (p) {
+            return '<option value="' + p.id + '"' + (p.id === selectedPid ? ' selected' : '') + '>' +
+                esc(p.short || p.id) + (p.needsKey ? '' : ' (anahtarsız)') + '</option>';
+        });
+        var exists = listReadyProviders().some(function (p) { return p.id === selectedPid; });
+        if (!exists) {
+            opts.push('<option value="' + esc(selectedPid) + '" selected>' + esc(providerShort(selectedPid)) + ' (anahtar yok)</option>');
+        }
+        return opts.join('');
+    }
+    function modelOptionsHtml(pid, selectedModel) {
+        var p = AI.PROVIDERS[pid] || {};
+        var models = (p.suggestedModels || []).slice();
+        if (p.defaultModel && models.indexOf(p.defaultModel) === -1) models.unshift(p.defaultModel);
+        var stored = (AI.getSettings().models || {})[pid];
+        if (stored && models.indexOf(stored) === -1) models.push(stored);
+        if (selectedModel && models.indexOf(selectedModel) === -1) models.unshift(selectedModel);
+        var opts = ['<option value="">varsayılan' + (p.defaultModel ? ' (' + esc(p.defaultModel) + ')' : '') + '</option>'];
+        opts = opts.concat(models.map(function (m) {
+            return '<option value="' + esc(m) + '"' + (m === selectedModel ? ' selected' : '') + '>' + esc(m) + '</option>';
+        }));
+        return opts.join('');
+    }
+
     function renderBotList() {
         if (!el) return;
         el.botList.innerHTML = '';
@@ -368,11 +397,14 @@
                     '<span class="acsim-bot-name">' + esc(b.name) + '</span>' +
                     '<select class="acsim-mode-select" title="Karakter modu">' +
                         MODE_KEYS.map(function (k) {
-                            return '<option value="' + k + '"' + (b.mode === k ? ' selected' : '') + '>' + MODES[k].emoji + ' ' + MODES[k].label + '</option>';
+                            return '<option value="' + k + '"' + (b.mode === k ? ' selected' : '') + '>' + MODES[k].label + '</option>';
                         }).join('') +
                     '</select>' +
                 '</div>' +
-                '<div class="acsim-bot-meta">' + esc(providerShort(b.providerId)) + ' · ' + esc(b.model || 'varsayılan') + '</div>' +
+                '<div class="acsim-bot-pickers">' +
+                    '<select class="acsim-provider-select" title="Sağlayıcı (Ayarlar)">' + providerOptionsHtml(b.providerId) + '</select>' +
+                    '<select class="acsim-model-select" title="Model">' + modelOptionsHtml(b.providerId, b.model) + '</select>' +
+                '</div>' +
                 '<div class="acsim-bot-actions">' +
                     '<button type="button" class="acsim-bot-dm" title="DM aç">DM</button>' +
                     '<button type="button" class="acsim-bot-say" title="Konuşsun">Konuş</button>' +
@@ -380,6 +412,16 @@
                 '</div>';
             row.querySelector('.acsim-mode-select').addEventListener('change', function (e) {
                 b.mode = e.target.value; saveBots();
+            });
+            row.querySelector('.acsim-provider-select').addEventListener('change', function (e) {
+                b.providerId = e.target.value;
+                b.model = '';
+                saveBots();
+                renderBotList();
+            });
+            row.querySelector('.acsim-model-select').addEventListener('change', function (e) {
+                b.model = e.target.value;
+                saveBots();
             });
             row.querySelector('.acsim-bot-dm').addEventListener('click', function () {
                 S.dmWith = (S.dmWith === b.name) ? null : b.name;
@@ -433,7 +475,7 @@
             d.innerHTML =
                 '<div class="acsim-msg-head">' +
                     '<span class="acsim-msg-name">' + esc(m.who) + '</span>' +
-                    (mode ? '<span class="acsim-msg-mode">' + esc(mode.emoji + ' ' + mode.label) + '</span>' : '') +
+                    (mode ? '<span class="acsim-msg-mode">' + modeIcon(b.mode) + ' ' + esc(mode.label) + '</span>' : '') +
                     (m.dm ? '<span class="acsim-msg-dm">DM</span>' : '') +
                 '</div>' +
                 '<div class="acsim-msg-text"></div>';

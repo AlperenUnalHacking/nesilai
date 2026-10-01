@@ -61,6 +61,13 @@ istek atar ve sonucu süre bilgisiyle birlikte gösterir.
 Planlar ve kullanım limitleri **yerel bir sayaçtır**; ödeme altyapısı bağlı değildir ve ücret
 tahsil edilmez. Amaç, limitli bir ürün akışını denemektir.
 
+Web sürümü ücretsiz plan limitleri (5 saatlik pencere):
+- **Görsel:** 20 üretim
+- **Sohbet:** 20.000 token bütçesi (gönderilen + alınan tokenlar dahil)
+- Kullanım %80'i geçince composer üstünde **"Kotana yaklaşıyorsun"** şeridi çıkar;
+  limit bitince **"NesilAI Usage Reached"** modalı geri sayımla açılır.
+- **PC ve Android uygulamalarında limitler sınırsızdır.**
+
 ---
 
 ## 3. Çalıştırma

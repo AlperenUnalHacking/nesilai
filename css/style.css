@@ -2279,8 +2279,8 @@ select.input { cursor: pointer; appearance: none; padding-right: var(--s-8); bac
     /* Düzen geçişi yine de yumuşak olsun */
     .sidebar {
         transition-property: width !important;
-        transition-duration: 0.28s !important;
-        transition-timing-function: var(--ease) !important;
+        transition-duration: 0.5s !important;
+        transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
     }
     .sidebar-head,
     .sidebar-foot {
@@ -4421,7 +4421,8 @@ html[data-device="tv"] .input, html[data-device="tv"] select.input { font-size: 
 .library-info-actions .icon { width: 16px; height: 16px; }
 
 /* --------- Düzen geçişleri: akıcı ve yumuşak --------- */
-.sidebar { transition: width 0.28s var(--ease); }
+/* Yumuşak düzen geçişi: uzun yay, yumuşak iniş (cubic-bezier) */
+.sidebar { transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
 
 /* --------- 2. düzen (dar sohbet görünümü) ---------
    Hamburger ile geçilir. Marka + "Yeni sohbet" görünür kalır;
@@ -4470,7 +4471,7 @@ html[data-device="tv"] .input, html[data-device="tv"] select.input { font-size: 
 }
 
 @keyframes railFadeIn {
-    from { opacity: 0; transform: translateY(-4px); }
+    from { opacity: 0; transform: translateX(-8px); }
     to   { opacity: 1; transform: none; }
 }
 
@@ -4816,3 +4817,48 @@ html[data-device="tv"] .library-head-actions .input { min-height: 52px; font-siz
     .acsim-body { flex-direction: column; }
     .acsim-side { width: 100%; max-height: 38%; }
 }
+
+
+/* ==============================================================
+   21. Özellikler modalı + AI Chat Sim model seçicileri
+   ============================================================== */
+.features-card { max-width: 640px; max-height: 82vh; display: flex; flex-direction: column; }
+.features-body { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+.feature-item {
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg, 16px);
+    background: var(--surface-1);
+    padding: 14px 16px;
+}
+.feature-item-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.feature-item-head .icon { width: 18px; height: 18px; color: var(--accent, #2f6bff); }
+.feature-item-head strong { font-size: 15px; }
+.feature-item-head code {
+    font-size: 11.5px; color: var(--text-3);
+    border: 1px solid var(--border); border-radius: var(--r-full, 999px);
+    padding: 1px 8px; margin-left: auto;
+}
+.feature-item p { margin: 0; color: var(--text-2); font-size: 13.5px; line-height: 1.6; }
+.feature-item code { font-size: 12px; }
+
+/* --- AI Chat Sim: sağlayıcı + model seçicileri (bot kartında) --- */
+.acsim-bot-pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0; }
+.acsim-provider-select, .acsim-model-select {
+    border: 1px solid var(--border); border-radius: var(--r-md, 12px);
+    background: var(--bg); color: var(--text-2);
+    font-size: 11.5px; padding: 4px 6px; min-width: 0;
+    font-family: inherit;
+}
+
+/* --- Özellikler modalı: uygulama açma butonu --- */
+.feature-open {
+    display: inline-flex; align-items: center; gap: 5px;
+    border: 1px solid var(--border); border-radius: var(--r-full, 999px);
+    background: var(--surface-0, transparent); color: var(--accent, #2f6bff);
+    font-size: 11.5px; font-weight: 700; padding: 3px 11px;
+    cursor: pointer; flex-shrink: 0;
+    transition: border-color 0.18s var(--ease, ease), background 0.18s var(--ease, ease);
+}
+.feature-open .icon { width: 13px; height: 13px; }
+.feature-open:hover { border-color: var(--accent, #2f6bff); background: var(--accent-soft, rgba(47, 107, 255, 0.08)); }
+

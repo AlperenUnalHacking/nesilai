@@ -1586,6 +1586,50 @@
         infoModal.classList.add('hidden');
     }
 
+    // Özellikler modalı — uygulamalar ve yetenekler
+    const featuresModal = document.getElementById('features-modal');
+    const featuresBackdrop = document.getElementById('features-backdrop');
+    const openFeaturesBtn = document.getElementById('open-features-btn');
+    const closeFeaturesBtn = document.getElementById('close-features-modal-btn');
+    function openFeaturesModal() {
+        if (!featuresModal) return;
+        featuresModal.classList.remove('hidden');
+        closeMobileSidebar();
+    }
+    function closeFeaturesModal() {
+        if (featuresModal) featuresModal.classList.add('hidden');
+    }
+
+    // Özellikler panelinden uygulama açma (kenar çubuğunda düğmesi olmayanlar dahil)
+    function openFeatureApp(app) {
+        switch (app) {
+            case 'nesilllm':
+                if (window.NesilLLM) { window.NesilLLM.open(); return; }
+                break;
+            case 'aichatsim':
+                if (window.NesilAiChatSim) { window.NesilAiChatSim.open(); return; }
+                break;
+            case 'nesilcode':
+                if (window.NesilCode) { window.NesilCode.open(); return; }
+                break;
+            case 'openview':
+                // Web'de OpenView yalnızca PC uygulamasında; mobilde yol yok — dürüst toast
+                if (window.NesilOpenView) {
+                    window.NesilOpenView.toggle();
+                    return;
+                }
+                showToast(t('OpenView yalnızca bilgisayar uygulamasında çalışır — web sürümünde bu özellik yok.'), 'warning');
+                return;
+            case 'pool':
+                openPoolModal();
+                return;
+            case 'voice':
+                openVoiceMode();
+                return;
+        }
+        showToast(t('Bu uygulama bu sürümde kullanılamıyor.'), 'warning');
+    }
+
     // ========================================================
     // Gizli bellek (Kendini Tanıt) — kullanıcı görüntüleyemez/değiştiremez.
     // localStorage'da obfuke edilmiş tutulur (nesilai_secret_mem_v1);
@@ -4449,6 +4493,20 @@
         if (closeInfoBtn) closeInfoBtn.addEventListener('click', closeInfoModal);
         if (infoBackdrop) infoBackdrop.addEventListener('click', closeInfoModal);
 
+        // Özellikler modalı
+        if (openFeaturesBtn) openFeaturesBtn.addEventListener('click', openFeaturesModal);
+        if (closeFeaturesBtn) closeFeaturesBtn.addEventListener('click', closeFeaturesModal);
+        if (featuresBackdrop) featuresBackdrop.addEventListener('click', closeFeaturesModal);
+
+        // Özellikler → uygulama açma butonları (data-app)
+        document.querySelectorAll('.feature-open').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const app = btn.dataset.app;
+                closeFeaturesModal();
+                openFeatureApp(app);
+            });
+        });
+
         // Kota modalı
         const quotaModal = document.getElementById('quota-modal');
         const quotaClose = document.getElementById('quota-close-btn');
@@ -4615,6 +4673,10 @@
         }
         if (poolModal && !poolModal.classList.contains('hidden')) {
             closePoolModal();
+            return;
+        }
+        if (featuresModal && !featuresModal.classList.contains('hidden')) {
+            closeFeaturesModal();
             return;
         }
         if (libraryModal && !libraryModal.classList.contains('hidden')) {

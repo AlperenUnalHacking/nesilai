@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="assets/logo.png?v=2">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
-    <link rel="stylesheet" href="css/style.css?v=23">
+    <link rel="stylesheet" href="css/style.css?v=28">
 </head>
 <body>
 
@@ -151,6 +151,10 @@
                 <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
                 <span>Bilgiler</span>
             </button>
+            <button id="open-features-btn" class="btn btn-outline btn-block" title="Özellikler — uygulamalar ve yetenekler">
+                <svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg>
+                <span>Özellikler</span>
+            </button>
             <div class="usage-widget" id="sidebar-usage-widget">
                 <div class="usage-widget-head">
                     <span class="usage-widget-plan" id="widget-plan-name">Ücretsiz Plan</span>
@@ -207,14 +211,6 @@
                 <button id="open-nesilcode-btn" class="nav-item" title="NesilCode — yapay zeka kodlama ajanı">
                     <svg class="icon" aria-hidden="true"><use href="#i-code"/></svg>
                     <span>NesilCode</span>
-                </button>
-                <button id="open-nesilllm-btn" class="nav-item" title="NesilLLM — iki model yarışır, jüri en iyisini seçer">
-                    <svg class="icon" aria-hidden="true"><use href="#i-cpu"/></svg>
-                    <span>NesilLLM</span>
-                </button>
-                <button id="open-aichatsim-btn" class="nav-item" title="AI Chat Simulator — yapay zekâlar birbirine dedikodu yapar">
-                    <svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>
-                    <span>AI Chat Sim</span>
                 </button>
                 <button id="open-settings-btn" class="nav-item">
                     <svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>
@@ -447,7 +443,7 @@
         </header>
         <div class="modal-body info-body">
             <h3>NesilAI nedir?</h3>
-            <p>NesilAI, Bloodline üzerinde çalışan bir yapay zeka asistanıdır; Acsida tarafından geliştirilmiştir. Sohbet, görsel üretimi, ses↔yazı ve <strong>OpenView</strong> ekran asistanı gibi yetenekleri vardır. Ayrıca <strong>NesilLLM</strong> (model yarışı) ve <strong>AI Chat Simulator</strong> (yapay zekâlar arası sohbet) uygulamaları vardır. OpenView yalnızca bilgisayar uygulamasında ayrı bir pencere olarak çalışır; web sürümünde ayrı bir PiP penceresi açar.</p>
+            <p>NesilAI, Bloodline üzerinde çalışan bir yapay zeka asistanıdır; Acsida tarafından geliştirilmiştir. Sohbet, görsel üretimi, ses↔yazı ve <strong>OpenView</strong> ekran asistanı gibi yetenekleri vardır. Ayrıca <strong>NesilLLM</strong> (klasik LLM) ve <strong>AI Chat Simulator</strong> (yapay zekâlar arası sohbet) uygulamaları vardır. OpenView yalnızca bilgisayar uygulamasında ayrı bir pencere olarak çalışır; web sürümünde ayrı bir PiP penceresi açar.</p>
 
             <h3>Gizlilik: verileriniz nerede?</h3>
             <ul>
@@ -722,17 +718,105 @@
             <span class="quota-timer-label">kaldı</span>
         </div>
         <p class="quota-note" id="quota-note">Limit her 5 saatte yenilenir. Uygulamaları kullanırsan limitler sınırsızdır.</p>
-        <div class="quota-actions">
-            <a class="btn btn-primary quota-dl" href="https://github.com/AlperenUnalHacking/nesilai/releases/latest/download/NesilAI-Android.apk" target="_blank" rel="noopener noreferrer">
-                <svg class="icon icon-fill" aria-hidden="true"><use href="#i-android"/></svg>
-                <span>Android uygulaması</span>
-            </a>
-            <a class="btn btn-outline quota-dl" href="https://github.com/AlperenUnalHacking/NesilAI-PC/releases/latest/download/NesilAI-Setup.exe" target="_blank" rel="noopener noreferrer">
-                <svg class="icon icon-fill" aria-hidden="true"><use href="#i-windows"/></svg>
-                <span>Bilgisayar uygulaması</span>
-            </a>
-        </div>
         <button id="quota-close-btn" class="btn btn-ghost btn-block">Tamam</button>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- Özellikler — uygulamalar ve yetenekler (merkezde container)      -->
+<!-- ============================================================== -->
+<div id="features-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="features-title">
+    <div class="modal-backdrop" id="features-backdrop"></div>
+    <div class="modal-card features-card">
+        <header class="modal-head">
+            <div>
+                <h2 id="features-title">Özellikler</h2>
+                <p class="modal-sub">NesilAI'nin uygulamaları ve yetenekleri</p>
+            </div>
+            <button id="close-features-modal-btn" class="icon-btn" aria-label="Kapat">
+                <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+            </button>
+        </header>
+        <div class="modal-body features-body">
+            <div class="feature-item">
+                <div class="feature-item-head">
+                    <svg class="icon" aria-hidden="true"><use href="#i-cpu"/></svg>
+                    <strong>NesilLLM</strong>
+                    <button type="button" class="feature-open" data-app="nesilllm">
+                        <svg class="icon" aria-hidden="true"><use href="#i-door"/></svg>
+                        <span>Aç</span>
+                    </button>
+                    <code>/llm</code>
+                </div>
+                <p>Klasik yapay zekâ sohbeti: sorunu yaz, model yanıtlar. Çok turlu hafıza ve akış (streaming) desteklidir. Model düğmesinden llm7 (Minimax, Codestral) veya kendi API sağlayıcını seçebilirsin.</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-item-head">
+                    <svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>
+                    <strong>AI Chat Simulator</strong>
+                    <button type="button" class="feature-open" data-app="aichatsim">
+                        <svg class="icon" aria-hidden="true"><use href="#i-door"/></svg>
+                        <span>Aç</span>
+                    </button>
+                    <code>/aichatsim</code>
+                </div>
+                <p>Yapay zekâlar kendi aralarında sohbet eder, sen de katılırsın. Soldaki panelde aktif yapay zekâlar; sağlayıcı, model ve karakter modu (Zorba, Dost Canlısı, Akıllı, Hayalperest, Dahi, Aptal) seçimi. DM ile birebir, Konu ile grup tartışması.</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-item-head">
+                    <svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg>
+                    <strong>OpenView</strong>
+                    <button type="button" class="feature-open" data-app="openview">
+                        <svg class="icon" aria-hidden="true"><use href="#i-door"/></svg>
+                        <span>Aç</span>
+                    </button>
+                    <code>/openview</code>
+                </div>
+                <p>Ekran asistanı: ekranını canlı izler, gördüğüne göre yanıt verir. PC uygulamasında bağımsız pencere, web'de PiP penceresi olarak açılır. Kısayol: Ctrl+Shift+O.</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-item-head">
+                    <svg class="icon" aria-hidden="true"><use href="#i-code"/></svg>
+                    <strong>NesilCode</strong>
+                    <button type="button" class="feature-open" data-app="nesilcode">
+                        <svg class="icon" aria-hidden="true"><use href="#i-door"/></svg>
+                        <span>Aç</span>
+                    </button>
+                    <code>/nesilcode</code>
+                </div>
+                <p>Kodlama ajanı: dosyalarını okur, yazar, oluşturur, siler. Plan → aksiyon döngüsüyle çalışır; kod içeriği sohbete sızmaz, doğrudan dosyaya yazar.</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-item-head">
+                    <svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg>
+                    <strong>Üretim Havuzu</strong>
+                    <button type="button" class="feature-open" data-app="pool">
+                        <svg class="icon" aria-hidden="true"><use href="#i-door"/></svg>
+                        <span>Aç</span>
+                    </button>
+                </div>
+                <p>Görsel üretme, yazıdan sese, sesten yazıya ve görselden metin (OCR) — sohbetten bağımsız dört üretim aracı. Sonuçlar galeride toplanır; Kitaplık'tan erişilir.</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-item-head">
+                    <svg class="icon" aria-hidden="true"><use href="#i-voice"/></svg>
+                    <strong>Sesli Sohbet</strong>
+                    <button type="button" class="feature-open" data-app="voice">
+                        <svg class="icon" aria-hidden="true"><use href="#i-door"/></svg>
+                        <span>Aç</span>
+                    </button>
+                </div>
+                <p>Orb arayüzüyle kesintisiz sesli diyalog. Mikrofonu geçici kapatabilirsin; yanıtlar otomatik seslendirilir.</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-item-head">
+                    <svg class="icon" aria-hidden="true"><use href="#i-brain"/></svg>
+                    <strong>Komutlar</strong>
+                    <code>/komutlar</code>
+                </div>
+                <p><code>/ultrathink</code> derin düşünme, <code>/report</code> web raporu, <code>/ultracode</code> kodlama, <code>/humanise</code> insan gibi yazma, <code>/trustme</code> dürüstlük modu, <code>/acsmod</code> geliştirici tonu.</p>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1007,10 +1091,10 @@
 <script src="js/openview-capture.js?v=ov9"></script>
 <script src="js/openview.js?v=ov19"></script>
 <script src="js/nesilcode.js?v=nc7"></script>
-<script src="js/nesilllm.js?v=nllm2"></script>
-<script src="js/aichatsim.js?v=sim2"></script>
+<script src="js/nesilllm.js?v=nllm4"></script>
+<script src="js/aichatsim.js?v=sim3"></script>
 <script src="js/textToPhoto.js?v=tr9"></script>
 <script src="js/photoToText.js?v=pool"></script>
-<script src="js/app.js?v=ui28"></script>
+<script src="js/app.js?v=ui30"></script>
 </body>
 </html>
