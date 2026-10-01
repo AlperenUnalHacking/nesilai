@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="assets/logo.png?v=2">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
-    <link rel="stylesheet" href="css/style.css?v=22">
+    <link rel="stylesheet" href="css/style.css?v=23">
 </head>
 <body>
 
@@ -207,6 +207,14 @@
                 <button id="open-nesilcode-btn" class="nav-item" title="NesilCode — yapay zeka kodlama ajanı">
                     <svg class="icon" aria-hidden="true"><use href="#i-code"/></svg>
                     <span>NesilCode</span>
+                </button>
+                <button id="open-nesilllm-btn" class="nav-item" title="NesilLLM — iki model yarışır, jüri en iyisini seçer">
+                    <svg class="icon" aria-hidden="true"><use href="#i-cpu"/></svg>
+                    <span>NesilLLM</span>
+                </button>
+                <button id="open-aichatsim-btn" class="nav-item" title="AI Chat Simulator — yapay zekâlar birbirine dedikodu yapar">
+                    <svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>
+                    <span>AI Chat Sim</span>
                 </button>
                 <button id="open-settings-btn" class="nav-item">
                     <svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>
@@ -439,7 +447,7 @@
         </header>
         <div class="modal-body info-body">
             <h3>NesilAI nedir?</h3>
-            <p>NesilAI, Bloodline üzerinde çalışan bir yapay zeka asistanıdır; Acsida tarafından geliştirilmiştir. Sohbet, görsel üretimi, ses↔yazı ve <strong>OpenView</strong> ekran asistanı gibi yetenekleri vardır. OpenView yalnızca bilgisayar uygulamasında ayrı bir pencere olarak çalışır; web sürümünde ayrı bir PiP penceresi açar.</p>
+            <p>NesilAI, Bloodline üzerinde çalışan bir yapay zeka asistanıdır; Acsida tarafından geliştirilmiştir. Sohbet, görsel üretimi, ses↔yazı ve <strong>OpenView</strong> ekran asistanı gibi yetenekleri vardır. Ayrıca <strong>NesilLLM</strong> (model yarışı) ve <strong>AI Chat Simulator</strong> (yapay zekâlar arası sohbet) uygulamaları vardır. OpenView yalnızca bilgisayar uygulamasında ayrı bir pencere olarak çalışır; web sürümünde ayrı bir PiP penceresi açar.</p>
 
             <h3>Gizlilik: verileriniz nerede?</h3>
             <ul>
@@ -458,7 +466,7 @@
 
             <h3>Kullanım kılavuzu</h3>
             <ul>
-                <li><strong>/komutlar:</strong> <code>/openview</code> (ekran asistanı), <code>/humanise</code> (insan gibi yazma), <code>/ultrathink</code>, <code>/ultracode</code>, <code>/yardim</code></li>
+                <li><strong>/komutlar:</strong> <code>/openview</code> (ekran asistanı), <code>/humanise</code> (insan gibi yazma), <code>/llm</code> (model yarışı), <code>/aichatsim</code> (YZ sohbet simülatörü), <code>/ultrathink</code>, <code>/ultracode</code>, <code>/yardim</code></li>
                 <li><strong>Kendini Tanıt:</strong> yeni sohbette adını, yaşını, ilgi alanlarını yaz — AI artık sana özel konuşur (gizli belleğe yazılır).</li>
                 <li><strong>Görsel:</strong> mesaj kutusuna ne istediğini yaz; "görsel oluştur" gibi ifadeler otomatik görsel moduna geçer.</li>
                 <li><strong>Üretim Havuzu:</strong> birden çok görseli/müziği tek seferde üret, sonuçları galeriden yönet.</li>
@@ -760,7 +768,7 @@
                 <div class="field hidden" id="ai-nesil-model-field">
                     <label for="ai-nesil-model-select">NesilAI YZ modeli</label>
                     <select id="ai-nesil-model-select" class="input"></select>
-                    <p class="field-note" id="ai-nesil-model-note">Minimax, Codestral, GLM, Mistral Nemo — anahtarsız çalışır.</p>
+                    <p class="field-note" id="ai-nesil-model-note">Minimax, Codestral — anahtarsız çalışır.</p>
                 </div>
 
                 <div class="field hidden" id="ai-nesil-key-field">
@@ -993,14 +1001,16 @@
 <script src="js/memory.js?v=m3"></script>
 <script src="js/research.js?v=r1"></script>
 <script src="js/projectfiles.js?v=p2"></script>
-<script src="js/ai.js?v=ai18"></script>
+<script src="js/ai.js?v=ai20"></script>
 <script src="js/tts.js?v=links3"></script>
 <script src="js/stt.js?v=stt2"></script>
 <script src="js/openview-capture.js?v=ov9"></script>
 <script src="js/openview.js?v=ov19"></script>
 <script src="js/nesilcode.js?v=nc7"></script>
+<script src="js/nesilllm.js?v=nllm2"></script>
+<script src="js/aichatsim.js?v=sim2"></script>
 <script src="js/textToPhoto.js?v=tr9"></script>
 <script src="js/photoToText.js?v=pool"></script>
-<script src="js/app.js?v=ui26"></script>
+<script src="js/app.js?v=ui28"></script>
 </body>
 </html>

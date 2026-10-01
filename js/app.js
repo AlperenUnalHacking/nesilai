@@ -15,8 +15,8 @@
             badge: 'Ücretsiz Plan',
             price: '0₺',
             limits: {
-                images: 100,
-                chats: 100,
+                images: 20,
+                chats: 100,   // (sohbet limiti token bazlı: CHAT_TOKEN_LIMIT)
                 stt: 100,
                 tts: 100,
                 music: 100,
@@ -430,7 +430,7 @@
                 currentSubscription = {
                     plan: 'free',
                     usageWindowStart: typeof parsed.usageWindowStart === 'number' ? parsed.usageWindowStart : 0,
-                    usage: Object.assign({ images: 0, chats: 0, stt: 0, tts: 0 }, parsed.usage)
+                    usage: Object.assign({ images: 0, chats: 0, stt: 0, tts: 0, chatTokens: 0 }, parsed.usage)
                 };
             }
         } catch (e) {
@@ -446,11 +446,51 @@
         const last = currentSubscription.usageWindowStart || 0;
         if (Date.now() - last >= RESET_MS) {
             currentSubscription.usageWindowStart = Date.now();
-            currentSubscription.usage = { images: 0, chats: 0, stt: 0, tts: 0, music: 0, video: 0 };
+            currentSubscription.usage = { images: 0, chats: 0, stt: 0, tts: 0, music: 0, video: 0, chatTokens: 0 };
             localStorage.setItem('nesilai_sub_v2', JSON.stringify(currentSubscription));
         }
 
         updateSubscriptionUI();
+    }
+
+    // Kota yaklaşıyor uyarısı: herhangi bir kota %80'i geçince composer üstünde yumuşak şerit
+    let quotaWarnState = '';
+    function checkQuotaWarning() {
+        const plan = getPlan();
+        if (plan.limits.images === Infinity) { hideQuotaWarning(); return; }
+        const u = currentSubscription.usage;
+        const imgPct = (u.images || 0) / plan.limits.images;
+        const chatPct = (u.chatTokens || 0) / CHAT_TOKEN_LIMIT;
+        const worst = Math.max(imgPct, chatPct);
+        if (worst >= 1) { hideQuotaWarning(); return; } // modal zaten gösterir
+        if (worst >= 0.8) {
+            showQuotaWarning(Math.max(imgPct, chatPct));
+        } else {
+            hideQuotaWarning();
+        }
+    }
+    function showQuotaWarning(pct) {
+        let bar = document.getElementById('quota-warning-bar');
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'quota-warning-bar';
+            bar.className = 'quota-warn';
+            const topbar = document.querySelector('.composer-topbar');
+            if (topbar && topbar.parentNode) topbar.parentNode.insertBefore(bar, topbar.nextSibling);
+        }
+        const isChat = (currentSubscription.usage.chatTokens || 0) / CHAT_TOKEN_LIMIT >=
+            (currentSubscription.usage.images || 0) / Math.max(1, getPlan().limits.images);
+        const left = isChat
+            ? Math.max(0, CHAT_TOKEN_LIMIT - (currentSubscription.usage.chatTokens || 0))
+            : Math.max(0, getPlan().limits.images - (currentSubscription.usage.images || 0));
+        bar.textContent = isChat
+            ? '⚠️ ' + t('Kotana yaklaşıyorsun — sohbet bütçesinden') + ' ' + Math.round(left).toLocaleString('tr-TR') + ' ' + t('token kaldı')
+            : '⚠️ ' + t('Kotana yaklaşıyorsun —') + ' ' + left + ' ' + t('görsel hakkın kaldı');
+        bar.classList.add('quota-warn-visible');
+    }
+    function hideQuotaWarning() {
+        const bar = document.getElementById('quota-warning-bar');
+        if (bar) bar.classList.remove('quota-warn-visible');
     }
 
     // Kota penceresinin kalan süresi (ms) — son hareket + 5 saat
@@ -477,7 +517,7 @@
     }
 
     function checkQuota(type) {
-        // Abonelik sistemi kaldırıldı: web'de tek ücretsiz plan (100'er),
+        // Abonelik sistemi kaldırıldı: web'de tek ücretsiz plan,
         // uygulamalarda sınırsız. Limit bitince kota modalı açılır.
         const plan = getPlan();
         const current = currentSubscription.usage[type] || 0;
@@ -485,11 +525,35 @@
 
         if (limit === Infinity) return true;
 
+        // Sohbet limiti token bazlı: gönderilen+alınan tokenlar bütçeden düşer
+        if (type === 'chats') {
+            const usedTokens = currentSubscription.usage.chatTokens || 0;
+            if (usedTokens >= CHAT_TOKEN_LIMIT) {
+                openQuotaModal(type);
+                return false;
+            }
+            return true;
+        }
+
         if (current >= limit) {
             openQuotaModal(type);
             return false;
         }
         return true;
+    }
+
+    // Sohbet bütçesi: 20.000 token (mesaj zarflarıyla birlikte)
+    const CHAT_TOKEN_LIMIT = 20000;
+
+    function incrementQuotaChats(userText, assistantText) {
+        const spent = AI.countMessagesTokens([
+            { content: userText || '' },
+            { content: assistantText || '' }
+        ]);
+        currentSubscription.usage.chatTokens = (currentSubscription.usage.chatTokens || 0) + spent;
+        currentSubscription.usage.chats = (currentSubscription.usage.chats || 0) + 1;
+        saveSubscription();
+        checkQuotaWarning();
     }
 
     // Kota modalı — "NesilAI Usage Reached" uyarısı + 5 saatlik yenileme sayacı
@@ -499,14 +563,16 @@
         if (!modal) { showToast(t('Günlük kullanım sınırına ulaştın. 5 saat sonra tekrar dene.'), 'warning'); return; }
         const typeLabels = {
             images: t('Görsel oluşturma'),
-            chats: t('Sohbet mesajı'),
+            chats: t('Sohbet bütçesi: 20.000 token (5 saatte yenilenir)'),
             stt: t('Sesi yazıya çevirme (Mikrofon)'),
             tts: t('Yazıyı sese çevirme (Dinleme)'),
             music: t('Müzik/ses üretimi'),
             video: t('Video üretimi')
         };
         const sub = document.getElementById('quota-sub');
-        if (sub) sub.textContent = typeLabels[type] ? (typeLabels[type] + ' — ' + t('günlük ücretsiz hakkın doldu.')) : t('Bugünlük ücretsiz kullanımın bitti.');
+        if (sub) sub.textContent = type === 'chats'
+            ? t('Sohbet bütçesi: 20.000 token (5 saatte yenilenir)')
+            : (typeLabels[type] ? (typeLabels[type] + ' — ' + t('günlük ücretsiz hakkın doldu.')) : t('Bugünlük ücretsiz kullanımın bitti.'));
         startQuotaCountdown();
         modal.classList.remove('hidden');
         closeMobileSidebar();
@@ -554,7 +620,11 @@
             if (barEl) barEl.style.width = (limit === Infinity ? 0 : Math.min(100, (used / limit) * 100)) + '%';
         };
         paintMeter(miniTxtImages, miniBarImages, usage.images, plan.limits.images);
-        paintMeter(miniTxtChats, miniBarChats, usage.chats, plan.limits.chats);
+        // Sohbet mini barı token bazlı: web'de 20k token bütçesi, uygulamada ∞
+        paintMeter(miniTxtChats, miniBarChats, usage.chatTokens || 0, plan.limits.chats === Infinity ? Infinity : CHAT_TOKEN_LIMIT);
+
+        // Kota yaklaşıyor şeridini de tazele
+        checkQuotaWarning();
     }
 
     // --- Müzik & Ses atölyesi ---
@@ -2331,6 +2401,52 @@
             return;
         }
 
+        // NESILLLM: /llm [on|off] → model yarışı uygulaması
+        if (cmdInfo && cmdInfo.cmd === 'llm') {
+            incrementQuota('chats');
+            const llmApp = window.NesilLLM;
+            const llmReply = llmApp
+                ? llmApp.handleCommand(cmdInfo.body)
+                : 'NesilLLM bu sürümde kullanılamıyor.';
+            const llmMsg = {
+                id: 'msg_' + (Date.now() + 2),
+                role: 'assistant',
+                text: llmReply,
+                command: 'llm',
+                commandLabel: 'LLM',
+                timestamp: Date.now()
+            };
+            activeChat.messages.push(llmMsg);
+            appendMessageToDom(llmMsg);
+            saveChatsToStorage();
+            if (window.NesilSFX) window.NesilSFX.reply();
+            checkAutoSpeak(llmMsg.text);
+            return;
+        }
+
+        // AI CHAT SIM: /aichatsim [on|off] → yapay zekâ sohbet simülatörü
+        if (cmdInfo && cmdInfo.cmd === 'aichatsim') {
+            incrementQuota('chats');
+            const simApp = window.NesilAiChatSim;
+            const simReply = simApp
+                ? simApp.handleCommand(cmdInfo.body)
+                : 'AI Chat Simulator bu sürümde kullanılamıyor.';
+            const simMsg = {
+                id: 'msg_' + (Date.now() + 3),
+                role: 'assistant',
+                text: simReply,
+                command: 'aichatsim',
+                commandLabel: 'AI CHAT SIM',
+                timestamp: Date.now()
+            };
+            activeChat.messages.push(simMsg);
+            appendMessageToDom(simMsg);
+            saveChatsToStorage();
+            if (window.NesilSFX) window.NesilSFX.reply();
+            checkAutoSpeak(simMsg.text);
+            return;
+        }
+
         // HUMANISE: /humanise [on|off] → insan modu (AI-Slop kapalı)
         if (cmdInfo && (cmdInfo.cmd === 'humanise' || cmdInfo.cmd === 'humanize')) {
             incrementQuota('chats');
@@ -2575,8 +2691,7 @@
             return;
         }
 
-        // 3. Normal Sohbet İşlemi (Kota Artır)
-        incrementQuota('chats');
+        // 3. Normal Sohbet İşlemi (mesaj sayacı; token bütçesi generateAiResponse içinde)
 
         // ANAHTAR KELİME MOTORU: Betty/Beste, kimlik, Acsida, Bloodline soruları → anında yanıt
         // Not: yalnızca kullanıcı düz mesaj yazdığında çalışır; slash komutlarında devre dışı
@@ -2882,7 +2997,7 @@
     // Slash Komutları — /ultrathink /report /ultracode + ayar komutları
     // ========================================================
     function parseSlashCommand(rawText) {
-        const m = String(rawText || '').match(/^\s*\/(ultrathink|report|ultracode|openview|nesilcode|humanise|humanize|trustme|acsmod|ayarlar|settings|tema|theme|ses|voice|temizle|clear|yardim|yardım|help|komutlar|commands)\b\s*([\s\S]*)$/i);
+        const m = String(rawText || '').match(/^\s*\/(ultrathink|report|ultracode|openview|nesilcode|llm|aichatsim|humanise|humanize|trustme|acsmod|ayarlar|settings|tema|theme|ses|voice|temizle|clear|yardim|yardım|help|komutlar|commands)\b\s*([\s\S]*)$/i);
         if (!m) return null;
         return { cmd: m[1].toLowerCase(), body: m[2].trim(), original: rawText };
     }
@@ -2927,6 +3042,10 @@
                     '',
                     'Kodlama ajanı:',
                     '- `/nesilcode` — kodlama çalışma alanını açar/kapatır; dosyaları okur, yazar, oluşturur, siler',
+                    '',
+                    'Yapay zekâ uygulamaları:',
+                    '- `/llm` — NesilLLM: Codestral ve MiniMax yarışır, jüri en iyisini seçer (on/off)',
+                    '- `/aichatsim` — AI Chat Simulator: yapay zekâlar kendi aralarında sohbet eder, sen de katılırsın (on/off)',
                     '',
                     'Ekran asistanı (PC):',
                     '- `/openview` — ekranı canlı izletir; /openview off → kapatır',
@@ -3181,7 +3300,12 @@
         if (result && result.fallbackFrom === 'llm7') {
             showToast(t('NesilAI YZ yoğun — otomatik yedek motora geçildi'), 'info');
         }
-        return typeof result === 'string' ? result : result.text;
+        const outText = typeof result === 'string' ? result : result.text;
+        // SOHBET BÜTÇESİ (20k token): bu turun yeni maliyeti düşülür (kullanıcı + yanıt)
+        try {
+            incrementQuotaChats(userPrompt, outText);
+        } catch (e) { /* sayaç hatası yanıtı bozmasın */ }
+        return outText;
     }
 
     // Sağlayıcı hatasını kullanıcıya yol gösteren bir mesaja çevirir
@@ -3544,7 +3668,7 @@
         const stored = AI.getSettings();
 
         // NesilAI YZ seçiliyse gerçek model seçim listesini göster
-        // (minimax ↔ codestral ↔ GLM ↔ Mistral Nemo)
+        // (minimax ↔ codestral)
         if (aiNesilModelField && aiNesilModelSelect) {
             const isBrandUi = AI.isNesilAiBrand(provider.id);
             aiNesilModelField.classList.toggle('hidden', !isBrandUi);
@@ -4010,6 +4134,8 @@
         { cmd: '/report', name: 'REPORT', desc: 'İnternette derin araştırma yapıp rapor hazırlar', icon: 'i-report' },
         { cmd: '/ultracode', name: 'ULTRACODE', desc: 'Araştırır, plan çıkarır, kod yazar', icon: 'i-bolt' },
         { cmd: '/nesilcode', name: 'NESILCODE', desc: 'Kodlama ajanı — dosyaları okur, yazar, oluşturur, siler (on/off)', icon: 'i-code' },
+        { cmd: '/llm', name: 'LLM', desc: 'NesilLLM — iki model yarışır, jüri en iyisini seçer (on/off)', icon: 'i-cpu' },
+        { cmd: '/aichatsim', name: 'AI CHAT SIM', desc: 'Yapay zekâlar kendi aralarında sohbet eder, sen de katılırsın (on/off)', icon: 'i-chat' },
         { cmd: '/openview', name: 'OPENVIEW', desc: 'Ekranını canlı izlet — PC ekran asistanı (on/off/settings)', icon: 'i-eye' },
         { cmd: '/humanise', name: 'HUMANISE', desc: 'AI-Slop\'u kapat — insan gibi konuşur (on/off)', icon: 'i-pen' },
         { cmd: '/trustme', name: 'TRUSTME', desc: 'Dürüstlük modu — övgü yok, fikir tutmuyorsa açıkça söyler (on/off)', icon: 'i-check-circle' },
@@ -4444,6 +4570,8 @@
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 if (window.NesilCode && window.NesilCode.isOpen()) return;
+                if (window.NesilLLM && window.NesilLLM.isOpen()) return;
+                if (window.NesilAiChatSim && window.NesilAiChatSim.isOpen()) return;
                 if (lightboxEl && !lightboxEl.classList.contains('hidden')) return; // lightbox kendi kapatır
                 closeTopModal();
             }

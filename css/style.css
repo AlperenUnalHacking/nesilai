@@ -4641,3 +4641,178 @@ html[data-device="tv"] .library-head-actions .input { min-height: 52px; font-siz
 .quota-actions { display: grid; gap: 10px; margin-bottom: 12px; }
 .quota-dl { justify-content: center; }
 .quota-dl span { white-space: nowrap; }
+
+
+/* ==============================================================
+   20. NesilLLM + AI Chat Simulator + Kota yaklaşıyor uyarısı
+   ============================================================== */
+.command-badge.cmd-llm { background: linear-gradient(100deg, #0a1626 0%, #2f6bff 55%, #04101f 100%); color: rgba(208, 228, 255, 0.55); border-color: rgba(47, 107, 255, 0.3); }
+.command-badge.cmd-aichatsim { background: linear-gradient(100deg, #23081f 0%, #ec4899 55%, #1a0416 100%); color: rgba(255, 214, 235, 0.55); border-color: rgba(236, 72, 153, 0.3); }
+
+/* --- Kota yaklaşıyor uyarısı (composer üst şeridi) --- */
+.quota-warn {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+    padding: 7px 14px;
+    border: 1px solid rgba(255, 176, 32, 0.35);
+    border-radius: var(--r-md, 12px);
+    background: linear-gradient(100deg, rgba(255, 176, 32, 0.12), rgba(255, 122, 0, 0.06));
+    color: #ffb020;
+    font-size: 13px;
+    font-weight: 600;
+}
+.quota-warn.quota-warn-visible { display: flex; animation: quotaWarnIn 0.3s var(--ease, ease); }
+@keyframes quotaWarnIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* --- NesilLLM (.nllm) --- */
+.nllm {
+    position: fixed; inset: 0; z-index: 900;
+    background:
+        radial-gradient(1200px 600px at 15% -10%, var(--space-glow-1), transparent 60%),
+        radial-gradient(1000px 500px at 90% 110%, var(--space-glow-2), transparent 60%),
+        var(--bg);
+    color: var(--text-1);
+}
+.nllm.hidden { display: none !important; }
+.nllm-shell { display: flex; flex-direction: column; height: 100%; max-width: 1100px; margin: 0 auto; padding: 0 20px 18px; }
+.nllm-header, .acsim-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 0;
+}
+.nllm-brand, .acsim-brand { display: flex; align-items: center; gap: 10px; }
+.nllm-brand .icon, .acsim-brand .icon { width: 22px; height: 22px; color: var(--accent, #2f6bff); }
+.nllm-brand strong, .acsim-brand strong { font-size: 17px; letter-spacing: 0.02em; }
+.nllm-sub, .acsim-sub { color: var(--text-3); font-size: 12.5px; }
+.nllm-header-actions, .acsim-header-actions { display: flex; gap: 8px; }
+.nllm-btn, .acsim-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--border); border-radius: var(--r-full, 999px);
+    background: var(--surface-1); color: var(--text-1);
+    padding: 7px 13px; font-size: 13px; cursor: pointer;
+    transition: border-color 0.18s var(--ease, ease), background 0.18s var(--ease, ease);
+}
+.nllm-btn .icon, .acsim-btn .icon { width: 15px; height: 15px; }
+.nllm-btn:hover, .acsim-btn:hover { border-color: var(--accent, #2f6bff); }
+.nllm-btn-accent, .acsim-btn-accent {
+    background: linear-gradient(100deg, var(--accent, #2f6bff), #7c4dff);
+    border-color: transparent; color: #fff; font-weight: 600;
+}
+.nllm-btn-accent:disabled { opacity: 0.5; cursor: not-allowed; }
+.nllm-settings {
+    border: 1px solid var(--border); border-radius: var(--r-lg, 16px);
+    background: var(--surface-1); padding: 14px 16px; margin-bottom: 12px;
+}
+.nllm-settings.hidden { display: none; }
+.nllm-settings h3 { margin: 0 0 4px; font-size: 15px; }
+.nllm-set-note { color: var(--text-3); font-size: 12.5px; margin: 0 0 10px; }
+.nllm-racer-list { display: grid; gap: 6px; margin-bottom: 10px; }
+.nllm-racer-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--r-md, 12px);
+    background: var(--surface-0, transparent); font-size: 13px;
+}
+.nllm-racer-off { opacity: 0.55; }
+.nllm-racer-name { font-weight: 700; min-width: 90px; }
+.nllm-racer-model { color: var(--text-2); flex: 1; }
+.nllm-racer-state { color: var(--text-3); font-size: 12px; }
+.nllm-racer-del { border: 0; background: none; color: var(--text-3); cursor: pointer; padding: 2px 6px; }
+.nllm-racer-del:hover { color: #ff5470; }
+.nllm-add-row { display: flex; gap: 8px; }
+.nllm-select, .nllm-input, .acsim-input {
+    border: 1px solid var(--border); border-radius: var(--r-md, 12px);
+    background: var(--bg); color: var(--text-1);
+    padding: 8px 10px; font-size: 13px; font-family: inherit;
+}
+.nllm-input { flex: 1; }
+.nllm-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 8px 2px 14px; }
+.nllm-card {
+    border: 1px solid var(--border); border-radius: var(--r-lg, 16px);
+    background: var(--surface-1); padding: 14px 16px;
+}
+.nllm-q { font-weight: 700; font-size: 14.5px; margin-bottom: 6px; }
+.nllm-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.nllm-winner {
+    color: #ffd166; font-size: 12.5px; font-weight: 700;
+    border: 1px solid rgba(255, 209, 102, 0.35); border-radius: var(--r-full, 999px); padding: 2px 10px;
+}
+.nllm-judge { color: var(--text-3); font-size: 12px; font-style: italic; }
+.nllm-a { font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+.nllm-sys, .acsim-sys {
+    align-self: center; color: var(--text-3); font-size: 12.5px; font-style: italic;
+    border: 1px dashed var(--border); border-radius: var(--r-full, 999px); padding: 4px 14px;
+}
+.nllm-composer, .acsim-composer {
+    display: flex; gap: 8px; align-items: flex-end;
+    border: 1px solid var(--border); border-radius: var(--r-lg, 16px);
+    background: var(--surface-1); padding: 10px;
+}
+.nllm-composer textarea {
+    flex: 1; resize: none; border: 0; background: transparent; color: var(--text-1);
+    font-family: inherit; font-size: 14px; line-height: 1.5; outline: none; max-height: 140px;
+}
+.nllm-composer .hidden { display: none; }
+
+/* --- AI Chat Simulator (.acsim) --- */
+.acsim { position: fixed; inset: 0; z-index: 900; background: var(--bg); color: var(--text-1); }
+.acsim.hidden { display: none !important; }
+.acsim-shell { display: flex; flex-direction: column; height: 100%; max-width: 1280px; margin: 0 auto; padding: 0 20px 18px; }
+.acsim-body { display: flex; gap: 16px; flex: 1; min-height: 0; }
+.acsim-side {
+    width: 280px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;
+    border: 1px solid var(--border); border-radius: var(--r-lg, 16px);
+    background: var(--surface-1); padding: 12px; overflow-y: auto;
+}
+.acsim-side-head { color: var(--text-3); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 4px 6px; }
+.acsim-bot-list { display: flex; flex-direction: column; gap: 8px; }
+.acsim-bot {
+    border: 1px solid var(--border); border-radius: var(--r-md, 12px);
+    background: var(--surface-0, transparent); padding: 9px 10px;
+}
+.acsim-bot-active { border-color: var(--accent, #2f6bff); box-shadow: 0 0 0 1px var(--accent, #2f6bff) inset; }
+.acsim-bot-off { opacity: 0.55; }
+.acsim-bot-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.acsim-bot-name { font-weight: 700; font-size: 13.5px; }
+.acsim-mode-select {
+    border: 1px solid var(--border); border-radius: var(--r-full, 999px);
+    background: var(--bg); color: var(--text-2); font-size: 11.5px; padding: 2px 6px; max-width: 130px;
+}
+.acsim-bot-meta { color: var(--text-3); font-size: 11.5px; margin: 4px 0 6px; }
+.acsim-bot-actions { display: flex; gap: 6px; }
+.acsim-bot-dm, .acsim-bot-say, .acsim-bot-del {
+    border: 1px solid var(--border); border-radius: var(--r-full, 999px);
+    background: transparent; color: var(--text-2); font-size: 11.5px; padding: 2px 10px; cursor: pointer;
+}
+.acsim-bot-dm:hover, .acsim-bot-say:hover { border-color: var(--accent, #2f6bff); color: var(--text-1); }
+.acsim-bot-del { margin-left: auto; }
+.acsim-bot-del:hover { color: #ff5470; border-color: #ff5470; }
+.acsim-add-btn { justify-content: center; }
+.acsim-topic { border-top: 1px dashed var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 7px; }
+.acsim-topic.hidden { display: none; }
+.acsim-topic label { color: var(--text-3); font-size: 12px; font-weight: 700; }
+.acsim-topic-actions { display: flex; gap: 6px; }
+.acsim-block { width: 100%; justify-content: center; }
+.acsim-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.acsim-dm-banner {
+    border: 1px solid rgba(236, 72, 153, 0.4); border-radius: var(--r-md, 12px);
+    background: rgba(236, 72, 153, 0.08); color: #f472b6;
+    font-size: 12.5px; padding: 7px 12px; margin-bottom: 8px;
+}
+.acsim-dm-banner.hidden { display: none; }
+.acsim-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 2px 12px; }
+.acsim-msg { max-width: 78%; border: 1px solid var(--border); border-radius: var(--r-lg, 16px); background: var(--surface-1); padding: 8px 12px; align-self: flex-start; }
+.acsim-msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+.acsim-msg-name { font-weight: 700; font-size: 12.5px; color: var(--accent, #2f6bff); }
+.acsim-msg-mode { font-size: 11px; color: var(--text-3); }
+.acsim-msg-dm { font-size: 10.5px; font-weight: 700; color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.4); border-radius: var(--r-full, 999px); padding: 0 7px; }
+.acsim-msg-text { font-size: 14px; line-height: 1.55; white-space: pre-wrap; }
+.acsim-user { align-self: flex-end; border-color: rgba(47, 107, 255, 0.35); }
+.acsim-user .acsim-msg-name { color: var(--text-2); }
+.acsim-auto-on { border-color: #ffb020 !important; color: #ffb020 !important; }
+.acsim-composer .acsim-input { flex: 1; }
+
+@media (max-width: 860px) {
+    .acsim-body { flex-direction: column; }
+    .acsim-side { width: 100%; max-height: 38%; }
+}

@@ -39,7 +39,7 @@
     // marka olarak gösterilir: "NesilAI YZ". llm7 asıl motor,
     // pollinations otomatik yedektir (429/quota durumunda devreye girer).
     // Kullanıcı Ayarlar → Yapay Zeka → "NesilAI YZ modeli" ile gerçek
-    // modeli seçer (minimax, codestral, GLM, Mistral Nemo).
+    // modeli seçer (minimax, codestral).
     // ========================================================
     const BRAND_NAME = 'NesilAI YZ';
 
@@ -54,12 +54,10 @@
             chatUrl: 'https://api.llm7.io/v1/chat/completions',
             modelsUrl: 'https://api.llm7.io/v1/models',
             defaultModel: 'minimax-m2.7',
-            suggestedModels: ['minimax-m2.7', 'codestral-latest', 'GLM-5.3-Flash', 'mistral-Nemo-Instruct-2407'],
+            suggestedModels: ['minimax-m2.7', 'codestral-latest'],
             modelHints: {
                 'minimax-m2.7': 'Genel amaçlı, uzun bağlam (180K)',
-                'codestral-latest': 'Kod için optimize',
-                'GLM-5.3-Flash': 'Hızlı, 400K bağlam',
-                'mistral-Nemo-Instruct-2407': 'Hafif ve hızlı'
+                'codestral-latest': 'Kod için optimize'
             },
             needsKey: false,
             vision: false,
@@ -239,6 +237,13 @@
 
     const UI_TRANSLATIONS = {
         ru: {
+            'NesilLLM — iki model yarışır, jüri en iyisini seçer (on/off)': 'NesilLLM — две модели соревнуются, жюри выбирает лучшую (вкл/выкл)',
+            'Yapay zekâlar kendi aralarında sohbet eder, sen de katılırsın (on/off)': 'ИИ общаются между собой, и ты тоже можешь присоединиться (вкл/выкл)',
+            'Kotana yaklaşıyorsun — sohbet bütçesinden': 'Ты приближаешься к лимиту — из бюджета чата',
+            'token kaldı': 'токенов осталось',
+            'Kotana yaklaşıyorsun —': 'Ты приближаешься к лимиту —',
+            'görsel hakkın kaldı': 'созданий изображений осталось',
+            'Sohbet bütçesi: 20.000 token (5 saatte yenilenir)': 'Бюджет чата: 20 000 токенов (обновление каждые 5 часов)',
             '[yerel]': '[локально]', '[çevrimiçi]': '[онлайн]',
             "İsteğe bağlı hız anahtarı: token.llm7.io — limiti yükseltir, zorunlu değildir.": "Необязательный ключ скорости: token.llm7.io — повышает лимиты, не обязателен.",
             "Anahtarsız çalışır (günlük ~1M token). Modeli aşağıdan seçebilirsin.": "Работает без ключа (~1M токенов в день). Модель можно выбрать ниже.",
@@ -280,7 +285,7 @@
             'NesilAI YZ · {m} seçildi': 'NesilAI YZ · {m} выбрано', 'Ayarlar kaydedildi': 'Настройки сохранены',
             'Yapay zeka sağlayıcısı, ses ve veri seçenekleri.': 'ИИ-провайдер, голос и данные.',
             'Yapay zeka': 'Искусственный интеллект', 'Sağlayıcı': 'Провайдер', 'NesilAI YZ modeli': 'Модель NesilAI YZ',
-            'Minimax, Codestral, GLM, Mistral Nemo — anahtarsız çalışır.': 'Minimax, Codestral, GLM, Mistral Nemo — без ключа.',
+            'Minimax, Codestral — anahtarsız çalışır.': 'Minimax, Codestral, GLM, Mistral Nemo — без ключа.',
             'Anahtarsız çalışır; modeli istediğin an değiştirebilirsin. Değişiklik anında kaydedilir.': 'Работает без ключа; модель можно сменить в любой момент. Изменение сохраняется сразу.',
             'Listeden seçebilir ya da model adını elle yazabilirsin.': 'Выберите из списка или введите название модели вручную.',
             'API anahtarı': 'API-ключ', 'Anahtarını buraya yapıştır': 'Вставьте свой ключ сюда', 'Göster': 'Показать',
@@ -416,6 +421,13 @@
         },
 
         es: {
+            'NesilLLM — iki model yarışır, jüri en iyisini seçer (on/off)': 'NesilLLM — dos modelos compiten, el jurado elige el mejor (on/off)',
+            'Yapay zekâlar kendi aralarında sohbet eder, sen de katılırsın (on/off)': 'Las IAs conversan entre sí y tú también participas (on/off)',
+            'Kotana yaklaşıyorsun — sohbet bütçesinden': 'Te acercas a tu cuota — del presupuesto de chat',
+            'token kaldı': 'tokens restantes',
+            'Kotana yaklaşıyorsun —': 'Te acercas a tu cuota —',
+            'görsel hakkın kaldı': 'creaciones de imágenes restantes',
+            'Sohbet bütçesi: 20.000 token (5 saatte yenilenir)': 'Presupuesto de chat: 20.000 tokens (se renueva cada 5 horas)',
             '[yerel]': '[local]', '[çevrimiçi]': '[en línea]',
             "İsteğe bağlı hız anahtarı: token.llm7.io — limiti yükseltir, zorunlu değildir.": "Clave de velocidad opcional: token.llm7.io — amplía límites, no obligatoria.",
             "Anahtarsız çalışır (günlük ~1M token). Modeli aşağıdan seçebilirsin.": "Funciona sin clave (~1M tokens al día). Puedes elegir el modelo abajo.",
@@ -457,7 +469,7 @@
             'NesilAI YZ · {m} seçildi': 'NesilAI YZ · {m} seleccionado', 'Ayarlar kaydedildi': 'Ajustes guardados',
             'Yapay zeka sağlayıcısı, ses ve veri seçenekleri.': 'Proveedor de IA, voz y datos.',
             'Yapay zeka': 'Inteligencia artificial', 'Sağlayıcı': 'Proveedor', 'NesilAI YZ modeli': 'Modelo de NesilAI YZ',
-            'Minimax, Codestral, GLM, Mistral Nemo — anahtarsız çalışır.': 'Minimax, Codestral, GLM, Mistral Nemo — sin clave.',
+            'Minimax, Codestral — anahtarsız çalışır.': 'Minimax, Codestral, GLM, Mistral Nemo — sin clave.',
             'Anahtarsız çalışır; modeli istediğin an değiştirebilirsin. Değişiklik anında kaydedilir.': 'Funciona sin clave; puedes cambiar el modelo cuando quieras. Se guarda al instante.',
             'Listeden seçebilir ya da model adını elle yazabilirsin.': 'Elige de la lista o escribe el nombre del modelo manualmente.',
             'API anahtarı': 'Clave API', 'Anahtarını buraya yapıştır': 'Pega tu clave aquí', 'Göster': 'Mostrar',
@@ -592,6 +604,13 @@
         },
 
         hi: {
+            'NesilLLM — iki model yarışır, jüri en iyisini seçer (on/off)': 'NesilLLM — दो मॉडल प्रतिस्पर्धा करते हैं, ज्यूरी सर्वश्रेष्ठ चुनती है (on/off)',
+            'Yapay zekâlar kendi aralarında sohbet eder, sen de katılırsın (on/off)': 'AI आपस में बातचीत करते हैं, आप भी शामिल हो सकते हैं (on/off)',
+            'Kotana yaklaşıyorsun — sohbet bütçesinden': 'आप कोटा के करीब हैं — चैट बजट से',
+            'token kaldı': 'टोकन बचे',
+            'Kotana yaklaşıyorsun —': 'आप कोटा के करीब हैं —',
+            'görsel hakkın kaldı': 'छवि निर्माण शेष',
+            'Sohbet bütçesi: 20.000 token (5 saatte yenilenir)': 'चैट बजट: 20,000 टोकन (हर 5 घंटे में नवीनीकृत)',
             '[yerel]': '[स्थानीय]', '[çevrimiçi]': '[ऑनलाइन]',
             "İsteğe bağlı hız anahtarı: token.llm7.io — limiti yükseltir, zorunlu değildir.": "वैकल्पिक स्पीड कुंजी: token.llm7.io — सीमा बढ़ाती है, अनिवार्य नहीं।",
             "Anahtarsız çalışır (günlük ~1M token). Modeli aşağıdan seçebilirsin.": "बिना कुंजी चलता है (~1M टोकन/दिन)। मॉडल नीचे चुनें।",
@@ -633,7 +652,7 @@
             'NesilAI YZ · {m} seçildi': 'NesilAI YZ · {m} चयनित', 'Ayarlar kaydedildi': 'सेटिंग्स सहेजी गईं',
             'Yapay zeka sağlayıcısı, ses ve veri seçenekleri.': 'AI प्रदाता, आवाज़ और डेटा विकल्प।',
             'Yapay zeka': 'आर्टिफिशियल इंटेलिजेंस', 'Sağlayıcı': 'प्रदाता', 'NesilAI YZ modeli': 'NesilAI YZ मॉडल',
-            'Minimax, Codestral, GLM, Mistral Nemo — anahtarsız çalışır.': 'Minimax, Codestral, GLM, Mistral Nemo — बिना कुंजी।',
+            'Minimax, Codestral — anahtarsız çalışır.': 'Minimax, Codestral, GLM, Mistral Nemo — बिना कुंजी।',
             'Anahtarsız çalışır; modeli istediğin an değiştirebilirsin. Değişiklik anında kaydedilir.': 'बिना कुंजी चलता है; मॉडल कभी भी बदलें। बदलाव तुरंत सहेजा जाता है।',
             'Listeden seçebilir ya da model adını elle yazabilirsin.': 'सूची से चुनें या मॉडल का नाम हाथ से लिखें।',
             'API anahtarı': 'API कुंजी', 'Anahtarını buraya yapıştır': 'अपनी कुंजी यहाँ पेस्ट करें', 'Göster': 'दिखाएँ',
@@ -768,6 +787,13 @@
         },
 
         de: {
+            'NesilLLM — iki model yarışır, jüri en iyisini seçer (on/off)': 'NesilLLM — zwei Modelle wetteifern, die Jury wählt das Beste (an/aus)',
+            'Yapay zekâlar kendi aralarında sohbet eder, sen de katılırsın (on/off)': 'KI-Chat untereinander, du kannst mitmachen (an/aus)',
+            'Kotana yaklaşıyorsun — sohbet bütçesinden': 'Du nähst dich deinem Limit — vom Chat-Budget',
+            'token kaldı': 'Token übrig',
+            'Kotana yaklaşıyorsun —': 'Du nähst dich deinem Limit —',
+            'görsel hakkın kaldı': 'Bilderzeugungen übrig',
+            'Sohbet bütçesi: 20.000 token (5 saatte yenilenir)': 'Chat-Budget: 20.000 Token (Erneuerung alle 5 Stunden)',
             '[yerel]': '[lokal]', '[çevrimiçi]': '[online]',
             "İsteğe bağlı hız anahtarı: token.llm7.io — limiti yükseltir, zorunlu değildir.": "Optionaler Geschwindigkeitsschlüssel: token.llm7.io — erhöht Limits, nicht Pflicht.",
             "Anahtarsız çalışır (günlük ~1M token). Modeli aşağıdan seçebilirsin.": "Läuft ohne Schlüssel (~1M Token/Tag). Modell unten wählbar.",
@@ -809,7 +835,7 @@
             'NesilAI YZ · {m} seçildi': 'NesilAI YZ · {m} ausgewählt', 'Ayarlar kaydedildi': 'Einstellungen gespeichert',
             'Yapay zeka sağlayıcısı, ses ve veri seçenekleri.': 'KI-Anbieter, Stimme und Daten.',
             'Yapay zeka': 'Künstliche Intelligenz', 'Sağlayıcı': 'Anbieter', 'NesilAI YZ modeli': 'NesilAI YZ-Modell',
-            'Minimax, Codestral, GLM, Mistral Nemo — anahtarsız çalışır.': 'Minimax, Codestral, GLM, Mistral Nemo — ohne Schlüssel.',
+            'Minimax, Codestral — anahtarsız çalışır.': 'Minimax, Codestral, GLM, Mistral Nemo — ohne Schlüssel.',
             'Anahtarsız çalışır; modeli istediğin an değiştirebilirsin. Değişiklik anında kaydedilir.': 'Läuft ohne Schlüssel; Modell jederzeit wechselbar. Änderung wird sofort gespeichert.',
             'Listeden seçebilir ya da model adını elle yazabilirsin.': 'Aus der Liste wählen oder Modellnamen manuell eingeben.',
             'API anahtarı': 'API-Schlüssel', 'Anahtarını buraya yapıştır': 'Schlüssel hier einfügen', 'Göster': 'Anzeigen',
@@ -944,6 +970,13 @@
         },
 
         en: {
+            'NesilLLM — iki model yarışır, jüri en iyisini seçer (on/off)': 'NesilLLM — two models compete, the judge picks the best (on/off)',
+            'Yapay zekâlar kendi aralarında sohbet eder, sen de katılırsın (on/off)': 'AIs chat among themselves and you can join too (on/off)',
+            'Kotana yaklaşıyorsun — sohbet bütçesinden': 'You\'re approaching your quota — from the chat budget',
+            'token kaldı': 'tokens left',
+            'Kotana yaklaşıyorsun —': 'You\'re approaching your quota —',
+            'görsel hakkın kaldı': 'image generations left',
+            'Sohbet bütçesi: 20.000 token (5 saatte yenilenir)': 'Chat budget: 20,000 tokens (renews every 5 hours)',
             '[yerel]': '[Local]',
             '[çevrimiçi]': '[Online]',
             'Kaydet': 'Save',
@@ -1007,7 +1040,7 @@
             'Yapay zeka': 'Artificial intelligence',
             'Sağlayıcı': 'Provider',
             'NesilAI YZ modeli': 'NesilAI AI model',
-            'Minimax, Codestral, GLM, Mistral Nemo — anahtarsız çalışır.': 'Minimax, Codestral, GLM, Mistral Nemo — works without a key.',
+            'Minimax, Codestral — anahtarsız çalışır.': 'Minimax, Codestral, GLM, Mistral Nemo — works without a key.',
             'Anahtarsız çalışır; modeli istediğin an değiştirebilirsin. Değişiklik anında kaydedilir.': 'Works keyless; change the model anytime. Changes save instantly.',
             'Listeden seçebilir ya da model adını elle yazabilirsin.': 'Pick from the list or type a model name manually.',
             'API anahtarı': 'API key',
@@ -1824,7 +1857,7 @@
         if (provider.extraHeaders) Object.assign(headers, provider.extraHeaders);
 
         const body = {
-            model: getModel(provider.id),
+            model: opts.model || getModel(provider.id),
             messages: toOpenAiMessages(system, messages, wantsVision),
             temperature: temperature,
             stream: wantStream
@@ -1988,6 +2021,27 @@
     }
 
     // ========================================================
+    // Token Tahmini — kota bütçesi için hafif sayım
+    // (karakter/4 ile kelime sayısının ortalaması; kesin değil, yeterli)
+    // ========================================================
+    function estimateTokens(text) {
+        const s = String(text || '');
+        if (!s) return 0;
+        const words = s.split(/\s+/).filter(Boolean).length;
+        return Math.max(1, Math.round((s.length / 4 + words * 1.3) / 2));
+    }
+
+    function countMessagesTokens(messages) {
+        let total = 0;
+        (messages || []).forEach(m => {
+            total += 4; // mesaj zarfı
+            total += estimateTokens(m.content);
+            (m.images || []).forEach(() => { total += 800; }); // görsel ≈ sabit maliyet
+        });
+        return total;
+    }
+
+    // ========================================================
     // Tek Soru → Tek Cevap Kısayolu
     // ========================================================
     async function ask(prompt, options) {
@@ -2120,6 +2174,8 @@
         isReady: isReady,
         chat: chat,
         ask: ask,
+        estimateTokens: estimateTokens,
+        countMessagesTokens: countMessagesTokens,
         listModels: listModels,
         testConnection: testConnection,
         on: on
