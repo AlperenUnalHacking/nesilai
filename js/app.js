@@ -1756,6 +1756,19 @@
         userInput.focus();
     }
 
+    // LYT tuşu etiketini yumuşakça değiştirir: kısa fade-out → metin swap → fade-in
+    // (layout/sidebar geçişiyle aynı cubic-bezier eğrisini kullanır)
+    function softSwapLayoutLabel(labelEl, newText) {
+        if (!labelEl) return;
+        labelEl.classList.add('lyt-swap-out');
+        setTimeout(() => {
+            labelEl.textContent = newText;
+            labelEl.classList.remove('lyt-swap-out');
+            labelEl.classList.add('lyt-swap-in');
+            setTimeout(() => labelEl.classList.remove('lyt-swap-in'), 320);
+        }, 180);
+    }
+
     // Mobil düzen tercihi: rail-active (2. LYT) açılışta geri yükle
     function restoreMobileLayoutPreference() {
         if (!layoutToggleBtn) return;
@@ -4478,12 +4491,13 @@
         // 1.LYT / 2.LYT geçiş tuşu — mobilde hamburger yalnızca menüyü açar/kapatır;
         // bu tuş açıkken tam menü ↔ sohbet-listesi düzeni arasında geçiş yapar.
         // Masaüstünde zaten hamburger bunu yaptığı için tuş gizlenir (CSS).
+        // Etiket değişimi de yumuşak: fade+slide, sidebar geçişiyle aynı eğri.
         if (layoutToggleBtn) {
             layoutToggleBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const isRail = document.body.classList.toggle('rail-active');
                 const label = layoutToggleBtn.querySelector('.layout-toggle-label');
-                if (label) label.textContent = isRail ? '2. LYT' : '1. LYT';
+                if (label) softSwapLayoutLabel(label, isRail ? '2. LYT' : '1. LYT');
                 try { localStorage.setItem('nesilai_mobile_layout', isRail ? 'rail' : 'full'); } catch (err) { /* yoksay */ }
             });
         }

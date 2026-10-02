@@ -4480,13 +4480,6 @@ html[data-device="tv"] .input, html[data-device="tv"] select.input { font-size: 
     body.rail-active .sidebar { width: var(--sidebar-w); }
     body.rail-active #introduce-btn,
     body.rail-active #open-library-btn { display: revert; }
-    body.rail-active .sidebar-foot {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        max-height: none;
-        transform: none;
-    }
 }
 
 /* --------- Kitaplık: telefon düzeni --------- */
@@ -4594,9 +4587,36 @@ html[data-device="tv"] .library-head-actions .input { min-height: 52px; font-siz
 }
 
 
-/* --- 19.7 Mobil 2. LYT: alt bölüm (Bilgiler/plan/indirme) katlanır --- */
+/* --- 19.7 Mobil 2. LYT: alt bölüm (Bilgiler/plan/indirme) yumuşak katlanır ---
+   Sert display:none yerine opacity + kayma + max-height çöküşü;
+   layout/sidebar geçişiyle aynı yumuşak eğri. --------- */
 @media (max-width: 860px) {
-    body.rail-active .sidebar-foot { display: none; }
+    .sidebar-foot {
+        max-height: 900px;
+        overflow: hidden;
+        transition: opacity 0.34s var(--ease),
+                    transform 0.4s var(--ease),
+                    max-height 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+                    padding 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+                    visibility 0s linear 0s;
+    }
+    body.rail-active .sidebar-foot {
+        opacity: 0;
+        transform: translateX(-10px);
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        pointer-events: none;
+        visibility: hidden;
+        transition: opacity 0.34s var(--ease),
+                    transform 0.4s var(--ease),
+                    max-height 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+                    padding 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+                    visibility 0s linear 0.5s;
+    }
+}
+@media (max-width: 860px) and (prefers-reduced-motion: reduce) {
+    .sidebar-foot { transition-duration: 0.34s, 0.4s, 0.5s, 0.5s, 0s !important; }
 }
 
 
@@ -4862,3 +4882,16 @@ html[data-device="tv"] .library-head-actions .input { min-height: 52px; font-siz
 .feature-open .icon { width: 13px; height: 13px; }
 .feature-open:hover { border-color: var(--accent, #2f6bff); background: var(--accent-soft, rgba(47, 107, 255, 0.08)); }
 
+
+
+/* --- LYT tuşu: yumuşak etiket değişimi (1.LYT ↔ 2.LYT) --- */
+.layout-toggle-label { display: inline-block; transition: opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1), transform 0.18s cubic-bezier(0.22, 1, 0.36, 1); }
+.layout-toggle-label.lyt-swap-out { opacity: 0; transform: translateY(-4px); }
+.layout-toggle-label.lyt-swap-in { animation: lytSwapIn 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes lytSwapIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .layout-toggle-label { transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
+}
