@@ -4826,6 +4826,7 @@ html[data-device="tv"] .library-head-actions .input { min-height: 52px; font-siz
 .acsim-msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
 .acsim-msg-name { font-weight: 700; font-size: 12.5px; color: var(--accent, #2f6bff); }
 .acsim-msg-mode { font-size: 11px; color: var(--text-3); }
+.acsim-msg-model { font-size: 10px; font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace); color: var(--text-3); border: 1px solid var(--border); border-radius: var(--r-full, 999px); padding: 0 7px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .acsim-msg-dm { font-size: 10.5px; font-weight: 700; color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.4); border-radius: var(--r-full, 999px); padding: 0 7px; }
 .acsim-msg-text { font-size: 14px; line-height: 1.55; white-space: pre-wrap; }
 .acsim-user { align-self: flex-end; border-color: rgba(47, 107, 255, 0.35); }

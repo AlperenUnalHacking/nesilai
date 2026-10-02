@@ -132,6 +132,13 @@
         return !!(r && r.ok);
     }
     function modeOf(b) { return MODES[b.mode] || MODES.smart; }
+    // Botun gerçekten çağrılacak model: seçili model yoksa sağlayıcının varsayılanı
+    function effectiveModelOf(b) {
+        if (!b) return '';
+        if (b.model) return b.model;
+        var p = (AI.PROVIDERS || {})[b.providerId];
+        return (p && p.defaultModel) || '';
+    }
 
     // ========================================================
     // Sohbet mantığı
@@ -472,10 +479,12 @@
             d.className = 'acsim-msg' + (isUser ? ' acsim-user' : '');
             var b = S.bots.find(function (x) { return x.name === m.who; });
             var mode = b ? modeOf(b) : null;
+            var model = effectiveModelOf(b);
             d.innerHTML =
                 '<div class="acsim-msg-head">' +
                     '<span class="acsim-msg-name">' + esc(m.who) + '</span>' +
                     (mode ? '<span class="acsim-msg-mode">' + modeIcon(b.mode) + ' ' + esc(mode.label) + '</span>' : '') +
+                    (model ? '<span class="acsim-msg-model" title="Model">' + esc(model) + '</span>' : '') +
                     (m.dm ? '<span class="acsim-msg-dm">DM</span>' : '') +
                 '</div>' +
                 '<div class="acsim-msg-text"></div>';
