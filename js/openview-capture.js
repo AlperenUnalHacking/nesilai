@@ -12,7 +12,12 @@
     'use strict';
 
     // ========================================================
-    // 0. Platform Kapısı — OpenView yalnızca PC / masaüstünde
+    // 0. Platform Kapısı — PC / masaüstü VE ARTIK mobil (Capacitor)
+    // --------------------------------------------------------
+    // PC: getDisplayMedia ile gerçek ekran paylaşımı.
+    // Mobil (Capacitor/Android): getDisplayMedia yoktur; yerine ARKA
+    // KAMERA açılır — "görme" kaynağı kameradır, geri kalan tüm akış
+    // (bölge seçimi, vision analizi, sohbet, mikrofon, TTS) aynıdır.
     // ========================================================
     const bridge = window.nesilaiDesktop || null; // Electron preload köprüsü
     // Electron tespiti YALNIZCA preload köprüsüne bakar. UA'da 'Electron' geçmesi
@@ -20,13 +25,15 @@
     // Electron sanıp PiP düğmesini gizler, ekranı otomatik bağlamaya çalışırdı.
     // Köprü yoksa güvenli varsayım web davranışıdır.
     const isElectron = !!(bridge && bridge.isDesktop);
-    const isMobileLike = !!window.Capacitor ||
+    const isCapacitor = !!window.Capacitor;
+    const isMobileLike = isCapacitor ||
         /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
     const hasCaptureApi = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
-    const isDesktopPlatform = hasCaptureApi && !isMobileLike;
+    // Mobil artık ENGELLİ değil: Capacitor uygulamasında panel açılır (kamera modu)
+    const isDesktopPlatform = (hasCaptureApi && !isMobileLike) || isCapacitor;
 
-    const PC_ONLY_MESSAGE = '**OpenView yalnızca PC sürümünde kullanılabilir.** ' +
-        'Mobil ve tablet sürümlerde bu özellik bulunmaz. Bilgisayar uygulamasında ' +
+    const PC_ONLY_MESSAGE = '**OpenView bu cihazda kullanılamıyor.** ' +
+        'Bilgisayar uygulamasında ya da NesilAI mobil uygulamasında (APK) ' +
         'ya da masaüstü tarayıcıda `/openview` yazarak kullanabilirsin.';
 
     // ========================================================
@@ -99,7 +106,30 @@
 
         async start() {
             if (this.isActive()) return;
+
+            // Mobil (Capacitor): getDisplayMedia yok → arka kamera "görme" kaynağı
             if (!hasCaptureApi) {
+                if (isCapacitor && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    try {
+                        // Kamera izni henüz verilmediyse yerel eklenti ister
+                        const perm = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NesilPermissions;
+                        if (perm && perm.request) { try { await perm.request({ permission: 'camera' }); } catch (e) { /* zaten verilmiş olabilir */ } }
+                        const camStream = await navigator.mediaDevices.getUserMedia({
+                            video: {
+                                facingMode: { ideal: 'environment' },
+                                width: { ideal: 1920 },
+                                height: { ideal: 1080 }
+                            },
+                            audio: false
+                        });
+                        this.stream = camStream;
+                        this.attachVideo();
+                        if (screenConnected) screenConnected();
+                        return;
+                    } catch (err) {
+                        throw new Error('Kamera açılamadı — kamera iznini kontrol et. (' + (err && err.message ? err.message : 'bilinmeyen') + ')');
+                    }
+                }
                 throw new Error('Bu ortam ekran paylaşımını desteklemiyor.');
             }
 
@@ -119,17 +149,7 @@
             });
 
             this.stream = stream;
-
-            if (!this.video) {
-                this.video = document.createElement('video');
-                this.video.muted = true;
-                this.video.playsInline = true;
-                this.video.setAttribute('aria-hidden', 'true');
-                this.video.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:2px;height:2px;opacity:0;pointer-events:none;';
-                document.body.appendChild(this.video);
-            }
-            this.video.srcObject = stream;
-            try { await this.video.play(); } catch (e) { /* grabFrame yeniden dener */ }
+            this.attachVideo();
 
             // Kullanıcı "paylaşımı durdur" dediğinde durumu düşür
             stream.getVideoTracks().forEach(track => {
@@ -140,6 +160,22 @@
             });
 
             if (screenConnected) screenConnected();
+        },
+
+        /** Video elemanını stream'e bağlar (PC + mobil ortak) */
+        attachVideo() {
+            if (!this.video) {
+                this.video = document.createElement('video');
+                this.video.muted = true;
+                this.video.playsInline = true;
+                this.video.setAttribute('playsinline', 'true');
+                this.video.setAttribute('aria-hidden', 'true');
+                this.video.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:2px;height:2px;opacity:0;pointer-events:none;';
+                document.body.appendChild(this.video);
+            }
+            this.video.srcObject = this.stream;
+            const p = this.video.play();
+            if (p && typeof p.catch === 'function') p.catch(() => { /* grabFrame yeniden dener */ });
         },
 
         stop() {
@@ -356,6 +392,15 @@
         '- Kısa ve doğrudan yanıt ver; kullanıcının dilinde yaz (varsayılan Türkçe).'
     ].join('\n');
 
+    // Mobilde kaynak kamera olduğundan sistem istemini uyarla
+    function visionSystemPrompt() {
+        if (!isMobileLike) return VISION_SYSTEM_PROMPT;
+        return VISION_SYSTEM_PROMPT.replace(
+            'kullanıcının bilgisayar ekranının ekran görüntüsü sana verilir',
+            'mobil cihazda kullanıcı sana ARKA KAMERAYLA bakılan ortamın görüntüsünü verir (telefonun baktığı şey: ekran, kitap, tabela, nesne…)'
+        );
+    }
+
     const VisionAnalyzer = {
         supportsVision() {
             const ai = window.NesilAI;
@@ -405,10 +450,10 @@
                 return window.NesilAI.chat({
                     messages: [{
                         role: 'user',
-                        content: opts.question + '\n\n(Eklenen görüntü: kullanıcının ekran görüntüsü. Yalnızca bu görüntüde görünen bilgilere dayan; görmediğin şeyleri ekrandaymış gibi uydurma.)',
+                        content: opts.question + '\n\n(Eklenen görüntü: kullanıcının paylaştığı canlı görüntü — PC\'de ekran, mobilde kamera. Yalnızca bu görüntüde görünen bilgilere dayan; görmediğin şeyleri ekrandaymış gibi uydurma.)',
                         images: [{ dataUrl: prepared.dataUrl, mimeType: prepared.mimeType }]
                     }],
-                    system: VISION_SYSTEM_PROMPT,
+                    system: visionSystemPrompt(),
                     onDelta: opts.onDelta,
                     signal: opts.signal
                 });
@@ -440,7 +485,7 @@
 
             return window.NesilAI.chat({
                 messages: [{ role: 'user', content: lines.join('\n') }],
-                system: VISION_SYSTEM_PROMPT,
+                system: visionSystemPrompt(),
                 onDelta: onDelta,
                 signal: signal
             });
@@ -454,6 +499,8 @@
         PC_ONLY_MESSAGE: PC_ONLY_MESSAGE,
         isDesktopPlatform: isDesktopPlatform,
         isElectron: isElectron,
+        isMobileLike: isMobileLike,
+        isCapacitor: isCapacitor,
         bridge: bridge,
         settings: settings,
         saveSettings: saveSettings,

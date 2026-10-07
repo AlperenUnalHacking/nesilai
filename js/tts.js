@@ -1,6 +1,10 @@
 /* ========================================================
    NesilAI — Text to Speech (TTS) Motoru
-   Web Speech API (SpeechSynthesis) Entegrasyonu
+   --------------------------------------------------------
+   Birincil: Ücretsiz bulut motorlar (js/ttsfree.js —
+   Google Çeviri TTS + Amazon Polly, anahtarsız).
+   Yedek: Web Speech API (SpeechSynthesis) — bulut
+   motorlar başarısız olursa devreye girer.
    ======================================================== */
 (function () {
     'use strict';
@@ -12,9 +16,17 @@
     let speechPitch = 1.0;
     let speechVolume = 1.0;
     let onCurrentEndCallback = null;
+    let freeActive = false;   // ücretsiz bulut motor konuşuyor mu
 
     function isSupported() {
-        return 'speechSynthesis' in window;
+        // Bulut motor varsa destekleniyor sayılır; Web Speech olmasa bile
+        return (window.NesilTTSFree && window.NesilTTSFree.isSupported()) ||
+            'speechSynthesis' in window;
+    }
+
+    // Ücretsiz bulut motor tercihi: 'auto' | 'off' | motor adı
+    function freeEnginePref() {
+        try { return localStorage.getItem('nesilai_ttsfree_pref') || 'auto'; } catch (e) { return 'auto'; }
     }
 
     // Markdown ve kod bloklarını sesten arındırma
@@ -181,6 +193,29 @@
             return;
         }
 
+        // ---- Birincil: ücretsiz bulut motorlar (anahtarsız) ----
+        const free = window.NesilTTSFree;
+        const pref = freeEnginePref();
+        if (free && free.isSupported() && pref !== 'off') {
+            freeActive = true;
+            free.speak(cleanText,
+                onStart,
+                function () { freeActive = false; if (onEnd) onEnd(); },
+                function (err) {
+                    // Bulut motorlar başarısız → Web Speech yedeği
+                    freeActive = false;
+                    speakLocal(cleanText, onStart, onEnd, onError);
+                },
+                { lang: 'tr', speed: speechRate }
+            );
+            return;
+        }
+        speakLocal(cleanText, onStart, onEnd, onError);
+    }
+
+    // ---- Yedek: Web Speech API (yerel sistem sesleri) ----
+    async function speakLocal(cleanText, onStart, onEnd, onError) {
+
         // Sesler tarayıcıda geç yükleniyorsa kısaca bekle (ilk konuşmada kritik)
         if (!selectedVoice && getVoices().length === 0) {
             await waitForVoices(3000);
@@ -282,8 +317,10 @@
     }
 
     function stop() {
-        if (!isSupported()) return;
-        window.speechSynthesis.cancel();
+        // Bulut motoru da kes — iki motorun sesi üst üste binmesin
+        if (window.NesilTTSFree) window.NesilTTSFree.stop();
+        freeActive = false;
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
         isSpeakingState = false;
         currentUtterance = null;
         if (onCurrentEndCallback) {
@@ -294,7 +331,8 @@
     }
 
     function isSpeaking() {
-        return isSpeakingState || (isSupported() && window.speechSynthesis.speaking);
+        return freeActive || isSpeakingState ||
+            ('speechSynthesis' in window && window.speechSynthesis.speaking);
     }
 
     /** OpenView gibi modüller geçici ses seviyesi ayarlayabilir (0.0 – 1.0) */

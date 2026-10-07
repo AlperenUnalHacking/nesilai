@@ -256,6 +256,8 @@
     const settingVoiceSelect = document.getElementById('setting-voice-select');
     const settingVoiceSpeed = document.getElementById('setting-voice-speed');
     const settingVoicePitch = document.getElementById('setting-voice-pitch');
+    const settingTtsFreeEngine = document.getElementById('setting-ttsfree-engine');
+    const settingTtsFreeVoice = document.getElementById('setting-ttsfree-voice');
     const settingAutoSpeak = document.getElementById('setting-auto-speak');
     const webSearchToggle = document.getElementById('web-search-toggle');
     const settingLanguageSelect = document.getElementById('setting-language-select');
@@ -388,6 +390,47 @@
     // ========================================================
     // Başlangıç (Initialization)
     // ========================================================
+    // Ücretsiz bulut TTS ayarları (motor + Polly sesi)
+    // ========================================================
+    function initTtsFreeSettings() {
+        const free = window.NesilTTSFree;
+        if (!free || !settingTtsFreeEngine) return;
+
+        // Motor seçenekleri: Otomatik / Google / Polly / Kapalı (Web Speech)
+        settingTtsFreeEngine.innerHTML = '';
+        const engineDefs = Object.keys(free.ENGINES).map(k => free.ENGINES[k]);
+        engineDefs.push({ id: 'off', label: 'Kapalı — sistem sesi (Web Speech)' });
+        const savedEngine = localStorage.getItem('nesilai_ttsfree_pref') || 'auto';
+        engineDefs.forEach(e => {
+            const opt = document.createElement('option');
+            opt.value = e.id;
+            opt.textContent = e.label;
+            if (savedEngine === e.id) opt.selected = true;
+            settingTtsFreeEngine.appendChild(opt);
+        });
+
+        // Edge Neural ses listesi (Edge motoru seçiliyken kullanılır)
+        if (settingTtsFreeVoice) {
+            settingTtsFreeVoice.innerHTML = '';
+            const savedVoice = localStorage.getItem('nesilai_ttsfree_voice') || 'tr-TR-EmelNeural';
+            free.VOICES.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.id;
+                opt.textContent = v.label;
+                if (savedVoice === v.id) opt.selected = true;
+                settingTtsFreeVoice.appendChild(opt);
+            });
+            settingTtsFreeVoice.addEventListener('change', () => {
+                try { localStorage.setItem('nesilai_ttsfree_voice', settingTtsFreeVoice.value); } catch (e) { /* yoksay */ }
+            });
+        }
+
+        settingTtsFreeEngine.addEventListener('change', () => {
+            try { localStorage.setItem('nesilai_ttsfree_pref', settingTtsFreeEngine.value); } catch (e) { /* yoksay */ }
+        });
+    }
+
+    // ========================================================
     function initApp() {
         // Tema: kaydedilmiş tercih yoksa sistem tercihi kullanılır
         applyTheme(localStorage.getItem(THEME_KEY) || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
@@ -399,6 +442,23 @@
         if (window.NesilTTS) {
             window.NesilTTS.initVoiceSettings(settingVoiceSelect, settingVoiceSpeed, settingVoicePitch);
         }
+
+        // Ücretsiz bulut TTS motoru seçicileri (Google/Polly — anahtarsız)
+        initTtsFreeSettings();
+
+        // Mobil (Capacitor): mikrofon iznini başlangıçta iste —
+        // sesli sohbet/STT ilk dokunuşta hazır olsun
+        try {
+            const Cap = window.Capacitor;
+            if (Cap && Cap.isNativePlatform && Cap.isNativePlatform()) {
+                const perms = Cap.Plugins && Cap.Plugins.NesilPermissions;
+                if (perms && perms.request) {
+                    setTimeout(function () {
+                        perms.request({ permission: 'microphone' }).catch(function () { /* kullanıcı reddederse sessiz */ });
+                    }, 1500);
+                }
+            }
+        } catch (e) { /* tarayıcıda yok — yoksay */ }
 
         // Aboneliği yükle
         loadSubscription();

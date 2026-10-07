@@ -764,7 +764,7 @@
                     </button>
                     <code>/openview</code>
                 </div>
-                <p>Ekran asistanı: ekranını canlı izler, gördüğüne göre yanıt verir. PC uygulamasında bağımsız pencere, web'de PiP penceresi olarak açılır. Kısayol: Ctrl+Shift+O.</p>
+                <p>Ekran asistanı: gördüğüne göre yanıt verir. PC'de ekranını canlı izler; telefonda arka kamerayı "göz" olarak kullanır (kamerayı ekrana/nesneye tut). Telefonda mikrofon, kamera ve "uygulamaların üstünde göster" izinleri istenir. Kısayol: Ctrl+Shift+O.</p>
             </div>
             <div class="feature-item">
                 <div class="feature-item-head">
@@ -945,6 +945,17 @@
                     <p class="field-note" id="voice-count-note"></p>
                 </div>
 
+                <div class="field">
+                    <label for="setting-ttsfree-engine">Seslendirme motoru — ücretsiz bulut (anahtar yok)</label>
+                    <select id="setting-ttsfree-engine" class="input"></select>
+                    <p class="field-note" id="ttsfree-note">Google Çeviri ve Edge Neural tabanlı bedava motorlar; sistem sesi değil, internette çalışır.</p>
+                </div>
+
+                <div class="field" id="ttsfree-voice-field">
+                    <label for="setting-ttsfree-voice">Neural sesi (Edge motoru için)</label>
+                    <select id="setting-ttsfree-voice" class="input"></select>
+                </div>
+
                 <div class="field-row">
                     <div class="field">
                         <label for="setting-voice-speed">Konuşma hızı — <span id="voice-speed-val">1.0</span>x</label>
@@ -1078,15 +1089,16 @@
 <script src="js/research.js?v=r1"></script>
 <script src="js/projectfiles.js?v=p2"></script>
 <script src="js/ai.js?v=ai20"></script>
-<script src="js/tts.js?v=links3"></script>
+<script src="js/tts.js?v=free1"></script>
+<script src="js/ttsfree.js?v=free1"></script>
 <script src="js/stt.js?v=stt2"></script>
-<script src="js/openview-capture.js?v=ov9"></script>
-<script src="js/openview.js?v=ov19"></script>
+<script src="js/openview-capture.js?v=free1"></script>
+<script src="js/openview.js?v=free1"></script>
 <script src="js/nesilcode.js?v=nc7"></script>
 <script src="js/nesilllm.js?v=nllm4"></script>
 <script src="js/aichatsim.js?v=sim4"></script>
 <script src="js/textToPhoto.js?v=tr9"></script>
 <script src="js/photoToText.js?v=pool"></script>
-<script src="js/app.js?v=ui32"></script>
+<script src="js/app.js?v=free1"></script>
 </body>
 </html>

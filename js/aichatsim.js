@@ -54,6 +54,18 @@
     var TOPIC_KEY = 'aichatsim_topic_v1';
     var LOG_KEY = 'aichatsim_log_v1';
 
+    // Odanın sahibi hakkında sabit bilgi: "Acsida kim?" sorusunun tek doğru cevabı
+    var ACSIDA_ID =
+        'ODANIN SAHİBİ hakkında bilmen gerekenler (bu bilgi kesindir, uydurma):\n' +
+        '- "Acsida", Alperen Unal\'ın takma adıdır (rumusdur). Yani Acsida = Alperen Unal.\n' +
+        '- Alperen Unal 15 yaşındadır.\n' +
+        '- Bloodline ve Acid Ecosystems\'in kurucusu ve CEO\'sidir.\n' +
+        '- Yazılım, elektronik ve müzik ile ilgilenmektedir.\n' +
+        'Biri "Acsida kim?", "Acsida kimdir?", "Acsida sen kimsin?", "Alperen Unal kim?" gibi sorarsa ' +
+        'bu bilgiyle cevap ver: "Acsida, Alperen Unal\'ın takma adıdır. Alperen Unal 15 yaşındadır; ' +
+        'Bloodline ve Acid Ecosystems\'in kurucusu ve CEO\'sidir. Yazılım, elektronik ve müzik ile ilgilenir." ' +
+        'Bu soru geldiğinde konuyu değiştirme, bilgiyi reddetme, farklı kimlik uydurma.';
+
     var S = {
         open: false,
         busy: false,
@@ -166,7 +178,10 @@
             groupMessages().roster,
             'Karakter modun: ' + modeOf(b).prompt,
             'Kurallar: 1-3 cümle yaz, Türkçe konuş. Mesajının başına adını yazma; kim olduğunu biliyoruz.',
-            'Diğer yapay zekâları tanıyorsun; hakkınızda serbestçe konuşabilir, espri yapabilir, tartışabilirsin.'
+            'Diğer yapay zekâları tanıyorsun; hakkınızda serbestçe konuşabilir, espri yapabilir, tartışabilirsin.',
+            ACSIDA_ID,
+            'TEKRAR YASAĞI: En son söylediklerini tekrar etme. Sohbette en son senin yazdığın mesaja bak; ' +
+                'aynı veya benzeri bir cümleyi ikinci kez yazma — her seferinde yeni bir şey söyle, farklı bir açıdan devam et.'
         ];
         if (S.topic) parts.push('Grubun güncel tartışma konusu: "' + S.topic + '". Bu konuya değin.');
         if (S.dmWith && S.dmWith !== b.name) {
@@ -200,20 +215,55 @@
         }
         if (!msgs.length) msgs.push({ role: 'user', content: 'Sohbeti sen başlat.' });
         return msgs;
+    }    function stripNamePrefix(b, text) {
+        return String(text || '').replace(/^\s*(?:' + b.name + '|Ben)\s*:\s*/i, '').trim();
     }
 
-    async function callBot(b, extra) {
+    // Canlı akış gösterimi için ham metni temizle (<think> blokları, isim öneki)
+    function finalizeForDisplay(b, full) {
+        var t = String(full || '');
+        t = t.replace(/<think>[\s\S]*?<\/think>/gi, '');   // kapanmış düşünce bloğu
+        t = t.replace(/<think>[\s\S]*$/i, '');             // hâlâ açık olan düşünce bloğu
+        t = t.replace(/^\s*```[a-z]*\s*/i, '').replace(/```\s*$/i, ''); // kod çiti
+        return stripNamePrefix(b, t);
+    }
+
+    async function callBot(b, extra, onDelta) {
         var res = await AI.chat({
             messages: buildBotMessages(b, extra),
             providerId: b.providerId,
             model: b.model || undefined,
             system: buildBotSystem(b),
             temperature: 0.9,
+            maxTokens: 400,   // kısa cevap → daha hızlı döner
             fallback: false,
-            __internal: true
+            __internal: true,
+            onDelta: onDelta || undefined
         });
         var text = typeof res === 'string' ? res : res.text;
-        return String(text || '').replace(/^\s*(?:'+ b.name + '|Ben)\s*:\s*/i, '').trim();
+        return stripNamePrefix(b, text);
+    }
+
+    // Bir bot konuşsun: cevabı canlı akışla baloncukta göster
+    async function callNextTurn(b, extra) {
+        beginStreamDom(b.name);
+        try {
+            var text = await callBot(b, extra, function (_chunk, full) {
+                // finalizeText öncesi ham akış gelir; DOM'da gösterirken <think> bloklarını ve isim önekini temizle
+                var cleaned = finalizeForDisplay(b, full);
+                if (streamDom && cleaned) {
+                    streamDom.full = cleaned;
+                    var node = streamDom.dom.querySelector('.acsim-msg-text');
+                    if (node) node.textContent = cleaned;
+                    el.messages.scrollTop = el.messages.scrollHeight;
+                }
+            });
+            endStreamDom();
+            return { bot: b, text: text };
+        } catch (err) {
+            endStreamDom();
+            throw err;
+        }
     }
 
     async function nextTurn(speakerName) {
@@ -231,8 +281,7 @@
         }
         var extra = null;
         if (S.topic && !S.dmWith) extra = 'Konuyla ilgili bir mesaj yaz.';
-        var text = await callBot(b, extra);
-        return { bot: b, text: text };
+        return callNextTurn(b, extra);
     }
 
     // ========================================================
@@ -492,6 +541,29 @@
         }
         el.messages.appendChild(d);
         el.messages.scrollTop = el.messages.scrollHeight;
+        return d;
+    }
+
+    // Akış için geçici baloncuk: cevap gelirken canlı güncellenir, sonra gerçek mesajla değiştirilir
+    var streamDom = null; // { botName, dom, full }
+    function beginStreamDom(botName) {
+        endStreamDom();
+        var dom = appendMsgDom({ who: botName, text: '…' });
+        streamDom = { botName: botName, dom: dom, full: '' };
+        return streamDom;
+    }
+    function updateStreamDom(chunk) {
+        if (!streamDom) return;
+        streamDom.full += chunk;
+        var node = streamDom.dom.querySelector('.acsim-msg-text');
+        if (node) node.textContent = streamDom.full;
+        el.messages.scrollTop = el.messages.scrollHeight;
+    }
+    function endStreamDom() {
+        if (streamDom && streamDom.dom && streamDom.dom.parentNode) {
+            streamDom.dom.parentNode.removeChild(streamDom.dom);
+        }
+        streamDom = null;
     }
 
     function addMsg(who, text, dm) {

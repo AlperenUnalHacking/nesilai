@@ -473,7 +473,7 @@
     // ========================================================
     // Mikrofon — mevcut NesilSTT (Web Speech API)
     // ========================================================
-    function toggleMic(target) {
+    async function toggleMic(target) {
         const isAsk = target === 'ask';
         const btn = isAsk ? askMicBtn : micBtn;
 
@@ -484,6 +484,18 @@
             updateStatusDots();
             if (btn) btn.classList.remove('listening');
             return;
+        }
+
+        // Mobil (Capacitor): mikrofon iznini önce yerel katmandan iste
+        const nativePerms = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NesilPermissions;
+        if (nativePerms && nativePerms.request) {
+            try {
+                const pr = await nativePerms.request({ permission: 'microphone' });
+                if (pr && pr.granted === false) {
+                    ovToast('Mikrofon izni verilmedi — telefon ayarlarından izin ver', 'error');
+                    return;
+                }
+            } catch (e) { /* izin köprüsü yoksa web davranışıyla devam */ }
         }
 
         if (!settings.micEnabled) {
@@ -1197,6 +1209,31 @@
         // tarayıcıdan izin penceresi fırlatır ve çoğu zaman reddedilir — Electron
         // ana süreç sessiz seçtiği için orada otomatik bağlantı güvenli kalır.
         if (Core.isElectron && !SC.isActive()) connectScreen();
+
+        // Mobil (Capacitor): izinler + kamera modu bilgilendirmesi
+        if (Core.isCapacitor) {
+            try {
+                const nativePerms = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NesilPermissions;
+                // "Uygulamaların üstünde göster" izni — ilk açılışta bir kez istenir
+                let asked = false;
+                try { asked = localStorage.getItem('nesilai_overlay_asked_v1') === '1'; } catch (e) { /* yoksay */ }
+                if (nativePerms && nativePerms.requestOverlay && !asked) {
+                    try { localStorage.setItem('nesilai_overlay_asked_v1', '1'); } catch (e) { /* yoksay */ }
+                    nativePerms.requestOverlay().then(function (r) {
+                        if (!r || !r.granted) {
+                            ovToast('"Uygulamaların üstünde göster" izni için ayarlar açıldı — OpenView\'ı üstte tutmak için izin ver', 'info');
+                        }
+                    }).catch(function () { /* yoksay */ });
+                }
+                // İlk açılışta kamera modu bilgilendirmesi
+                let camNote = false;
+                try { camNote = localStorage.getItem('nesilai_openview_camnote_v1') === '1'; } catch (e) { /* yoksay */ }
+                if (!camNote) {
+                    try { localStorage.setItem('nesilai_openview_camnote_v1', '1'); } catch (e) { /* yoksay */ }
+                    ovToast('Telefon modu: ekran yerine ARKA KAMERA "görme" kaynağıdır — kamerayı ekrana/nesneye tut', 'info');
+                }
+            } catch (e) { /* yoksay */ }
+        }
     }
 
     function closeView() {
@@ -1287,7 +1324,7 @@
     }
 
     function getCommandHelp() {
-        return '- `/openview` — ekran asistanını açar/kapatır (yalnızca PC)\n' +
+        return '- `/openview` — ekran asistanını açar/kapatır (PC: ekran, telefon: kamera)\n' +
                '- `/openview off` — OpenView\'ı kapatır\n' +
                '- `/openview settings` — OpenView ayarlarını açar';
     }
