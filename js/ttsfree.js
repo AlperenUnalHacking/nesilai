@@ -184,11 +184,11 @@
                             return;
                         }
                         // binary: [2B başlık uzunluğu][başlık][audio]
-                        var buf = ev.data;
+                        var buf = new Uint8Array(ev.data);
                         if (buf.byteLength < 2) return;
                         var headLen = (buf[0] << 8) | buf[1];
                         if (buf.byteLength > headLen + 2) {
-                            parts.push(buf.slice(headLen + 2));
+                            parts.push(ev.data.slice(headLen + 2));
                         }
                     };
 
@@ -268,7 +268,7 @@
         if (!text) { if (onEnd) onEnd(); return; }
 
         var lang = o.lang || 'tr';
-        var engine = o.engine || getPref('nesilai_ttsfree_engine', 'auto');
+        var engine = o.engine || getPref('nesilai_ttsfree_pref', 'auto');
         var voice = o.voice || getPref('nesilai_ttsfree_voice', 'tr-TR-EmelNeural');
         var speed = o.speed || parseFloat(getPref('nesilai_voice_speed', '1')) || 1;
 

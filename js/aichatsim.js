@@ -215,8 +215,12 @@
         }
         if (!msgs.length) msgs.push({ role: 'user', content: 'Sohbeti sen başlat.' });
         return msgs;
-    }    function stripNamePrefix(b, text) {
-        return String(text || '').replace(/^\s*(?:' + b.name + '|Ben)\s*:\s*/i, '').trim();
+    }
+
+    function stripNamePrefix(b, text) {
+        var escName = (b && b.name ? String(b.name) : '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        var re = new RegExp('^\\s*(?:' + escName + '|Ben)\\s*:\\s*', 'i');
+        return String(text || '').replace(re, '').trim();
     }
 
     // Canlı akış gösterimi için ham metni temizle (<think> blokları, isim öneki)
