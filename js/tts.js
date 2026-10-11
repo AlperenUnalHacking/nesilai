@@ -304,12 +304,19 @@
             part.volume = speechVolume;
             if (idx === 0) {
                 part.onstart = utterance.onstart;
-                part.onend = utterance.onend;
                 part.onerror = utterance.onerror;
             } else {
                 // Son parça değilse: sonraki parça konuşulmaya devam etsin
-                part.onend = () => { /* devam ediyor */ };
                 part.onerror = () => { /* yoksay */ };
+            }
+            // onend yalnızca SON parçada tetiklenir. Eskiden ilk parçada
+            // da atanmıştı → Web Speech ilk parça biter bitmez "bitti"
+            // sanıp onEnd çağırıyordu; sohbet UI hemen normal moda döner,
+            // kalan parçalar fonda konuşmaya devam ederdi.
+            if (idx === chunks.length - 1) {
+                part.onend = utterance.onend;
+            } else {
+                part.onend = () => { /* devamlılık: kalan parçalar sırada */ };
             }
             // Sıraya al — tarayıcı parçaları sırayla okur
             window.speechSynthesis.speak(part);

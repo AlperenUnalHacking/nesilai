@@ -556,6 +556,13 @@
         streamDom = { botName: botName, dom: dom, full: '' };
         return streamDom;
     }
+
+    // Oturum kapatıldığında akış balonunu anında temizle. Eskiden
+    // kapatma sırasında yarı-yazan baloncukta '…' metni kalıyor,
+    // yeniden açınca hayalet mesaj olarak görünüyordu.
+    function cancelStreamDom() {
+        endStreamDom();
+    }
     function updateStreamDom(chunk) {
         if (!streamDom) return;
         streamDom.full += chunk;
@@ -656,6 +663,7 @@
     function closeView() {
         if (!el) return;
         S.auto = false; // kapanınca döngü dursun
+        cancelStreamDom();
         el.root.classList.add('hidden');
         S.open = false;
     }

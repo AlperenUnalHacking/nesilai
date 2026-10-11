@@ -183,6 +183,15 @@
                             }
                             return;
                         }
+                        // Kullanıcı Stop'a bastıysa artık ses grubuna ihtiyaç yok;
+                        // socket'i kapat (yoksa 'bağlantı kapandı' failOnce'i
+                        // aborted=true iken de reject zinciri başlatırdı)
+                        if (aborted && !done) {
+                            done = true;
+                            clearTimeout(guard);
+                            try { ws.close(); } catch (e) { /* yoksay */ }
+                            return;
+                        }
                         // binary: [2B başlık uzunluğu][başlık][audio]
                         var buf = new Uint8Array(ev.data);
                         if (buf.byteLength < 2) return;
@@ -305,6 +314,9 @@
                 onDone();
             };
             a.src = url;
+            // Stop ile kesildiyse çalmaya hiç başlamayalım: play() sonradan
+            // çalıp onDone → playGroup() zincirini yeniden tetiklerdi
+            if (aborted) return;
             var p = a.play();
             if (p && typeof p.catch === 'function') {
                 p.catch(function () {
